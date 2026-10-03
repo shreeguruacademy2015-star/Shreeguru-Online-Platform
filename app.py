@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
-app.secret_key = "shreeguru_master_test_platform_2026_ultimate_secure"
+app.secret_key = "shreeguru_master_test_platform_2026_ultimate_safe"
 
 # --- NEON CLOUD DATABASE CONNECTION ---
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -18,7 +18,7 @@ def get_db():
 def init_master_db():
     with get_db() as conn:
         with conn.cursor() as cur:
-            # १. टेस्ट पेपर्स टेबल (टाईमर मिनिटांसह)
+            # १. टेस्ट पेपर्स टेबल
             cur.execute('''CREATE TABLE IF NOT EXISTS test_papers (
                 id SERIAL PRIMARY KEY,
                 test_title TEXT NOT NULL,
@@ -41,7 +41,7 @@ def init_master_db():
                 explanation TEXT DEFAULT ''
             )''')
 
-            # ३. विद्यार्थी लीड्स व निकाल टेबल (सुरक्षित व अचूक कॉलमसह)
+            # ३. विद्यार्थी लीड्स व निकाल टेबल
             cur.execute('''CREATE TABLE IF NOT EXISTS mock_test_leads (
                 id SERIAL PRIMARY KEY,
                 test_id INTEGER DEFAULT 1,
