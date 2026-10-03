@@ -1,12 +1,17 @@
 import json
 import os
 from datetime import date, datetime, timedelta
-from flask import Flask, redirect, render_template_string, request, session, url_for
+from flask import Flask, redirect, render_template_string, request, session, url_for, send_from_directory
+from werkzeug.utils import secure_filename
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 app.secret_key = "shreeguru_master_test_platform_2026_ultimate_safe"
+
+UPLOAD_FOLDER = 'static/uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # --- NEON CLOUD DATABASE CONNECTION ---
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -18,7 +23,6 @@ def get_db():
 def init_master_db():
     with get_db() as conn:
         with conn.cursor() as cur:
-            # १. टेस्ट पेपर्स टेबल (टेस्ट ऑन/ऑफ स्टेटस व वेळेसह)
             cur.execute('''CREATE TABLE IF NOT EXISTS test_papers (
                 id SERIAL PRIMARY KEY,
                 test_title TEXT NOT NULL,
@@ -28,7 +32,6 @@ def init_master_db():
                 status TEXT DEFAULT 'Active'
             )''')
 
-            # २. प्रश्न टेबल
             cur.execute('''CREATE TABLE IF NOT EXISTS questions (
                 id SERIAL PRIMARY KEY,
                 test_id INTEGER DEFAULT 1,
@@ -41,7 +44,6 @@ def init_master_db():
                 explanation TEXT DEFAULT ''
             )''')
 
-            # ३. विद्यार्थी लीड्स, पेमेंट, OTP व वैधता टेबल
             cur.execute('''CREATE TABLE IF NOT EXISTS mock_test_leads (
                 id SERIAL PRIMARY KEY,
                 test_id INTEGER DEFAULT 1,
@@ -60,7 +62,6 @@ def init_master_db():
                 valid_until TEXT DEFAULT ''
             )''')
 
-            # ४. सेटिंग्ज टेबल (QR कोड, UPI नंबर, ॲडमिन पासवर्ड व OTP साठी)
             cur.execute('''CREATE TABLE IF NOT EXISTS academy_settings (
                 id SERIAL PRIMARY KEY,
                 setting_key TEXT UNIQUE NOT NULL,
@@ -72,15 +73,16 @@ def init_master_db():
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_pass', 'shreeguru2026') ON CONFLICT (setting_key) DO NOTHING")
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_phone', '9921111960') ON CONFLICT (setting_key) DO NOTHING")
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_otp', '') ON CONFLICT (setting_key) DO NOTHING")
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('insta_link', '') ON CONFLICT (setting_key) DO NOTHING")
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('yt_link', '') ON CONFLICT (setting_key) DO NOTHING")
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('toppers_link', '') ON CONFLICT (setting_key) DO NOTHING")
 
-            # डीफॉल्ट टेस्ट्स ऍड करणे
             cur.execute('SELECT COUNT(*) as count FROM test_papers')
             if cur.fetchone()['count'] == 0:
                 cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status) VALUES (1, 'पोलीस भरती विशेष महासराव टेस्ट #१', 'Free', 0, 60, 'Active')")
                 cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status) VALUES (2, 'आर्मी भरती बौद्धिक व गणित टेस्ट #२', 'Paid', 49, 45, 'Active')")
                 conn.commit()
 
-            # डीफॉल्ट प्रश्न ऍड करणे
             cur.execute('SELECT COUNT(*) as count FROM questions')
             if cur.fetchone()['count'] == 0:
                 default_qs = [
@@ -93,12 +95,12 @@ def init_master_db():
 
 init_master_db()
 
-# ----------------- 1. PUBLIC HOME TEMPLATE (Attractive Marathi Font) -----------------
+# ----------------- 1. PUBLIC HOME TEMPLATE -----------------
 HOME_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>श्रीगुरु राज्यस्तरीय पोलीस सराव प्रश्नपत्रिका</title>
+    <title>राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</title>
     <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaina+2:wght@500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', 'Baloo Bhaina 2', sans-serif; }
@@ -126,11 +128,11 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 
 <div class="top-bar">
     <div class="clock">🕒 <span id="live-clock">लोडिंग...</span></div>
-    <div><a href="/admin/login" style="background:#0f172a; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">⚙️️ ॲडमिन लॉगिन</a></div>
+    <div><a href="/admin/login" style="background:#0f172a; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">⚙ ॲडमिन लॉगिन</a></div>
 </div>
 
 <div class="box">
-    <h2>⚔️ श्रीगुरु राज्यस्तरीय पोलीस सराव प्रश्नपत्रिका</h2>
+    <h2>⚔️ राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</h2>
 
     <div class="quote-box">
         🔥 राहिलेल्या दिवसात काबाड कष्ट करायचे आणि वर्दीचे स्वप्न पूर्ण करायचे! 🌟
@@ -181,7 +183,12 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
     
     <div style="background:#fffbeb; padding:15px; border-radius:6px; border:1px solid #fcd34d; text-align:center; margin-bottom:15px;">
         <p style="margin:0 0 10px; font-weight:bold; color:#92400e; font-size:13px;">QR कोड स्कॅन करून किंवा <b>{{ upi_mobile }}</b> वर पे करा:</p>
+        {% if qr_url.startswith('/') %}
         <img src="{{ qr_url }}" alt="QR" style="width:140px; height:140px; border-radius:6px; border:1px solid #cbd5e1;">
+        {% else %}
+        <img src="{{ qr_url }}" alt="QR" style="width:140px; height:140px; border-radius:6px; border:1px solid #cbd5e1;">
+        {% endif %}
+        <p style="font-size:12px; color:#b45309; font-weight:bold; margin-top:8px;">⚠️ पेमेंट करून झाल्यावर <b>{{ upi_mobile }}</b> या नंबरवर आपले नाव व पेमेंट स्क्रीनशॉट पाठवा!</p>
     </div>
 
     <form method="POST" action="/request_paid_test/{{ test.id }}">
@@ -204,7 +211,7 @@ OTP_VERIFY_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTP पडताळणी - श्रीगुरु प्लॅटफॉर्म</title>
+    <title>OTP पडताळणी - राज्यस्तरीय प्लॅटफॉर्म</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -231,18 +238,17 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ test.test_title }} - श्रीगुरु प्लॅटफॉर्म</title>
+    <title>{{ test.test_title }} - राज्यस्तरीय परीक्षा कक्ष</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { margin: 0; background: #f0fdf4; color: #1e293b; padding: 15px; }
-        .box { max-width: 750px; margin: 20px auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 6px solid #059669; }
-        h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 22px; }
-        .sub { text-align: center; color: #475569; font-size: 13px; margin-bottom: 15px; }
-        .timer-box { background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 20px; position: sticky; top: 10px; z-index: 100; }
-        .q-item { margin-bottom: 22px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0; }
+        body { margin: 0; background: #eef2f7; color: #1e293b; padding: 10px; }
+        .exam-header { background: #065f46; color: white; padding: 12px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; max-width: 800px; margin: 0 auto 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .box { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border-top: 5px solid #059669; }
+        .timer-box { background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; padding: 8px 15px; border-radius: 6px; font-weight: bold; font-size: 15px; display: inline-block; }
+        .q-item { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin-bottom: 18px; }
         .q-text { font-weight: bold; margin-bottom: 10px; font-size: 15px; color: #0f172a; }
-        .opt-label { display: block; margin-bottom: 8px; font-size: 14px; cursor: pointer; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .opt-label { display: block; margin-bottom: 8px; font-size: 14px; cursor: pointer; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
         .opt-label:hover { background: #f1f5f9; }
         .btn-submit { width: 100%; background: linear-gradient(135deg, #059669, #047857); color: white; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(5,150,105,0.3); }
     </style>
@@ -267,14 +273,17 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
     </script>
 </head>
 <body>
-<div class="box">
-    <h2>⚔️ {{ test.test_title }}</h2>
-    <div class="sub">श्रीगुरु राज्यस्तरीय पोलीस सराव प्रश्नपत्रिका</div>
-
-    <div class="timer-box">
-        ⏳ उरलेली वेळ: <span id="time-left">00:00</span> मिनिटे
+<div class="exam-header">
+    <div>
+        <h3 style="margin:0; font-size:18px;">⚔️ {{ test.test_title }}</h3>
+        <small style="opacity:0.9;">राज्यस्तरीय पोलीस भरती सराव परीक्षा कक्ष</small>
     </div>
+    <div class="timer-box">
+        ⏳ वेळ: <span id="time-left">00:00</span>
+    </div>
+</div>
 
+<div class="box">
     <form id="examForm" method="POST" action="/submit_test/{{ test.id }}">
         {% for q in questions %}
         <div class="q-item">
@@ -297,7 +306,7 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>टेस्ट निकाल - श्रीगुरु प्लॅटफॉर्म</title>
+    <title>टेस्ट निकाल - राज्यस्तरीय प्लॅटफॉर्म</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -306,11 +315,13 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
         h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 24px; }
         .sub { text-align: center; color: #475569; font-size: 13px; margin-bottom: 25px; }
         .cert-box { background: linear-gradient(135deg, #fefce8, #fef3c7); border: 4px double #d97706; padding: 25px; border-radius: 10px; text-align: center; margin-top: 25px; }
+        .promo-box { background: #f0fdf4; border: 2px dashed #059669; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px; }
+        .btn-link { display: inline-block; background: #25D366; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; }
     </style>
 </head>
 <body>
 <div class="box">
-    <h2>⚔️ श्रीगुरु राज्यस्तरीय पोलीस सराव प्रश्नपत्रिका</h2>
+    <h2>⚔️ राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</h2>
     <div class="sub">परीक्षेचा निकाल व प्रशस्तीपत्र डॅशबोर्ड</div>
 
     <div style="background:#f0fdf4; border:2px solid #86efac; border-radius:8px; padding:20px; text-align:center; margin-bottom:20px;">
@@ -325,13 +336,22 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
     <!-- DIGITAL CERTIFICATE -->
     <div class="cert-box">
         <h3 style="color:#92400e; margin:0 0 5px;">📜 सहभाग व अभिनंदनपर डिजिटल प्रशस्तीपत्र (Certificate)</h3>
-        <p style="font-size:12px; color:#78350f; margin-bottom:15px;">श्रीगुरु ऑनलाईन प्लॅटफॉर्म तर्फे गुणवंत विद्यार्थ्यांसाठी गौरवास्पद प्रमाणपत्र</p>
+        <p style="font-size:12px; color:#78350f; margin-bottom:15px;">राज्यस्तरीय ऑनलाईन प्लॅटफॉर्म तर्फे गुणवंत विद्यार्थ्यांसाठी गौरवास्पद प्रमाणपत्र</p>
         <div style="background:white; padding:15px; border-radius:6px; border:1px dashed #b45309;">
             <p style="font-size:13px; margin:5px 0;">प्रमाणित करण्यात येते की,</p>
             <h2 style="color:#065f46; margin:5px 0; font-size:22px;">{{ lead.student_name }}</h2>
             <p style="font-size:13px; margin:5px 0;">यांनी <b>{{ lead.test_name }}</b> मध्ये सहभाग घेऊन उत्तम यश मिळवले आहे.</p>
-            <p style="font-size:12px; color:#555; margin-top:10px;">— संचालक, श्रीगुरु करिअर अकॅडमी, आडूर (कोल्हापूर)</p>
+            <p style="font-size:12px; color:#555; margin-top:10px;">— परीक्षा नियंत्रक, राज्यस्तरीय पोलीस भरती सराव कक्ष</p>
         </div>
+    </div>
+
+    <!-- SOCIAL & ACADEMY LINKS PROMO -->
+    <div class="promo-box">
+        <h4 style="margin:0 0 8px; color:#065f46;">🌟 आमच्या अधिकृत सोशल मीडिया व यशोगाथा लिंक्स:</h4>
+        <p style="font-size:12px; color:#334155; margin-bottom:12px;">पुढील अपडेट्स, चालू घडामोडी आणि यशस्वी विद्यार्थ्यांच्या मुलाखतींसाठी खालील लिंक्स जॉईन करा:</p>
+        {% if insta_link %}<a href="{{ insta_link }}" target="_blank" class="btn-link" style="background:#E1306C;">📸 Instagram Join</a>{% endif %}
+        {% if yt_link %}<a href="{{ yt_link }}" target="_blank" class="btn-link" style="background:#FF0000;">▶️ YouTube Channel</a>{% endif %}
+        {% if toppers_link %}<a href="{{ toppers_link }}" target="_blank" class="btn-link" style="background:#0284c7;">🏆 यशस्वी विद्यार्थ्यांचे फोटो पहा</a>{% endif %}
     </div>
 
     <!-- ANSWER KEY & EXPLANATIONS -->
@@ -354,23 +374,38 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 4. ADMIN LOGIN & FORGOT TEMPLATE (Real WhatsApp OTP) -----------------
+# ----------------- 4. ADMIN LOGIN & FORGOT TEMPLATE (With Show/Hide Password) -----------------
 ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ॲडमिन लॉगिन - श्रीगुरु अकॅडमी</title>
+    <title>ॲडमिन लॉगिन - राज्यस्तरीय प्लॅटफॉर्म</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
         .login-box { background: #1e293b; padding: 30px; border-radius: 10px; width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-top: 5px solid #059669; }
         h2 { text-align: center; color: #34d399; margin-top: 0; }
-        input { width: 100%; padding: 10px; margin: 10px 0 15px; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 14px; text-align: center; }
+        .pass-group { position: relative; width: 100%; margin: 10px 0 15px; }
+        input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 14px; text-align: center; }
+        .eye-btn { position: absolute; right: 10px; top: 10px; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; }
         button { width: 100%; background: #059669; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .err { color: #f87171; font-size: 12px; text-align: center; margin-bottom: 10px; }
         .succ { color: #34d399; font-size: 12px; text-align: center; margin-bottom: 10px; }
     </style>
+    <script>
+        function togglePassword() {
+            var passInput = document.getElementById("admin_pass");
+            var eyeBtn = document.getElementById("eyeIcon");
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                eyeBtn.innerText = "🙈";
+            } else {
+                passInput.type = "password";
+                eyeBtn.innerText = "👁️";
+            }
+        }
+    </script>
 </head>
 <body>
 <div class="login-box">
@@ -381,7 +416,10 @@ ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
     {% if not otp_sent %}
     <form method="POST" action="/admin/login">
         <label style="font-size:13px;">पासवर्ड टाका:</label>
-        <input type="password" name="admin_pass" placeholder="पासवर्ड" required>
+        <div class="pass-group">
+            <input type="password" name="admin_pass" id="admin_pass" placeholder="पासवर्ड" required>
+            <button type="button" class="eye-btn" id="eyeIcon" onclick="togglePassword()">👁️</button>
+        </div>
         <button type="submit">लॉगिन करा</button>
     </form>
     <div style="margin-top:15px; border-top:1px solid #334155; padding-top:12px; text-align:center;">
@@ -407,7 +445,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ॲडमिन डॅशबोर्ड - श्रीगुरु प्लॅटफॉर्म</title>
+    <title>ॲडमिन डॅशबोर्ड - राज्यस्तरीय प्लॅटफॉर्म</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -424,10 +462,16 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         .btn { background: #059669; color: white; padding: 8px 14px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
         .btn-sm { padding: 4px 8px; font-size: 11px; text-decoration: none; border-radius: 3px; display: inline-block; }
     </style>
+    <script>
+        function togglePassVis() {
+            var p = document.getElementById("new_password");
+            if (p.type === "password") { p.type = "text"; } else { p.type = "password"; }
+        }
+    </script>
 </head>
 <body>
 <div class="container">
-    <h2>⚙️ श्रीगुरु ऑनलाईन प्लॅटफॉर्म - ॲडमिन डॅशबोर्ड</h2>
+    <h2>⚙️ राज्यस्तरीय परीक्षा प्लॅटफॉर्म - ॲडमिन डॅशबोर्ड</h2>
     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
         <a href="/" style="font-weight:bold; color:#0284c7; text-decoration:none;">⬅️ मुख्य वेबसाईटवर जा</a>
         <a href="/admin/logout" style="font-weight:bold; color:#dc2626; text-decoration:none;">🚪 लॉगआऊट</a>
@@ -440,7 +484,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <a href="/admin/dashboard?tab=questions" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (प्रश्न व्यवस्थापन)</a>
         <a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Test Launch (टेस्ट लॉन्च)</a>
         <a href="/admin/dashboard?tab=leaderboard" class="{{ 'active' if active_tab == 'leaderboard' else '' }}">🏆 Leaderboard (टॉपर लिस्ट)</a>
-        <a href="/admin/dashboard?tab=settings" class="{{ 'active' if active_tab == 'settings' else '' }}">🔐 Security & Password (पासवर्ड बदल)</a>
+        <a href="/admin/dashboard?tab=settings" class="{{ 'active' if active_tab == 'settings' else '' }}">🔐 Security & Links (सेटिंग्स व लिंक्स)</a>
     </div>
 
     <!-- 1. LEADS SUB-TAB -->
@@ -465,14 +509,14 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 2. PAYMENTS SUB-TAB -->
     {% elif active_tab == 'payments' %}
-    <h3>💰 पेमेंट वैधता डेस्क, युपीआय नंबर आणि QR कोड व्यवस्थापन</h3>
+    <h3>💰 पेमेंट वैधता डेस्क, युपीआय नंबर आणि QR कोड अपलोड व्यवस्थापन</h3>
     <div style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:20px;">
-        <h4 style="margin:0 0 10px; color:#065f46;">💳 पेमेंट डिटेल्स व QR कोड एडिट / अपडेट करा:</h4>
-        <form method="POST" action="/admin/update_payment_settings">
+        <h4 style="margin:0 0 10px; color:#065f46;">💳 पेमेंट मोबाईल नंबर व नवीन QR कोड इमेज अपलोड करा:</h4>
+        <form method="POST" action="/admin/update_payment_settings" enctype="multipart/form-data">
             <label style="font-weight:bold; font-size:12px;">पेमेंट मोबाईल नंबर / UPI ID:</label>
             <input type="text" name="upi_mobile" value="{{ upi_mobile }}" required>
-            <label style="font-weight:bold; font-size:12px;">QR कोड इमेज URL:</label>
-            <input type="text" name="qr_url" value="{{ qr_url }}" required>
+            <label style="font-weight:bold; font-size:12px;">QR कोड इमेज फाईल अपलोड करा (JPG/PNG):</label>
+            <input type="file" name="qr_file" accept="image/*" style="margin-bottom:10px;">
             <button type="submit" class="btn" style="margin-top:5px;">💾 पेमेंट सेटिंग्ज अपडेट करा</button>
         </form>
     </div>
@@ -574,7 +618,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 4. TEST LAUNCH SUB-TAB -->
     {% elif active_tab == 'launch' %}
-    <h3>🚀 नवीन टेस्ट लॉन्च व व्यवस्थापन (Edit / Status Toggle)</h3>
+    <h3>🚀 नवीन टेस्ट लॉन्च व व्यवस्थापन (Print / Edit / Status Toggle)</h3>
     <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:20px;">
         <label style="font-weight:bold; font-size:12px;">नवीन टेस्टचे नाव:</label>
         <input type="text" name="test_title" placeholder="उदा. पोलीस भरती विशेष टेस्ट #३" required>
@@ -622,6 +666,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 </td>
                 <td>
                     <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; padding:5px 8px; cursor:pointer;">💾 सेव्ह</button>
+                    <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white; margin-left:4px;">🖨️ प्रिंट</a>
                     <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white; margin-left:4px;" onclick="return confirm('टेस्ट डिलीट करायची का?');">🗑️ डिलीट</a>
                 </td>
             </form>
@@ -647,12 +692,13 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     </div>
 
     <table>
-        <tr><th>रँक</th><th>विद्यार्थ्याचे नाव</th><th>जिल्हा</th><th>टेस्टचे नाव</th><th>गुण</th></tr>
+        <tr><th>रँक</th><th>विद्यार्थ्याचे नाव</th><th>जिल्हा</th><th>WhatsApp नंबर</th><th>टेस्टचे नाव</th><th>गुण</th></tr>
         {% for rank, l in top_leads %}
         <tr>
             <td><b>#{{ rank }}</b></td>
             <td>{{ l.student_name }}</td>
             <td>{{ l.district }}</td>
+            <td><a href="https://wa.me/91{{ l.phone }}" target="_blank" style="color:green; font-weight:bold;">💬 {{ l.phone }}</a></td>
             <td>{{ l.test_name }}</td>
             <td><b style="color:#059669;">{{ l.score }} / {{ l.total_marks }}</b></td>
         </tr>
@@ -661,15 +707,31 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 6. SECURITY & PASSWORD SETTINGS SUB-TAB -->
     {% elif active_tab == 'settings' %}
-    <h3>🔐 ॲडमिन पासवर्ड बदल व सुरक्षा सेटिंग्स</h3>
-    <div style="background:#f8fafc; padding:20px; border-radius:6px; border:1px solid #cbd5e1; max-width:500px;">
-        <h4 style="margin-top:0; color:#065f46;">🔑 ॲडमिन पासवर्ड बदला:</h4>
+    <h3>🔐 ॲडमिन पासवर्ड बदल, सुरक्षा व सोशल मीडिया लिंक्स सेटिंग्स</h3>
+    <div style="background:#f8fafc; padding:20px; border-radius:6px; border:1px solid #cbd5e1; max-width:600px;">
+        <h4 style="margin-top:0; color:#065f46;">🔑 ॲडमिन पासवर्ड व सोशल मीडिया लिंक्स बदला:</h4>
         <form method="POST" action="/admin/update_password">
             <label style="font-weight:bold; font-size:12px;">फॉरगेट पासवर्ड WhatsApp OTP साठीचा मोबाईल नंबर:</label>
             <input type="text" name="admin_phone" value="{{ admin_phone }}" placeholder="१० अंकी मोबाईल नंबर" required>
+            
             <label style="font-weight:bold; font-size:12px; margin-top:10px; display:block;">नवा ॲडमिन पासवर्ड:</label>
-            <input type="password" name="new_password" placeholder="नवा पासवर्ड टाका" required>
-            <button type="submit" class="btn" style="margin-top:10px;">💾 पासवर्ड सेव्ह करा</button>
+            <div style="position:relative; width:100%;">
+                <input type="password" name="new_password" id="new_password" placeholder="नवा पासवर्ड टाका" required style="text-align:left; padding-right:40px;">
+                <button type="button" onclick="togglePassVis()" style="position:absolute; right:5px; top:5px; background:none; border:none; cursor:pointer; font-size:16px;">👁️</button>
+            </div>
+
+            <hr style="margin:15px 0; border:0; border-top:1px solid #cbd5e1;">
+            
+            <label style="font-weight:bold; font-size:12px;">Instagram पेज लिंक:</label>
+            <input type="text" name="insta_link" value="{{ insta_link }}" placeholder="https://instagram.com/...">
+
+            <label style="font-weight:bold; font-size:12px;">YouTube चॅनेल लिंक:</label>
+            <input type="text" name="yt_link" value="{{ yt_link }}" placeholder="https://youtube.com/...">
+
+            <label style="font-weight:bold; font-size:12px;">यशस्वी विद्यार्थ्यांचे फोटो/माहिती लिंक:</label>
+            <input type="text" name="toppers_link" value="{{ toppers_link }}" placeholder="https://...">
+
+            <button type="submit" class="btn" style="margin-top:10px;">💾 सर्व सेटिंग्ज सेव्ह करा</button>
         </form>
     </div>
     {% endif %}
@@ -844,6 +906,18 @@ def result_view(lead_id):
             cur.execute("SELECT * FROM questions WHERE test_id=%s ORDER BY id ASC", (lead['test_id'],))
             questions = cur.fetchall()
 
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='insta_link'")
+            insta_row = cur.fetchone()
+            insta_link = insta_row['setting_value'] if insta_row else ''
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='yt_link'")
+            yt_row = cur.fetchone()
+            yt_link = yt_row['setting_value'] if yt_row else ''
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
+            top_row = cur.fetchone()
+            toppers_link = top_row['setting_value'] if top_row else ''
+
     evaluated_questions = []
     for q in questions:
         u_ans = user_ans_dict.get(str(q['id']), 'सोडवले नाही')
@@ -856,9 +930,13 @@ def result_view(lead_id):
             'explanation': q['explanation']
         })
 
-    return render_template_string(RESULT_TEMPLATE, lead=lead, state_rank=state_rank, evaluated_questions=evaluated_questions)
+    # WhatsApp निकाल पाठवण्याची सिम्युलेशन लिंक तयार करणे
+    res_link = request.host_url + f"result_view/{lead_id}"
+    print(f"--- WHATSAPP RESULT LINK --- To: {lead['phone']} | Link: {res_link} | Score: {lead['score']}/{lead['total_marks']}")
 
-# ----------------- ADMIN SECURITY & DASHBOARD ROUTES (Real WhatsApp OTP) -----------------
+    return render_template_string(RESULT_TEMPLATE, lead=lead, state_rank=state_rank, evaluated_questions=evaluated_questions, insta_link=insta_link, yt_link=yt_link, toppers_link=toppers_link)
+
+# ----------------- ADMIN SECURITY & DASHBOARD ROUTES -----------------
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -966,20 +1044,35 @@ def admin_dashboard():
             aph_row = cur.fetchone()
             admin_phone = aph_row['setting_value'] if aph_row else '9921111960'
 
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='insta_link'")
+            insta_link = cur.fetchone()['setting_value'] if cur.fetchone() else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='yt_link'")
+            yt_link = cur.fetchone()['setting_value'] if cur.fetchone() else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
+            toppers_link = cur.fetchone()['setting_value'] if cur.fetchone() else ''
+
     top_leads = []
     for idx, l in enumerate(all_leads_sorted, start=1):
         top_leads.append((idx, l))
 
-    return render_template_string(ADMIN_TEMPLATE, active_tab=active_tab, leads=leads, tests=tests, all_questions=all_questions, payments=payments, top_leads=top_leads, qr_url=qr_url, upi_mobile=upi_mobile, admin_phone=admin_phone, filter_test_id=filter_test_id, lb_test_id=lb_test_id)
+    return render_template_string(ADMIN_TEMPLATE, active_tab=active_tab, leads=leads, tests=tests, all_questions=all_questions, payments=payments, top_leads=top_leads, qr_url=qr_url, upi_mobile=upi_mobile, admin_phone=admin_phone, filter_test_id=filter_test_id, lb_test_id=lb_test_id, insta_link=insta_link, yt_link=yt_link, toppers_link=toppers_link)
 
 @app.route('/admin/update_payment_settings', methods=['POST'])
 def admin_update_payment_settings():
     if not session.get('admin_logged'): return redirect('/admin/login')
-    new_qr = request.form.get('qr_url')
     new_mobile = request.form.get('upi_mobile')
+    qr_file = request.files.get('qr_file')
+    
+    qr_url = None
+    if qr_file and qr_file.filename != '':
+        filename = secure_filename(qr_file.filename)
+        qr_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        qr_url = f"/static/uploads/{filename}"
+
     with get_db() as conn:
         with conn.cursor() as cur:
-            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='qr_code_url'", (new_qr,))
+            if qr_url:
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='qr_code_url'", (qr_url,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='upi_mobile'", (new_mobile,))
             conn.commit()
     return redirect('/admin/dashboard?tab=payments')
@@ -989,10 +1082,17 @@ def admin_update_password():
     if not session.get('admin_logged'): return redirect('/admin/login')
     new_pass = request.form.get('new_password')
     new_phone = request.form.get('admin_phone')
+    insta = request.form.get('insta_link', '')
+    yt = request.form.get('yt_link', '')
+    top = request.form.get('toppers_link', '')
+
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_pass'", (new_pass,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_phone'", (new_phone,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='insta_link'", (insta,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='yt_link'", (yt,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='toppers_link'", (top,))
             conn.commit()
     return redirect('/admin/dashboard?tab=settings')
 
@@ -1024,6 +1124,26 @@ def admin_update_test(test_id):
             cur.execute("UPDATE test_papers SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, status=%s WHERE id=%s", (title, ttype, fee, duration, status, test_id))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
+
+@app.route('/admin/print_test/<int:test_id>')
+def admin_print_test(test_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM test_papers WHERE id=%s", (test_id,))
+            test = cur.fetchone()
+            cur.execute("SELECT * FROM questions WHERE test_id=%s ORDER BY id ASC", (test_id,))
+            questions = cur.fetchall()
+            
+    html = f'''<!DOCTYPE html><html lang="mr"><head><meta charset="UTF-8"><title>{test['test_title']} - Print</title></head>
+    <body style="font-family:sans-serif; padding:30px; color:#000;">
+        <h2 style="text-align:center;">राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</h2>
+        <h3 style="text-align:center;">{test['test_title']}</h3>
+        <hr>
+        <ol>{ "".join([f"<li style='margin-bottom:15px;'><b>{q['question']}</b><br>A) {q['opt_a']}&nbsp;&nbsp;&nbsp;B) {q['opt_b']}&nbsp;&nbsp;&nbsp;C) {q['opt_c']}&nbsp;&nbsp;&nbsp;D) {q['opt_d']}<br><small style='color:green;'>अचूक उत्तर: {q['correct']} | स्पष्टीकरण: {q['explanation']}</small></li>" for q in questions]) }</ol>
+        <script>window.print();</script>
+    </body></html>'''
+    return render_template_string(html)
 
 @app.route('/admin/delete_test/<int:test_id>')
 def admin_delete_test(test_id):
@@ -1115,7 +1235,7 @@ def admin_approve_payment(lead_id):
 
 @app.route('/admin/delete_payment/<int:lead_id>')
 def admin_delete_payment(lead_id):
-    if not session.get('admin_logged'): return redirect('/admin/install') # dummy fallback or direct delete
+    if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM mock_test_leads WHERE id=%s", (lead_id,))
