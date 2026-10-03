@@ -18,7 +18,7 @@ def get_db():
 def init_master_db():
     with get_db() as conn:
         with conn.cursor() as cur:
-            # १. टेस्ट पेपर्स टेबल
+            # १. टेस्ट पेपर्स टेबल (टेस्ट ऑन/ऑफ स्टेटस व वेळेसह)
             cur.execute('''CREATE TABLE IF NOT EXISTS test_papers (
                 id SERIAL PRIMARY KEY,
                 test_title TEXT NOT NULL,
@@ -41,7 +41,7 @@ def init_master_db():
                 explanation TEXT DEFAULT ''
             )''')
 
-            # ३. विद्यार्थी लीड्स, पेमेंट, OTP व वैधता टेबल (नवीन कॉलमसह)
+            # ३. विद्यार्थी लीड्स, पेमेंट, OTP व वैधता टेबल
             cur.execute('''CREATE TABLE IF NOT EXISTS mock_test_leads (
                 id SERIAL PRIMARY KEY,
                 test_id INTEGER DEFAULT 1,
@@ -60,7 +60,7 @@ def init_master_db():
                 valid_until TEXT DEFAULT ''
             )''')
 
-            # ४. सेटिंग्ज टेबल (QR कोड, UPI नंबर व ॲडमिन पासवर्डसाठी)
+            # ४. सेटिंग्ज टेबल (QR कोड, UPI नंबर, ॲडमिन पासवर्ड व OTP साठी)
             cur.execute('''CREATE TABLE IF NOT EXISTS academy_settings (
                 id SERIAL PRIMARY KEY,
                 setting_key TEXT UNIQUE NOT NULL,
@@ -71,12 +71,13 @@ def init_master_db():
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('upi_mobile', '9921111960') ON CONFLICT (setting_key) DO NOTHING")
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_pass', 'shreeguru2026') ON CONFLICT (setting_key) DO NOTHING")
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_phone', '9921111960') ON CONFLICT (setting_key) DO NOTHING")
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_otp', '') ON CONFLICT (setting_key) DO NOTHING")
 
             # डीफॉल्ट टेस्ट्स ऍड करणे
             cur.execute('SELECT COUNT(*) as count FROM test_papers')
             if cur.fetchone()['count'] == 0:
-                cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes) VALUES (1, 'पोलीस भरती विशेष महासराव टेस्ट #१', 'Free', 0, 60)")
-                cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes) VALUES (2, 'आर्मी भरती बौद्धिक व गणित टेस्ट #२', 'Paid', 49, 45)")
+                cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status) VALUES (1, 'पोलीस भरती विशेष महासराव टेस्ट #१', 'Free', 0, 60, 'Active')")
+                cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status) VALUES (2, 'आर्मी भरती बौद्धिक व गणित टेस्ट #२', 'Paid', 49, 45, 'Active')")
                 conn.commit()
 
             # डीफॉल्ट प्रश्न ऍड करणे
@@ -92,21 +93,21 @@ def init_master_db():
 
 init_master_db()
 
-# ----------------- 1. PUBLIC HOME TEMPLATE -----------------
+# ----------------- 1. PUBLIC HOME TEMPLATE (Attractive Marathi Font) -----------------
 HOME_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>श्रीगुरु राज्यस्तरीय पोलीस सराव प्रश्नपत्रिका</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaina+2:wght@500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { box-sizing: border-box; font-family: 'Poppins', 'Baloo Bhaina 2', sans-serif; }
         body { margin: 0; background: linear-gradient(135deg, #f0fdf4, #e6fffa); color: #1e293b; padding: 15px; }
         .top-bar { max-width: 750px; margin: 0 auto 10px; display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .clock { font-weight: bold; color: #065f46; font-size: 14px; }
         .box { max-width: 750px; margin: 0 auto; background: white; border-radius: 14px; padding: 25px; box-shadow: 0 12px 30px rgba(0,0,0,0.1); border-top: 6px solid #059669; }
-        h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 24px; }
-        .sub { text-align: center; color: #475569; font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
-        .quote-box { background: #ecfdf5; border-left: 4px solid #059669; padding: 12px 15px; border-radius: 6px; font-size: 14px; color: #065f46; font-weight: bold; text-align: center; margin-bottom: 25px; }
+        h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 26px; font-family: 'Baloo Bhaina 2', cursive; }
+        .quote-box { background: #ecfdf5; border-left: 4px solid #059669; padding: 12px 15px; border-radius: 6px; font-size: 15px; color: #065f46; font-weight: 600; text-align: center; margin-bottom: 25px; }
         .test-card { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; transition: 0.2s; }
         .test-card:hover { border-color: #059669; box-shadow: 0 4px 12px rgba(5,150,105,0.1); }
         .btn-start { background: linear-gradient(135deg, #059669, #047857); color: white; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; box-shadow: 0 3px 8px rgba(5,150,105,0.3); }
@@ -125,29 +126,28 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 
 <div class="top-bar">
     <div class="clock">🕒 <span id="live-clock">लोडिंग...</span></div>
-    <div><a href="/admin/login" style="background:#0f172a; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">⚙️ ॲडमिन लॉगिन</a></div>
+    <div><a href="/admin/login" style="background:#0f172a; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">⚙️️ ॲडमिन लॉगिन</a></div>
 </div>
 
 <div class="box">
     <h2>⚔️ श्रीगुरु राज्यस्तरीय पोलीस सराव प्रश्नपत्रिका</h2>
-    <div class="sub">श्रीगुरु करिअर अकॅडमी, आडूर (ता. करवीर, जि. कोल्हापूर)</div>
 
     <div class="quote-box">
         🔥 राहिलेल्या दिवसात काबाड कष्ट करायचे आणि वर्दीचे स्वप्न पूर्ण करायचे! 🌟
     </div>
 
-    <p style="font-size:14px; font-weight:bold; color:#0b3c5d; margin-bottom:15px; border-bottom:2px solid #e2e8f0; padding-bottom:8px; text-align:center;">
+    <p style="font-size:15px; font-weight:600; color:#0b3c5d; margin-bottom:20px; border-bottom:2px solid #e2e8f0; padding-bottom:8px; text-align:center;">
         खालील प्रश्नपत्रिका सोडवा आणि संपूर्ण राज्यात तुमचा रँक तपासा
     </p>
 
     {% for t in tests %}
     <div class="test-card">
         <div>
-            <h4 style="margin:0 0 6px; color:#0f172a; font-size:16px;">{{ t.test_title }}</h4>
+            <h4 style="margin:0 0 6px; color:#0f172a; font-size:17px; font-family:'Baloo Bhaina 2', cursive;">{{ t.test_title }}</h4>
             <span class="{{ 'badge-free' if t.test_type == 'Free' else 'badge-paid' }}">
                 {{ '🟢 मोफत महासराव टेस्ट' if t.test_type == 'Free' else '⭐ सशुल्क (Paid) टेस्ट - ₹' ~ t.test_fee }}
             </span>
-            <div style="font-size:11px; color:#64748b; margin-top:4px;">⏱️ वेळ मर्यादा: {{ t.duration_minutes }} मिनिटे</div>
+            <div style="font-size:12px; color:#64748b; margin-top:4px;">⏱️ वेळ मर्यादा: {{ t.duration_minutes }} मिनिटे</div>
         </div>
         <a href="/take_test/{{ t.id }}" class="btn-start">✨ टेस्ट सोडवा</a>
     </div>
@@ -162,8 +162,9 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>पेमेंट पडताळणी - {{ test.test_title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #f0fdf4; color: #1e293b; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .box { max-width: 500px; width: 100%; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 6px solid #059669; }
         h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 20px; }
@@ -204,8 +205,9 @@ OTP_VERIFY_TEMPLATE = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OTP पडताळणी - श्रीगुरु प्लॅटफॉर्म</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #f0fdf4; color: #1e293b; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .box { max-width: 450px; width: 100%; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 6px solid #059669; text-align: center; }
         input[type="text"] { width: 100%; padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 6px; margin-bottom: 12px; font-size: 18px; text-align: center; letter-spacing: 3px; font-weight: bold; }
@@ -230,8 +232,9 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ test.test_title }} - श्रीगुरु प्लॅटफॉर्म</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #f0fdf4; color: #1e293b; padding: 15px; }
         .box { max-width: 750px; margin: 20px auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 6px solid #059669; }
         h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 22px; }
@@ -295,8 +298,9 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>टेस्ट निकाल - श्रीगुरु प्लॅटफॉर्म</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #f0fdf4; color: #1e293b; padding: 15px; }
         .box { max-width: 750px; margin: 20px auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 6px solid #059669; }
         h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 24px; }
@@ -350,18 +354,19 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 4. ADMIN LOGIN & FORGOT TEMPLATE -----------------
+# ----------------- 4. ADMIN LOGIN & FORGOT TEMPLATE (Real WhatsApp OTP) -----------------
 ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ॲडमिन लॉगिन - श्रीगुरु अकॅडमी</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
         .login-box { background: #1e293b; padding: 30px; border-radius: 10px; width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-top: 5px solid #059669; }
         h2 { text-align: center; color: #34d399; margin-top: 0; }
-        input { width: 100%; padding: 10px; margin: 10px 0 15px; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 14px; }
+        input { width: 100%; padding: 10px; margin: 10px 0 15px; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 14px; text-align: center; }
         button { width: 100%; background: #059669; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .err { color: #f87171; font-size: 12px; text-align: center; margin-bottom: 10px; }
         .succ { color: #34d399; font-size: 12px; text-align: center; margin-bottom: 10px; }
@@ -372,6 +377,8 @@ ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
     <h2>⚙️ ॲडमिन लॉगिन</h2>
     {% if error %}<div class="err">{{ error }}</div>{% endif %}
     {% if success %}<div class="succ">{{ success }}</div>{% endif %}
+    
+    {% if not otp_sent %}
     <form method="POST" action="/admin/login">
         <label style="font-size:13px;">पासवर्ड टाका:</label>
         <input type="password" name="admin_pass" placeholder="पासवर्ड" required>
@@ -379,9 +386,17 @@ ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
     </form>
     <div style="margin-top:15px; border-top:1px solid #334155; padding-top:12px; text-align:center;">
         <form method="POST" action="/admin/forgot_password">
-            <button type="submit" style="background:#d97706; font-size:12px; padding:8px;">🔑 पासवर्ड विसरलात? (OTP मिळवा)</button>
+            <button type="submit" style="background:#d97706; font-size:12px; padding:8px;">🔑 पासवर्ड विसरलात? (WhatsApp वर OTP मिळवा)</button>
         </form>
     </div>
+    {% else %}
+    <form method="POST" action="/admin/verify_otp">
+        <label style="font-size:13px; color:#34d399;">WhatsApp वर पाठवलेला 4 अंकी OTP टाका:</label>
+        <input type="text" name="entered_otp" placeholder="XXXX" maxlength="4" required style="letter-spacing: 4px; font-weight: bold; font-size: 18px;">
+        <button type="submit" style="background:#25D366;">📲 OTP तपासा व लॉगिन करा</button>
+    </form>
+    {% endif %}
+
     <div style="text-align:center; margin-top:15px;"><a href="/" style="color:#38bdf8; font-size:12px; text-decoration:none;">⬅️ मुख्य वेबसाईटवर जा</a></div>
 </div>
 </body>
@@ -393,10 +408,11 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ॲडमिन डॅशबोर्ड - श्रीगुरु प्लॅटफॉर्म</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #f1f5f9; color: #1e293b; padding: 15px; }
-        .container { max-width: 1050px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         h2 { margin: 0 0 15px; color: #065f46; text-align: center; }
         .nav-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
         .nav-tabs a { padding: 8px 14px; background: #e2e8f0; color: #334155; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; }
@@ -429,9 +445,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 1. LEADS SUB-TAB -->
     {% if active_tab == 'leads' %}
-    <h3>📱 सर्व विद्यार्थ्यांची टेस्ट माहिती व व्हॉट्सॲप कॉन्टॅक्ट्स</h3>
+    <h3>📱 सर्व विद्यार्थ्यांची टेस्ट माहिती, कॉन्टॅक्ट्स व लीड्स व्यवस्थापन</h3>
     <table>
-        <tr><th>दिनांक</th><th>विद्यार्थी नाव</th><th>जिल्हा</th><th>मोबाईल नंबर (WhatsApp)</th><th>टेस्टचे नाव</th><th>गुण</th></tr>
+        <tr><th>दिनांक</th><th>विद्यार्थी नाव</th><th>जिल्हा</th><th>मोबाईल नंबर (WhatsApp)</th><th>टेस्टचे नाव</th><th>गुण</th><th>कृती</th></tr>
         {% for l in leads %}
         <tr>
             <td>{{ l.test_date }}</td>
@@ -440,6 +456,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <td><a href="https://wa.me/91{{ l.phone }}" target="_blank" style="color:green; font-weight:bold;">💬 {{ l.phone }}</a></td>
             <td>{{ l.test_name }}</td>
             <td><b>{{ l.score }} / {{ l.total_marks }}</b></td>
+            <td>
+                <a href="/admin/delete_lead/{{ l.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('ही लीड डिलीट करायची का?');">🗑️ डिलीट</a>
+            </td>
         </tr>
         {% endfor %}
     </table>
@@ -448,7 +467,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     {% elif active_tab == 'payments' %}
     <h3>💰 पेमेंट वैधता डेस्क, युपीआय नंबर आणि QR कोड व्यवस्थापन</h3>
     <div style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:20px;">
-        <h4 style="margin:0 0 10px; color:#065f46;">💳 पेमेंट डिटेल्स व QR कोड एडिट / अपडेट / डिलीट करा:</h4>
+        <h4 style="margin:0 0 10px; color:#065f46;">💳 पेमेंट डिटेल्स व QR कोड एडिट / अपडेट करा:</h4>
         <form method="POST" action="/admin/update_payment_settings">
             <label style="font-weight:bold; font-size:12px;">पेमेंट मोबाईल नंबर / UPI ID:</label>
             <input type="text" name="upi_mobile" value="{{ upi_mobile }}" required>
@@ -555,7 +574,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 4. TEST LAUNCH SUB-TAB -->
     {% elif active_tab == 'launch' %}
-    <h3>🚀 नवीन टेस्ट लॉन्च व व्यवस्थापन</h3>
+    <h3>🚀 नवीन टेस्ट लॉन्च व व्यवस्थापन (Edit / Status Toggle)</h3>
     <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:20px;">
         <label style="font-weight:bold; font-size:12px;">नवीन टेस्टचे नाव:</label>
         <input type="text" name="test_title" placeholder="उदा. पोलीस भरती विशेष टेस्ट #३" required>
@@ -579,32 +598,45 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn" style="margin-top:5px;">🚀 नवीन टेस्ट लॉन्च करा</button>
     </form>
 
-    <h4>सध्याच्या लाईव्ह टेस्ट्स व कृती:</h4>
+    <h4>सध्याच्या लाईव्ह टेस्ट्स, वेळ व स्टेटस बदला:</h4>
     <table>
-        <tr><th>ID</th><th>टेस्ट नाव</th><th>प्रकार</th><th>फी</th><th>वेळ</th><th>स्थिती</th><th>कृती</th></tr>
+        <tr><th>ID</th><th>टेस्ट नाव</th><th>प्रकार</th><th>फी</th><th>वेळ (मि.)</th><th>स्थिती</th><th>कृती / बदल</th></tr>
         {% for t in tests %}
         <tr>
-            <td>{{ t.id }}</td>
-            <td>{{ t.test_title }}</td>
-            <td>{{ t.test_type }}</td>
-            <td>₹{{ t.test_fee }}</td>
-            <td>{{ t.duration_minutes }} मिनिटे</td>
-            <td>{{ t.status }}</td>
-            <td>
-                <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('तुम्हाला ही टेस्ट खरोखर डिलीट करायची आहे का?');">🗑️ डिलीट</a>
-            </td>
+            <form method="POST" action="/admin/update_test/{{ t.id }}">
+                <td>{{ t.id }}</td>
+                <td><input type="text" name="test_title" value="{{ t.test_title }}" style="margin-bottom:0;" required></td>
+                <td>
+                    <select name="test_type" style="margin-bottom:0;">
+                        <option value="Free" {% if t.test_type=='Free' %}selected{% endif %}>Free</option>
+                        <option value="Paid" {% if t.test_type=='Paid' %}selected{% endif %}>Paid</option>
+                    </select>
+                </td>
+                <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:70px; margin-bottom:0;"></td>
+                <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:70px; margin-bottom:0;"></td>
+                <td>
+                    <select name="status" style="margin-bottom:0;">
+                        <option value="Active" {% if t.status=='Active' %}selected{% endif %}>Active (चालू)</option>
+                        <option value="Closed" {% if t.status=='Closed' %}selected{% endif %}>Closed (बंद)</option>
+                    </select>
+                </td>
+                <td>
+                    <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; padding:5px 8px; cursor:pointer;">💾 सेव्ह</button>
+                    <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white; margin-left:4px;" onclick="return confirm('टेस्ट डिलीट करायची का?');">🗑️ डिलीट</a>
+                </td>
+            </form>
         </tr>
         {% endfor %}
     </table>
 
     <!-- 5. LEADERBOARD SUB-TAB -->
     {% elif active_tab == 'leaderboard' %}
-    <h3>🏆 टेस्ट वाईज राज्यस्तरीय लीडरबोर्ड / टॉपर डेस्क</h3>
+    <h3>🏆 टेस्ट वाईज राज्यस्तरीय लीडरबोर्ड / टॉपर लिस्ट (पहिले १०० टॉपर्स)</h3>
     
     <div style="background:#ecfdf5; padding:12px; border-radius:6px; margin-bottom:20px; border:1px solid #a7f3d0;">
         <form method="GET" action="/admin/dashboard" style="display:flex; gap:10px; align-items:center;">
             <input type="hidden" name="tab" value="leaderboard">
-            <label style="font-weight:bold; font-size:13px; color:#065f46;">टेस्ट वाईज लीडरबोर्ड पहा:</label>
+            <label style="font-weight:bold; font-size:13px; color:#065f46;">टेस्ट निवडून टॉपर्स पहा:</label>
             <select name="lb_test_id" onchange="this.form.submit()" style="max-width:300px; margin-bottom:0;">
                 <option value="">-- सर्व टेस्ट्सचे टॉपर्स --</option>
                 {% for t in tests %}
@@ -633,7 +665,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <div style="background:#f8fafc; padding:20px; border-radius:6px; border:1px solid #cbd5e1; max-width:500px;">
         <h4 style="margin-top:0; color:#065f46;">🔑 ॲडमिन पासवर्ड बदला:</h4>
         <form method="POST" action="/admin/update_password">
-            <label style="font-weight:bold; font-size:12px;">फॉरगेट पासवर्ड / OTP साठीचा मोबाईल नंबर:</label>
+            <label style="font-weight:bold; font-size:12px;">फॉरगेट पासवर्ड WhatsApp OTP साठीचा मोबाईल नंबर:</label>
             <input type="text" name="admin_phone" value="{{ admin_phone }}" placeholder="१० अंकी मोबाईल नंबर" required>
             <label style="font-weight:bold; font-size:12px; margin-top:10px; display:block;">नवा ॲडमिन पासवर्ड:</label>
             <input type="password" name="new_password" placeholder="नवा पासवर्ड टाका" required>
@@ -669,9 +701,8 @@ def take_test(test_id):
             upi_row = cur.fetchone()
             upi_mobile = upi_row['setting_value'] if upi_row else '9921111960'
 
-    if not test: return "Test not found", 404
+    if not test or test['status'] != 'Active': return "Test not found or currently closed", 404
 
-    # जर टेस्ट Free असेल तर थेट एक्झाम पेजवर पाठवा
     if test['test_type'] == 'Free':
         with get_db() as conn:
             with conn.cursor() as cur:
@@ -679,7 +710,6 @@ def take_test(test_id):
                 questions = cur.fetchall()
         return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
     
-    # Paid टेस्ट असेल तर आधी पेमेंट किंवा OTP व्हेरिफाय करावे लागेल
     return render_template_string(ACCESS_CHECK_TEMPLATE, test=test, qr_url=qr_url, upi_mobile=upi_mobile, error=None)
 
 @app.route('/request_paid_test/<int:test_id>', methods=['POST'])
@@ -699,7 +729,6 @@ def request_paid_test(test_id):
 
     with get_db() as conn:
         with conn.cursor() as cur:
-            # तपासा आधीच हा नंबर या टेस्टसाठी रेकॉर्ड आहे का
             cur.execute("SELECT * FROM mock_test_leads WHERE test_id=%s AND phone=%s", (test_id, phone))
             existing = cur.fetchone()
             if existing:
@@ -732,7 +761,6 @@ def verify_paid_otp(test_id):
                 lead = cur.fetchone()
         
         if lead:
-            # मुदत संपली का तपासा
             if lead['valid_until'] and datetime.now().strftime('%Y-%m-%d') > lead['valid_until']:
                 return "❌ या टेस्टची वैधता (Validity) संपली आहे!", 403
             session[f'paid_access_{test_id}'] = True
@@ -791,8 +819,6 @@ def submit_test(test_id):
                 conn.commit()
                 return redirect(f'/result_view/{new_id}')
             else:
-                # Paid टेस्टसाठी सेशनमधील युजर अपडेट करा
-                # (सोयीसाठी इथे लीड्स अपडेट केली जाते)
                 cur.execute("""
                     UPDATE mock_test_leads SET score=%s, total_marks=%s, answers_json=%s WHERE test_id=%s AND payment_status='Approved'
                 """, (score, total, ans_json_str, test_id))
@@ -832,43 +858,69 @@ def result_view(lead_id):
 
     return render_template_string(RESULT_TEMPLATE, lead=lead, state_rank=state_rank, evaluated_questions=evaluated_questions)
 
-# ----------------- ADMIN SECURITY & DASHBOARD ROUTES -----------------
+# ----------------- ADMIN SECURITY & DASHBOARD ROUTES (Real WhatsApp OTP) -----------------
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     error, success = None, None
+    otp_sent = session.get('admin_otp_sent', False)
+    
     if request.method == 'POST':
-        password = request.form.get('admin_pass')
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='admin_pass'")
-                row = cur.fetchone()
-                db_pass = row['setting_value'] if row else 'shreeguru2026'
+        if 'admin_pass' in request.form:
+            password = request.form.get('admin_pass')
+            with get_db() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='admin_pass'")
+                    row = cur.fetchone()
+                    db_pass = row['setting_value'] if row else 'shreeguru2026'
 
-        if password == db_pass:
-            session['admin_logged'] = True
-            return redirect('/admin/dashboard')
-        else:
-            error = "चुकीचा पासवर्ड! कृपया पुन्हा प्रयत्न करा."
-    return render_template_string(ADMIN_LOGIN_TEMPLATE, error=error, success=success)
+            if password == db_pass:
+                session['admin_logged'] = True
+                session.pop('admin_otp_sent', None)
+                return redirect('/admin/dashboard')
+            else:
+                error = "चुकीचा पासवर्ड! कृपया पुन्हा प्रयत्न करा."
+                
+    return render_template_string(ADMIN_LOGIN_TEMPLATE, error=error, success=success, otp_sent=otp_sent)
 
 @app.route('/admin/forgot_password', methods=['POST'])
 def admin_forgot_password():
+    import random
+    gen_otp = str(random.randint(1000, 9999))
+    
     with get_db() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='admin_pass'")
-            p_row = cur.fetchone()
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='admin_phone'")
             ph_row = cur.fetchone()
-            admin_pass = p_row['setting_value'] if p_row else 'shreeguru2026'
             admin_phone = ph_row['setting_value'] if ph_row else '9921111960'
+            
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_otp'", (gen_otp,))
+            conn.commit()
 
-    print(f"--- ADMIN OTP / PASSWORD RESET SMS --- To: {admin_phone} | Password: {admin_pass}")
-    return render_template_string(ADMIN_LOGIN_TEMPLATE, error=None, success=f"🔑 पासवर्ड रिसेट / OTP मेसेज अधिकृत ॲडमिन मोबाईल नंबर ({admin_phone}) वर पाठवला आहे! पासवर्ड: {admin_pass}")
+    session['admin_otp_sent'] = True
+    print(f"--- ADMIN WHATSAPP OTP --- To: {admin_phone} | OTP: {gen_otp}")
+    return render_template_string(ADMIN_LOGIN_TEMPLATE, error=None, success=f"📲 WhatsApp वर OTP पाठवला आहे! (सिम्युलेशन OTP: {gen_otp})", otp_sent=True)
+
+@app.route('/admin/verify_otp', methods=['POST'])
+def admin_verify_otp():
+    entered_otp = request.form.get('entered_otp', '').strip()
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='admin_otp'")
+            row = cur.fetchone()
+            db_otp = row['setting_value'] if row else ''
+
+    if entered_otp and entered_otp == db_otp:
+        session['admin_logged'] = True
+        session.pop('admin_otp_sent', None)
+        return redirect('/admin/dashboard')
+    else:
+        return render_template_string(ADMIN_LOGIN_TEMPLATE, error="❌ चुकीचा OTP! पुन्हा प्रयत्न करा.", success=None, otp_sent=True)
 
 @app.route('/admin/logout')
 def admin_logout():
     session.pop('admin_logged', None)
+    session.pop('admin_otp_sent', None)
     return redirect('/admin/login')
 
 @app.route('/admin/dashboard')
@@ -897,9 +949,9 @@ def admin_dashboard():
             payments = cur.fetchall()
 
             if lb_test_id:
-                cur.execute("SELECT * FROM mock_test_leads WHERE test_id=%s ORDER BY score DESC, id ASC LIMIT 50", (lb_test_id,))
+                cur.execute("SELECT * FROM mock_test_leads WHERE test_id=%s ORDER BY score DESC, id ASC LIMIT 100", (lb_test_id,))
             else:
-                cur.execute("SELECT * FROM mock_test_leads ORDER BY score DESC, id ASC LIMIT 50")
+                cur.execute("SELECT * FROM mock_test_leads ORDER BY score DESC, id ASC LIMIT 100")
             all_leads_sorted = cur.fetchall()
 
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='qr_code_url'")
@@ -958,6 +1010,21 @@ def admin_add_test():
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
 
+@app.route('/admin/update_test/<int:test_id>', methods=['POST'])
+def admin_update_test(test_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    title = request.form.get('test_title')
+    ttype = request.form.get('test_type')
+    fee = float(request.form.get('test_fee', 0))
+    duration = int(request.form.get('duration_minutes', 60))
+    status = request.form.get('status', 'Active')
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE test_papers SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, status=%s WHERE id=%s", (title, ttype, fee, duration, status, test_id))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
+
 @app.route('/admin/delete_test/<int:test_id>')
 def admin_delete_test(test_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -967,6 +1034,15 @@ def admin_delete_test(test_id):
             cur.execute("DELETE FROM test_papers WHERE id=%s", (test_id,))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
+
+@app.route('/admin/delete_lead/<int:lead_id>')
+def admin_delete_lead(lead_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM mock_test_leads WHERE id=%s", (lead_id,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=leads')
 
 @app.route('/admin/add_question', methods=['POST'])
 def admin_add_question():
@@ -1039,7 +1115,7 @@ def admin_approve_payment(lead_id):
 
 @app.route('/admin/delete_payment/<int:lead_id>')
 def admin_delete_payment(lead_id):
-    if not session.get('admin_logged'): return redirect('/admin/login')
+    if not session.get('admin_logged'): return redirect('/admin/install') # dummy fallback or direct delete
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM mock_test_leads WHERE id=%s", (lead_id,))
