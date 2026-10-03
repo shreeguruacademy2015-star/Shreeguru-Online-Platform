@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
-app.secret_key = "shreeguru_master_test_platform_2026_secure_final"
+app.secret_key = "shreeguru_master_test_platform_2026_final_secure"
 
 # --- NEON CLOUD DATABASE CONNECTION ---
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -57,14 +57,13 @@ def init_master_db():
                 answers_json TEXT DEFAULT ''
             )''')
 
-            # ४. सेटिंग्ज टेबल (QR कोड व इतर माहितीसाठी)
+            # ४. सेटिंग्ज टेबल (QR कोडसाठी)
             cur.execute('''CREATE TABLE IF NOT EXISTS academy_settings (
                 id SERIAL PRIMARY KEY,
                 setting_key TEXT UNIQUE NOT NULL,
                 setting_value TEXT NOT NULL
             )''')
 
-            # डीफॉल्ट QR कोड सेटिंग सेट करणे
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('qr_code_url', 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=ShreeguruUPIpayment') ON CONFLICT (setting_key) DO NOTHING")
 
             # डीफॉल्ट टेस्ट्स ऍड करणे
@@ -185,7 +184,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
                     <input type="text" name="district" placeholder="उदा. कोल्हापूर" required>
                 </div>
                 <div>
-                    <label style="font-weight:bold; font-size:13px;">व्हॉट्सॲप मोबाईल नंबर *:</label>
+                    <label style="font-weight:bold; font-size:13px;">व्हॉट्सॲप मोबाईल नंबर (खात्रीशीर) *:</label>
                     <input type="tel" name="phone" placeholder="१० अंकी नंबर" pattern="[0-9]{10}" required>
                 </div>
             </div>
@@ -216,7 +215,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 3. RESULT & CERTIFICATE TEMPLATE -----------------
+# ----------------- 3. RESULT, CERTIFICATE & WHATSAPP LOCK TEMPLATE -----------------
 RESULT_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -239,8 +238,30 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
     <h2>⚔️ श्रीगुरु करिअर अकॅडमी, आडूर</h2>
     <div class="sub">परीक्षेचा निकाल व प्रशस्तीपत्र डॅशबोर्ड</div>
 
+    {% if not verified %}
+    <!-- LOCK / VERIFICATION SCREEN -->
     <div style="background:#f0fdf4; border:2px solid #86efac; border-radius:8px; padding:20px; text-align:center; margin-bottom:20px;">
         <h3 style="margin:0 0 5px; color:#166534;">टेस्ट यशस्वीरीत्या सबमिट झाली आहे! 🎉</h3>
+        <p style="font-size:14px; color:#334155;">विद्यार्थ्याचे नाव: <b>{{ lead.student_name }}</b> (जिल्हा: {{ lead.district }})</p>
+    </div>
+
+    <div class="lock-box">
+        <h3 style="color:#92400e; margin-top:0;">🔒 तुमचे गुण (Score), प्रशस्तीपत्र व उत्तरपत्रिका लॉक आहे!</h3>
+        <p style="font-size:13px; color:#78350f; line-height:1.5;">
+            निकाल, डिजिटल प्रशस्तीपत्र आणि सविस्तर स्पष्टीकरण पाहण्यासाठी कृपया तुम्ही फॉर्म भरताना दिलेला तुमचा <b>ओरिजनल व्हॉट्सॲप मोबाईल नंबर</b> इथे टाकून व्हेरिफाय करा.
+        </p>
+        {% if error_msg %}
+        <div style="color:red; font-weight:bold; font-size:12px; margin-bottom:10px;">{{ error_msg }}</div>
+        {% endif %}
+        <form method="POST" action="/verify_whatsapp/{{ lead.id }}">
+            <input type="tel" name="verify_phone" placeholder="१० अंकी व्हॉट्सॲप नंबर" required>
+            <button type="submit" class="btn-verify">📲 नंबर व्हेरिफाय करा</button>
+        </form>
+    </div>
+    {% else %}
+    <!-- UNLOCKED SCORE & CERTIFICATE SCREEN -->
+    <div style="background:#f0fdf4; border:2px solid #86efac; border-radius:8px; padding:20px; text-align:center; margin-bottom:20px;">
+        <h3 style="margin:0 0 5px; color:#166534;">व्हॉट्सॲप नंबर यशस्वीरित्या व्हेरिफाय झाला! ✅</h3>
         <p style="font-size:16px; margin:8px 0;">विद्यार्थ्याचे नाव: <b>{{ lead.student_name }}</b> (जिल्हा: {{ lead.district }})</p>
         <p style="font-size:20px; margin:8px 0;">प्राप्त गुण: <b style="color:#059669; font-size:26px;">{{ lead.score }} / {{ lead.total_marks }}</b></p>
         <p style="font-size:16px; color:#b45309; font-weight:bold; margin-top:10px;">
@@ -248,33 +269,19 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
         </p>
     </div>
 
-    <!-- DIGITAL CERTIFICATE SECTION -->
+    <!-- DIGITAL CERTIFICATE -->
     <div class="cert-box">
-        <h3 style="color:#92400e; margin:0 0 5px;">📜 अभिनंदनपर डिजिटल प्रशस्तीपत्र (Certificate)</h3>
+        <h3 style="color:#92400e; margin:0 0 5px;">📜 सहभाग व अभिनंदनपर डिजिटल प्रशस्तीपत्र (Certificate)</h3>
         <p style="font-size:12px; color:#78350f; margin-bottom:15px;">श्रीगुरु ऑनलाईन प्लॅटफॉर्म तर्फे गुणवंत विद्यार्थ्यांसाठी गौरवास्पद प्रमाणपत्र</p>
         <div style="background:white; padding:15px; border-radius:6px; border:1px dashed #b45309;">
             <p style="font-size:13px; margin:5px 0;">प्रमाणित करण्यात येते की,</p>
             <h2 style="color:#065f46; margin:5px 0; font-size:22px;">{{ lead.student_name }}</h2>
-            <p style="font-size:13px; margin:5px 0;">यांनी <b>{{ lead.test_name }}</b> मध्ये उत्तम यश संपादन केले आहे.</p>
+            <p style="font-size:13px; margin:5px 0;">यांनी <b>{{ lead.test_name }}</b> मध्ये सहभाग घेऊन उत्तम यश मिळवले आहे.</p>
             <p style="font-size:12px; color:#555; margin-top:10px;">— संचालक, श्रीगुरु करिअर अकॅडमी, आडूर (कोल्हापूर)</p>
         </div>
     </div>
 
-    {% if not verified %}
-    <div class="lock-box">
-        <h3 style="color:#92400e; margin-top:0;">🔒 उत्तरपत्रिका (Answer Key) व स्पष्टीकरण लॉक आहे!</h3>
-        <p style="font-size:13px; color:#78350f; line-height:1.5;">
-            सविस्तर स्पष्टीकरण पाहण्यासाठी कृपया तुमचा नोंदणीकृत <b>व्हॉट्सॲप नंबर</b> टाका आणि व्हेरिफाय करा.
-        </p>
-        {% if error_msg %}
-        <div style="color:red; font-weight:bold; font-size:12px; margin-bottom:10px;">{{ error_msg }}</div>
-        {% endif %}
-        <form method="POST" action="/verify_whatsapp/{{ lead.id }}">
-            <input type="tel" name="verify_phone" placeholder="१० अंकी मोबाईल नंबर" required>
-            <button type="submit" class="btn-verify">📲 व्हॉट्सॲप व्हेरिफाय करा</button>
-        </form>
-    </div>
-    {% else %}
+    <!-- DETAILED ANSWER KEY & EXPLANATIONS -->
     <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:20px; border-radius:8px; margin-top:20px;">
         <h3 style="color:#065f46; margin-top:0;">📋 सविस्तर उत्तरपत्रिका व स्पष्टीकरण (Answer Key)</h3>
         {% for item in evaluated_questions %}
@@ -313,7 +320,7 @@ ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
 </head>
 <body>
 <div class="login-box">
-    <h2>⚙️️ ॲडमिन लॉगिन</h2>
+    <h2>⚙️ ॲडमिन लॉगिन</h2>
     <p style="font-size:12px; color:#94a3b8; text-align:center; margin-bottom:15px;">श्रीगुरु करिअर अकॅडमी सुरक्षित कक्ष</p>
     {% if error %}<div class="err">{{ error }}</div>{% endif %}
     <form method="POST">
@@ -382,7 +389,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% endfor %}
     </table>
 
-    <!-- 2. PAYMENTS & QR CODE SUB-TAB -->
+    <!-- 2. PAYMENTS SUB-TAB -->
     {% elif active_tab == 'payments' %}
     <h3>💰 पेमेंट वैधता डेस्क आणि QR कोड बदलण्याची सुविधा</h3>
     <div style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:20px;">
@@ -413,7 +420,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% endfor %}
     </table>
 
-    <!-- 3. QUESTIONS SUB-TAB (SINGLE, BULK & DELETE) -->
+    <!-- 3. QUESTIONS SUB-TAB -->
     {% elif active_tab == 'questions' %}
     <h3>📝 प्रश्न व्यवस्थापन (Single & Bulk Question Upload)</h3>
     
@@ -500,7 +507,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <td>₹{{ t.test_fee }}</td>
             <td>{{ t.status }}</td>
             <td>
-                <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('तुम्हाला ही टेस्ट खरोखर डिलीट करायची आहे का? (यामधील सर्व प्रश्नही डिलीट होतील)');">🗑️ डिलीट</a>
+                <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('तुम्हाला ही टेस्ट खरोखर डिलीट करायची आहे का?');">🗑️ डिलीट</a>
             </td>
         </tr>
         {% endfor %}
@@ -659,7 +666,7 @@ def verify_whatsapp(lead_id):
                 'is_correct': (u_ans == q['correct']), 'explanation': q['explanation']
             })
 
-        return render_template_string(RESULT_TEMPLATE, lead=lead, state_rank=state_rank, verified=False, evaluated_questions=evaluated_questions, error_msg="❌ चुकीचा मोबाईल नंबर! कृपया तुम्ही फॉर्म भरताना दिलेला १० अंकी व्हॉट्सॲप नंबरच टाका.")
+        return render_template_string(RESULT_TEMPLATE, lead=lead, state_rank=state_rank, verified=False, evaluated_questions=evaluated_questions, error_msg="❌ चुकीचा नंबर! कृपया तुम्ही फॉर्म भरताना दिलेला १० अंकी ओरिजनल व्हॉट्सॲप नंबरच टाका.")
 
 # ----------------- ADMIN SECURITY & DASHBOARD ROUTES -----------------
 
