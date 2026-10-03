@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
-app.secret_key = "shreeguru_master_test_platform_2026_final_secure"
+app.secret_key = "shreeguru_master_test_platform_2026_ultimate_secure"
 
 # --- NEON CLOUD DATABASE CONNECTION ---
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -18,12 +18,13 @@ def get_db():
 def init_master_db():
     with get_db() as conn:
         with conn.cursor() as cur:
-            # १. टेस्ट पेपर्स टेबल
+            # १. टेस्ट पेपर्स टेबल (टाईमर मिनिटांसह)
             cur.execute('''CREATE TABLE IF NOT EXISTS test_papers (
                 id SERIAL PRIMARY KEY,
                 test_title TEXT NOT NULL,
                 test_type TEXT DEFAULT 'Free',
                 test_fee REAL DEFAULT 0,
+                duration_minutes INTEGER DEFAULT 60,
                 status TEXT DEFAULT 'Active'
             )''')
 
@@ -40,7 +41,7 @@ def init_master_db():
                 explanation TEXT DEFAULT ''
             )''')
 
-            # ३. विद्यार्थी लीड्स व निकाल टेबल
+            # ३. विद्यार्थी लीड्स व निकाल टेबल (सुरक्षित व अचूक कॉलमसह)
             cur.execute('''CREATE TABLE IF NOT EXISTS mock_test_leads (
                 id SERIAL PRIMARY KEY,
                 test_id INTEGER DEFAULT 1,
@@ -51,7 +52,7 @@ def init_master_db():
                 whatsapp_verified INTEGER DEFAULT 0,
                 payment_status TEXT DEFAULT 'Not Required',
                 utr_number TEXT DEFAULT '',
-                score INTEGER NOT NULL,
+                score REAL NOT NULL,
                 total_marks INTEGER NOT NULL,
                 test_name TEXT NOT NULL,
                 answers_json TEXT DEFAULT ''
@@ -69,8 +70,8 @@ def init_master_db():
             # डीफॉल्ट टेस्ट्स ऍड करणे
             cur.execute('SELECT COUNT(*) as count FROM test_papers')
             if cur.fetchone()['count'] == 0:
-                cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee) VALUES (1, 'पोलीस भरती विशेष महासराव टेस्ट #१', 'Free', 0)")
-                cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee) VALUES (2, 'आर्मी भरती बौद्धिक व गणित टेस्ट #२', 'Paid', 49)")
+                cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes) VALUES (1, 'पोलीस भरती विशेष महासराव टेस्ट #१', 'Free', 0, 60)")
+                cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes) VALUES (2, 'आर्मी भरती बौद्धिक व गणित टेस्ट #२', 'Paid', 49, 45)")
                 conn.commit()
 
             # डीफॉल्ट प्रश्न ऍड करणे
@@ -139,6 +140,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             <span class="{{ 'badge-free' if t.test_type == 'Free' else 'badge-paid' }}">
                 {{ '🟢 मोफत महासराव टेस्ट' if t.test_type == 'Free' else '⭐ सशुल्क (Paid) टेस्ट - ₹' ~ t.test_fee }}
             </span>
+            <div style="font-size:11px; color:#64748b; margin-top:4px;">⏱️ वेळ मर्यादा: {{ t.duration_minutes }} मिनिटे</div>
         </div>
         <a href="/take_test/{{ t.id }}" class="btn-start">✨ टेस्ट सोडवा</a>
     </div>
@@ -147,7 +149,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 2. EXAM TEMPLATE -----------------
+# ----------------- 2. EXAM TEMPLATE (WITH LIVE TIMER) -----------------
 EXAM_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -158,7 +160,8 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         body { margin: 0; background: #f0fdf4; color: #1e293b; padding: 15px; }
         .box { max-width: 750px; margin: 20px auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 6px solid #059669; }
         h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 22px; }
-        .sub { text-align: center; color: #475569; font-size: 13px; margin-bottom: 25px; }
+        .sub { text-align: center; color: #475569; font-size: 13px; margin-bottom: 15px; }
+        .timer-box { background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 20px; position: sticky; top: 10px; z-index: 100; }
         .q-item { margin-bottom: 22px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0; }
         .q-text { font-weight: bold; margin-bottom: 10px; font-size: 15px; color: #0f172a; }
         .opt-label { display: block; margin-bottom: 8px; font-size: 14px; cursor: pointer; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
@@ -166,13 +169,36 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         input[type="text"], input[type="tel"] { width: 100%; padding: 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; margin-bottom: 12px; font-size: 14px; }
         .btn-submit { width: 100%; background: linear-gradient(135deg, #059669, #047857); color: white; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(5,150,105,0.3); }
     </style>
+    <script>
+        let timeLeft = {{ test.duration_minutes * 60 }};
+        function startTimer() {
+            const timerDisplay = document.getElementById('time-left');
+            let timer = setInterval(function () {
+                let minutes = parseInt(timeLeft / 60, 10);
+                let seconds = parseInt(timeLeft % 60, 10);
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+                timerDisplay.innerText = minutes + ":" + seconds;
+                if (--timeLeft < 0) {
+                    clearInterval(timer);
+                    alert("⏰ वेळ संपली! तुमची टेस्ट ऑटोमॅटिक सबमिट होत आहे.");
+                    document.getElementById("examForm").submit();
+                }
+            }, 1000);
+        }
+        window.onload = startTimer;
+    </script>
 </head>
 <body>
 <div class="box">
     <h2>⚔️ {{ test.test_title }}</h2>
     <div class="sub">श्रीगुरु करिअर अकॅडमी, आडूर (जि. कोल्हापूर)</div>
 
-    <form method="POST" action="/submit_test/{{ test.id }}">
+    <div class="timer-box">
+        ⏳ उरलेली वेळ: <span id="time-left">00:00</span> मिनिटे
+    </div>
+
+    <form id="examForm" method="POST" action="/submit_test/{{ test.id }}">
         <div style="background:#f8fafc; padding:18px; border-radius:8px; margin-bottom:20px; border:1px solid #cbd5e1;">
             <h4 style="margin:0 0 12px; color:#0b3c5d;">👤 तुमची माहिती भरा:</h4>
             <label style="font-weight:bold; font-size:13px;">पूर्ण नाव *:</label>
@@ -215,7 +241,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 3. RESULT, CERTIFICATE & WHATSAPP LOCK TEMPLATE -----------------
+# ----------------- 3. RESULT & CERTIFICATE TEMPLATE -----------------
 RESULT_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -239,7 +265,6 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
     <div class="sub">परीक्षेचा निकाल व प्रशस्तीपत्र डॅशबोर्ड</div>
 
     {% if not verified %}
-    <!-- LOCK / VERIFICATION SCREEN -->
     <div style="background:#f0fdf4; border:2px solid #86efac; border-radius:8px; padding:20px; text-align:center; margin-bottom:20px;">
         <h3 style="margin:0 0 5px; color:#166534;">टेस्ट यशस्वीरीत्या सबमिट झाली आहे! 🎉</h3>
         <p style="font-size:14px; color:#334155;">विद्यार्थ्याचे नाव: <b>{{ lead.student_name }}</b> (जिल्हा: {{ lead.district }})</p>
@@ -259,7 +284,6 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
         </form>
     </div>
     {% else %}
-    <!-- UNLOCKED SCORE & CERTIFICATE SCREEN -->
     <div style="background:#f0fdf4; border:2px solid #86efac; border-radius:8px; padding:20px; text-align:center; margin-bottom:20px;">
         <h3 style="margin:0 0 5px; color:#166534;">व्हॉट्सॲप नंबर यशस्वीरित्या व्हेरिफाय झाला! ✅</h3>
         <p style="font-size:16px; margin:8px 0;">विद्यार्थ्याचे नाव: <b>{{ lead.student_name }}</b> (जिल्हा: {{ lead.district }})</p>
@@ -281,7 +305,7 @@ RESULT_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- DETAILED ANSWER KEY & EXPLANATIONS -->
+    <!-- ANSWER KEY & EXPLANATIONS -->
     <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:20px; border-radius:8px; margin-top:20px;">
         <h3 style="color:#065f46; margin-top:0;">📋 सविस्तर उत्तरपत्रिका व स्पष्टीकरण (Answer Key)</h3>
         {% for item in evaluated_questions %}
@@ -480,7 +504,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:20px;">
         <label style="font-weight:bold; font-size:12px;">नवीन टेस्टचे नाव:</label>
         <input type="text" name="test_title" placeholder="उदा. पोलीस भरती विशेष टेस्ट #३" required>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
             <div>
                 <label style="font-weight:bold; font-size:12px;">प्रकार:</label>
                 <select name="test_type">
@@ -492,19 +516,24 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 <label style="font-weight:bold; font-size:12px;">फी (रुपये):</label>
                 <input type="number" name="test_fee" value="0">
             </div>
+            <div>
+                <label style="font-weight:bold; font-size:12px;">वेळ (मिनिटे):</label>
+                <input type="number" name="duration_minutes" value="60">
+            </div>
         </div>
         <button type="submit" class="btn" style="margin-top:5px;">🚀 नवीन टेस्ट लॉन्च करा</button>
     </form>
 
     <h4>सध्याच्या लाईव्ह टेस्ट्स व कृती:</h4>
     <table>
-        <tr><th>ID</th><th>टेस्ट नाव</th><th>प्रकार</th><th>फी</th><th>स्थिती</th><th>कृती</th></tr>
+        <tr><th>ID</th><th>टेस्ट नाव</th><th>प्रकार</th><th>फी</th><th>वेळ</th><th>स्थिती</th><th>कृती</th></tr>
         {% for t in tests %}
         <tr>
             <td>{{ t.id }}</td>
             <td>{{ t.test_title }}</td>
             <td>{{ t.test_type }}</td>
             <td>₹{{ t.test_fee }}</td>
+            <td>{{ t.duration_minutes }} मिनिटे</td>
             <td>{{ t.status }}</td>
             <td>
                 <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('तुम्हाला ही टेस्ट खरोखर डिलीट करायची आहे का?');">🗑️ डिलीट</a>
@@ -560,10 +589,10 @@ def take_test(test_id):
 
 @app.route('/submit_test/<int:test_id>', methods=['POST'])
 def submit_test(test_id):
-    name = request.form.get('student_name')
-    district = request.form.get('district')
-    phone = request.form.get('phone')
-    utr_number = request.form.get('utr_number', '')
+    name = request.form.get('student_name', '').strip()
+    district = request.form.get('district', '').strip()
+    phone = request.form.get('phone', '').strip()
+    utr_number = request.form.get('utr_number', '').strip()
 
     with get_db() as conn:
         with conn.cursor() as cur:
@@ -571,6 +600,8 @@ def submit_test(test_id):
             test = cur.fetchone()
             cur.execute("SELECT * FROM questions WHERE test_id=%s ORDER BY id ASC", (test_id,))
             questions = cur.fetchall()
+
+    if not test: return "Test not found", 404
 
     score = 0
     total = len(questions)
@@ -731,10 +762,11 @@ def admin_add_test():
     title = request.form.get('test_title')
     ttype = request.form.get('test_type')
     fee = float(request.form.get('test_fee', 0))
+    duration = int(request.form.get('duration_minutes', 60))
 
     with get_db() as conn:
         with conn.cursor() as cur:
-            cur.execute("INSERT INTO test_papers (test_title, test_type, test_fee, status) VALUES (%s, %s, %s, 'Active')", (title, ttype, fee))
+            cur.execute("INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status) VALUES (%s, %s, %s, %s, 'Active')", (title, ttype, fee, duration))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
 
