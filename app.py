@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import secrets
 import urllib.parse
 from datetime import date, datetime, timedelta
@@ -83,7 +84,24 @@ def init_master_db():
                     created_at TEXT NOT NULL
                 )''')
 
-                # ५. ॲकॅडमी सेटिंग्स
+                # ५. स्पेशल ॲक्सेस टेबल्स (अमर्याद प्रयत्न व सर्व टेस्ट्स मोफत)
+                cur.execute('''CREATE TABLE IF NOT EXISTS special_unlimited_attempts (
+                    id SERIAL PRIMARY KEY,
+                    phone TEXT UNIQUE NOT NULL,
+                    student_name TEXT DEFAULT '',
+                    note TEXT DEFAULT '',
+                    added_on TEXT NOT NULL
+                )''')
+
+                cur.execute('''CREATE TABLE IF NOT EXISTS special_free_pass (
+                    id SERIAL PRIMARY KEY,
+                    phone TEXT UNIQUE NOT NULL,
+                    student_name TEXT DEFAULT '',
+                    note TEXT DEFAULT '',
+                    added_on TEXT NOT NULL
+                )''')
+
+                # ६. ॲकॅडमी सेटिंग्स
                 cur.execute('''CREATE TABLE IF NOT EXISTS academy_settings (
                     id SERIAL PRIMARY KEY,
                     setting_key TEXT UNIQUE NOT NULL,
@@ -168,7 +186,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </div>
 
 <div class="box">
-    <h2>⚔️ राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</h2>
+    <h2>⚔ राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</h2>
 
     <div class="quote-box">
         🔥 हातात उरलेल्या दिवसात काबाड कष्ट करून तुला तुझे वर्दीचे स्वप्न पूर्ण करायचे आहे (लक्षात ठेव तुला घडविण्यासाठी कुणाचे तरी हात झिजत आहेत) 🌟
@@ -215,7 +233,7 @@ TERMS_TEMPLATE = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terms and Conditions - Online Mock Test Platform</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #f8fafc; color: #1e293b; padding: 25px 15px; line-height: 1.6; }
@@ -261,7 +279,7 @@ TERMS_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 2. EXAM TEMPLATE (Single Phone per Test Restriction) -----------------
+# ----------------- 2. EXAM TEMPLATE (मोबाईल नंबरखाली फक्त 'आपण चुकीचा मोबाईल नंबर टाकत आहात' मेसेज) -----------------
 EXAM_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -275,7 +293,8 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         .box { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border-top: 5px solid #059669; }
         .timer-box { background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; padding: 8px 15px; border-radius: 6px; font-weight: bold; font-size: 15px; }
         .student-details { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 18px; margin-bottom: 20px; }
-        .student-details input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px; font-size: 14px; margin-bottom: 12px; }
+        .student-details input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px; font-size: 14px; margin-bottom: 6px; transition: border-color 0.2s; }
+        .phone-error-msg { display: none; color: #b91c1c; font-size: 12px; font-weight: bold; background: #fee2e2; border-left: 3px solid #dc2626; padding: 6px 10px; border-radius: 4px; margin-bottom: 10px; line-height: 1.4; }
         .q-item { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin-bottom: 18px; transition: 0.3s; }
         .q-locked { opacity: 0.45; pointer-events: none; user-select: none; }
         .q-text { font-weight: bold; margin-bottom: 10px; font-size: 15px; color: #0f172a; }
@@ -302,39 +321,59 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             }, 1000);
         }
 
-        let isPhoneUsed = false;
+        let isPhoneValid = false;
         async function checkStudentDetails() {
             const name = document.getElementById('s_name').value.trim();
             const dist = document.getElementById('s_dist').value.trim();
-            const phone = document.getElementById('s_phone').value.trim();
+            const phoneInput = document.getElementById('s_phone');
+            const phone = phoneInput.value.trim();
+            const phoneErrDiv = document.getElementById('phoneErrorNotice');
             const questionsArea = document.getElementById('questionsArea');
             const submitNotice = document.getElementById('submitNotice');
             const submitBtn = document.getElementById('submitBtn');
 
-            if (phone.length === 10) {
-                try {
-                    const res = await fetch(`/api/check_phone_usage?test_id={{ test.id }}&phone=${phone}`);
-                    const data = await res.json();
-                    if (data.used) {
-                        isPhoneUsed = true;
-                        questionsArea.classList.add('q-locked');
-                        submitBtn.disabled = true;
-                        submitNotice.innerHTML = "⚠️ हा मोबाईल नंबर या टेस्टसाठी आधीच वापरला गेला आहे! कृपया दुसरा नंबर टाकून टेस्ट सोडवा.";
-                        submitNotice.style.background = "#fee2e2";
-                        submitNotice.style.borderColor = "#ef4444";
-                        submitNotice.style.color = "#991b1b";
-                        return;
-                    } else {
-                        isPhoneUsed = false;
+            const indianPhoneRegex = /^[6-9][0-9]{9}$/;
+
+            if (phone.length > 0) {
+                if (!['6', '7', '8', '9'].includes(phone.charAt(0))) {
+                    isPhoneValid = false;
+                    phoneInput.style.borderColor = "#dc2626";
+                    phoneErrDiv.style.display = "block";
+                    phoneErrDiv.innerText = "⚠️ आपण चुकीचा मोबाईल नंबर टाकत आहात!";
+                } else if (phone.length > 0 && phone.length < 10) {
+                    isPhoneValid = false;
+                    phoneInput.style.borderColor = "#f59e0b";
+                    phoneErrDiv.style.display = "none";
+                } else if (phone.length === 10 && indianPhoneRegex.test(phone)) {
+                    try {
+                        const res = await fetch(`/api/check_phone_usage?test_id={{ test.id }}&phone=${phone}`);
+                        const data = await res.json();
+                        if (data.used) {
+                            isPhoneValid = false;
+                            phoneInput.style.borderColor = "#dc2626";
+                            phoneErrDiv.style.display = "block";
+                            phoneErrDiv.innerText = "⚠️ आपण हा नंबर पूर्वी वापरलेला आहे! कृपया टेस्ट सोडवण्यासाठी दुसरा नंबर टाका.";
+                        } else {
+                            isPhoneValid = true;
+                            phoneInput.style.borderColor = "#16a34a";
+                            phoneErrDiv.style.display = "none";
+                        }
+                    } catch (e) {
+                        console.error(e);
                     }
-                } catch (e) {
-                    console.error(e);
+                } else {
+                    isPhoneValid = false;
+                    phoneInput.style.borderColor = "#dc2626";
+                    phoneErrDiv.style.display = "block";
+                    phoneErrDiv.innerText = "⚠️ आपण चुकीचा मोबाईल नंबर टाकत आहात!";
                 }
             } else {
-                isPhoneUsed = false;
+                isPhoneValid = false;
+                phoneInput.style.borderColor = "#cbd5e1";
+                phoneErrDiv.style.display = "none";
             }
 
-            if (name !== "" && dist !== "" && phone.length === 10 && !isPhoneUsed) {
+            if (name !== "" && dist !== "" && isPhoneValid) {
                 questionsArea.classList.remove('q-locked');
                 submitBtn.disabled = false;
                 submitNotice.innerHTML = "✅ तुमची माहिती यशस्वीरीत्या भरली आहे. सर्व प्रश्न सोडवून टेस्ट सबमिट करा.";
@@ -344,11 +383,16 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             } else {
                 questionsArea.classList.add('q-locked');
                 submitBtn.disabled = true;
-                if (!isPhoneUsed) {
-                    submitNotice.innerHTML = "⚠️ कृपया सुरुवातीला तुमचे नाव, जिल्हा व १० अंकी WhatsApp नंबर भरा. त्याशिवाय प्रश्न सोडवता किंवा सबमिट करता येणार नाहीत.";
+                if (!phoneErrDiv.style.display || phoneErrDiv.style.display === "none") {
+                    submitNotice.innerHTML = "⚠️ कृपया सुरुवातीला तुमचे नाव, जिल्हा व 10 अंकी WhatsApp नंबर भरा. त्याशिवाय प्रश्न सोडवता येणार नाहीत.";
                     submitNotice.style.background = "#fef3c7";
                     submitNotice.style.borderColor = "#f59e0b";
                     submitNotice.style.color = "#92400e";
+                } else {
+                    submitNotice.innerHTML = "⚠️ मोबाईल नंबर दुरुस्त करा. वैध नंबर टाकल्याशिवाय प्रश्न सोडवता येणार नाहीत.";
+                    submitNotice.style.background = "#fee2e2";
+                    submitNotice.style.borderColor = "#ef4444";
+                    submitNotice.style.color = "#991b1b";
                 }
             }
         }
@@ -391,7 +435,9 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
                 </div>
                 <div>
                     <label style="font-size:13px; font-weight:600;">WhatsApp मोबाईल नंबर *:</label>
-                    <input type="tel" name="phone" id="s_phone" placeholder="१० अंकी नंबर" pattern="[0-9]{10}" onkeyup="checkStudentDetails()" required>
+                    <input type="tel" name="phone" id="s_phone" placeholder="10 अंकी मोबाईल नंबर" pattern="[6-9][0-9]{9}" maxlength="10" onkeyup="checkStudentDetails()" required>
+                    <!-- नंबरच्या बरोबर खाली हायलाइट होणारा इशारा मेसेज -->
+                    <div id="phoneErrorNotice" class="phone-error-msg"></div>
                 </div>
             </div>
         </div>
@@ -432,14 +478,57 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
         h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 20px; }
         input[type="text"], input[type="tel"] { width: 100%; padding: 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; margin-bottom: 12px; font-size: 14px; }
         .btn { width: 100%; background: #059669; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .phone-error-msg { display: none; color: #b91c1c; font-size: 12px; font-weight: bold; background: #fee2e2; border-left: 3px solid #dc2626; padding: 6px 10px; border-radius: 4px; margin-bottom: 10px; line-height: 1.4; }
     </style>
+    <script>
+        async function checkFreePass(val) {
+            const phone = val.trim();
+            const phoneErrDiv = document.getElementById('phoneErrorNoticePaid');
+            const submitBtn = document.getElementById('submitBtn');
+            const infoDiv = document.getElementById('freePassInfo');
+            const paySection = document.getElementById('paymentSection');
+
+            if (phone.length > 0 && !['6', '7', '8', '9'].includes(phone.charAt(0))) {
+                phoneErrDiv.style.display = 'block';
+                phoneErrDiv.innerText = '⚠️ आपण चुकीचा मोबाईल नंबर टाकत आहात!';
+                submitBtn.disabled = true;
+                return;
+            } else {
+                phoneErrDiv.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+
+            if (phone.length === 10 && /^[6-9][0-9]{9}$/.test(phone)) {
+                try {
+                    const res = await fetch(`/api/check_free_pass?phone=${phone}`);
+                    const data = await res.json();
+
+                    if (data.is_free) {
+                        infoDiv.style.display = 'block';
+                        paySection.style.display = 'none';
+                        submitBtn.innerText = '✨ मोफत प्रवेश मिळवा व टेस्ट सुरू करा';
+                        submitBtn.style.background = '#16a34a';
+                    } else {
+                        infoDiv.style.display = 'none';
+                        paySection.style.display = 'block';
+                        submitBtn.innerText = '🚀 ॲडमिनकडे पडताळणीसाठी पाठवा';
+                        submitBtn.style.background = '#059669';
+                    }
+                } catch(e) { console.error(e); }
+            }
+        }
+    </script>
 </head>
 <body>
 <div class="box">
     <h2>🔒 सशुल्क टेस्ट प्रवेश द्वार</h2>
     <p style="text-align:center; font-size:13px; color:#475569;">{{ test.test_title }} (फी: ₹{{ test.test_fee }})</p>
+
+    <div id="freePassInfo" style="display:none; background:#dcfce7; border:1.5px solid #86efac; color:#166534; padding:12px; border-radius:6px; font-size:13px; font-weight:bold; text-align:center; margin-bottom:15px;">
+        🎉 अभिनंदन! तुमचा मोबाईल नंबर ॲडमिन विशेष सवलत यादीत आहे. तुम्हाला ही सशुल्क टेस्ट १००% मोफत सोडवता येईल!
+    </div>
     
-    <div style="background:#fffbeb; padding:15px; border-radius:6px; border:1px solid #fcd34d; text-align:center; margin-bottom:15px;">
+    <div id="paymentSection" style="background:#fffbeb; padding:15px; border-radius:6px; border:1px solid #fcd34d; text-align:center; margin-bottom:15px;">
         <p style="margin:0 0 10px; font-weight:bold; color:#92400e; font-size:13px;">QR कोड स्कॅन करून किंवा <b>{{ upi_mobile }}</b> वर पे करा:</p>
         <img src="{{ qr_url }}" alt="QR" style="max-width:160px; max-height:160px; border-radius:6px; border:1px solid #cbd5e1;">
         <p style="font-size:12px; color:#b45309; font-weight:bold; margin-top:8px;">⚠️ पेमेंट करून झाल्यावर <b>{{ upi_mobile }}</b> या नंबरवर नाव व पेमेंट स्क्रीनशॉट पाठवा!</p>
@@ -451,8 +540,9 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
         <label style="font-size:13px; font-weight:bold;">जिल्हा:</label>
         <input type="text" name="district" placeholder="जिल्हा" required>
         <label style="font-size:13px; font-weight:bold;">व्हॉट्सॲप मोबाईल नंबर:</label>
-        <input type="tel" name="phone" placeholder="१० अंकी मोबाईल नंबर" pattern="[0-9]{10}" required>
-        <button type="submit" class="btn">🚀 ॲडमिनकडे पडताळणीसाठी पाठवा</button>
+        <input type="tel" name="phone" placeholder="10 अंकी मोबाईल नंबर" pattern="[6-9][0-9]{9}" maxlength="10" onkeyup="checkFreePass(this.value)" required>
+        <div id="phoneErrorNoticePaid" class="phone-error-msg"></div>
+        <button type="submit" id="submitBtn" class="btn">🚀 ॲडमिनकडे पडताळणीसाठी पाठवा</button>
     </form>
     <div style="text-align:center; margin-top:15px;"><a href="/" style="font-size:12px; color:#0284c7; text-decoration:none;">⬅️ मुख्य पानावर जा</a></div>
 </div>
@@ -584,7 +674,7 @@ EDIT_QUESTION_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 4. DETAILED ANSWER KEY TEMPLATE (With Share Text & Top Home Button) -----------------
+# ----------------- 4. DETAILED ANSWER KEY TEMPLATE -----------------
 DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -606,7 +696,6 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
 </head>
 <body>
 <div class="box">
-    <!-- वरच्या बाजूला मुख्य पानावर जाण्याचे बटण -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
         <span style="font-size:12px; font-weight:bold; color:#065f46;">📖 राज्यस्तरीय सराव परीक्षा स्पष्टीकरण कक्ष</span>
         <a href="/" style="background:#0284c7; color:white; padding:6px 14px; border-radius:5px; text-decoration:none; font-weight:bold; font-size:12px;">🏠 मुख्य पानावर जा</a>
@@ -638,7 +727,6 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
     </div>
     {% endfor %}
 
-    <!-- शेअर व सेव्ह मेसेज बॉक्स -->
     <div class="highlight-share">
         <h3 style="margin:0 0 6px; color:#854d0e; font-size:16px;">🔥 राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका 🔥</h3>
         <p style="font-size:13.5px; color:#713f12; margin:6px 0 12px; line-height:1.6; font-weight:500;">
@@ -651,9 +739,8 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- आपला अभिप्राय द्या बॉक्स -->
     <div class="feedback-card">
-        <h4 style="margin:0; color:#065f46;">✍️ आपला मौल्यवान अभिप्राय (Feedback) नोंदवा:</h4>
+        <h4 style="margin:0; color:#065f46;">✍ आपला मौल्यवान अभिप्राय (Feedback) नोंदवा:</h4>
         <p style="font-size:12px; color:#64748b; margin:4px 0 0;">ही टेस्ट सोडवण्याचा तुमचा अनुभव कसा होता? काही सुधारणा हवी असल्यास नक्की कळवा:</p>
         {% if feedback_done %}
         <div style="background:#dcfce7; color:#166534; padding:10px; border-radius:6px; font-weight:bold; font-size:13px; margin-top:10px; text-align:center;">
@@ -763,6 +850,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <div class="nav-tabs">
         <a href="/admin/dashboard?tab=leads" class="{{ 'active' if active_tab == 'leads' else '' }}">📱 Leads (चौकशी व फिल्टर्स)</a>
         <a href="/admin/dashboard?tab=payments" class="{{ 'active' if active_tab == 'payments' else '' }}">💰 Payments & QR (पेमेंट्स व QR)</a>
+        <a href="/admin/dashboard?tab=special" class="{{ 'active' if active_tab == 'special' else '' }}">👑 Special Access (खास सवलती)</a>
         <a href="/admin/dashboard?tab=questions" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (प्रश्न व्यवस्थापन व AI)</a>
         <a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Test Launch & Edit (टेस्ट व्यवस्थापन)</a>
         <a href="/admin/dashboard?tab=leaderboard" class="{{ 'active' if active_tab == 'leaderboard' else '' }}">🏆 Leaderboard (टॉपर लिस्ट)</a>
@@ -846,6 +934,71 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </tr>
         {% endfor %}
     </table>
+
+    <!-- SPECIAL ACCESS SUB-TAB -->
+    {% elif active_tab == 'special' %}
+    <h3>👑 Special Access (विद्यार्थी विशेष सवलत व्यवस्थापन कक्ष)</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px; margin-top:15px;">
+        <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:18px;">
+            <h4 style="margin-top:0; color:#065f46; display:flex; align-items:center; gap:6px;">
+                🔄 १. अमर्याद प्रयत्न सवलत (Unlimited Attempts)
+            </h4>
+            <p style="font-size:12px; color:#64748b; line-height:1.4; margin-top:-4px;">
+                या यादीत असलेल्या नंबरवरून विद्यार्थी <b>कोणतीही टेस्ट कितीही वेळा</b> पुन्हा पुन्हा सोडवू शकतात (त्यांना ब्लॉक केले जाणार नाही).
+            </p>
+
+            <form method="POST" action="/admin/add_special_unlimited">
+                <input type="text" name="phone" placeholder="१० अंकी मोबाईल नंबर टाका" pattern="[6-9][0-9]{9}" required>
+                <input type="text" name="student_name" placeholder="विद्यार्थ्याचे नाव (ऐच्छिक)">
+                <input type="text" name="note" placeholder="टीप / संदर्भ (उदा. ॲडमिन, शिक्षक, VIP)">
+                <button type="submit" class="btn" style="width:100%; background:#059669;">➕ अमर्याद सवलतीत जोडा</button>
+            </form>
+
+            <h5 style="margin:15px 0 6px; color:#334155;">सध्या जोडलेले नंबर ({{ unlimited_list|length }}):</h5>
+            <table style="font-size:12px;">
+                <tr><th>मोबाईल नंबर</th><th>नाव / टीप</th><th>कृती</th></tr>
+                {% for u in unlimited_list %}
+                <tr>
+                    <td><b>{{ u.phone }}</b></td>
+                    <td>{{ u.student_name }} <br><small style="color:#64748b;">{{ u.note }}</small></td>
+                    <td><a href="/admin/delete_special_unlimited/{{ u.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('हा नंबर काढायचा का?');">🗑️</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" style="text-align:center; color:#94a3b8;">कोणताही नंबर जोडलेला नाही.</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:18px;">
+            <h4 style="margin-top:0; color:#b45309; display:flex; align-items:center; gap:6px;">
+                ⭐ २. सर्व सशुल्क टेस्ट्स मोफत (All Tests Free Pass)
+            </h4>
+            <p style="font-size:12px; color:#64748b; line-height:1.4; margin-top:-4px;">
+                या यादीत असलेल्या नंबरसाठी <b>सर्व सशुल्क (Paid) टेस्ट्स १००% मोफत</b> राहतील. त्यांना पेमेंट न करता थेट टेस्ट सोडवता येईल.
+            </p>
+
+            <form method="POST" action="/admin/add_special_free_pass">
+                <input type="text" name="phone" placeholder="१० अंकी मोबाईल नंबर टाका" pattern="[6-9][0-9]{9}" required>
+                <input type="text" name="student_name" placeholder="विद्यार्थ्याचे नाव (ऐच्छिक)">
+                <input type="text" name="note" placeholder="टीप / संदर्भ (उदा. अकॅडमी विद्यार्थी, टॉपर)">
+                <button type="submit" class="btn" style="width:100%; background:#d97706;">➕ मोफत पास यादीत जोडा</button>
+            </form>
+
+            <h5 style="margin:15px 0 6px; color:#334155;">सध्या जोडलेले नंबर ({{ free_pass_list|length }}):</h5>
+            <table style="font-size:12px;">
+                <tr><th>मोबाईल नंबर</th><th>नाव / टीप</th><th>कृती</th></tr>
+                {% for f in free_pass_list %}
+                <tr>
+                    <td><b>{{ f.phone }}</b></td>
+                    <td>{{ f.student_name }} <br><small style="color:#64748b;">{{ f.note }}</small></td>
+                    <td><a href="/admin/delete_special_free_pass/{{ f.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('हा नंबर काढायचा का?');">🗑️</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" style="text-align:center; color:#94a3b8;">कोणताही नंबर जोडलेला नाही.</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
 
     <!-- 3. QUESTIONS SUB-TAB -->
     {% elif active_tab == 'questions' %}
@@ -1077,18 +1230,37 @@ def home_tests_list():
 def terms_and_conditions():
     return render_template_string(TERMS_TEMPLATE)
 
-# फोन नंबरचा पुनर्वापर तपासण्यासाठी API रूट
+# फोन नंबरचा पुनर्वापर तपासण्यासाठी API रूट (Special Unlimited Attempts चे भान ठेवून)
 @app.route('/api/check_phone_usage')
 def check_phone_usage():
     test_id = request.args.get('test_id', type=int)
     phone = request.args.get('phone', '').strip()
     if not test_id or len(phone) != 10:
         return jsonify({'used': False})
+    
     with get_db() as conn:
         with conn.cursor() as cur:
+            # १. हा नंबर अमर्याद प्रयत्न सवलत यादीत आहे का?
+            cur.execute("SELECT id FROM special_unlimited_attempts WHERE phone=%s LIMIT 1", (phone,))
+            if cur.fetchone():
+                return jsonify({'used': False})
+
+            # २. नसेल तर आधी सोडवले आहे का ते तपासा
             cur.execute("SELECT id FROM mock_test_leads WHERE test_id=%s AND phone=%s LIMIT 1", (test_id, phone))
             row = cur.fetchone()
             return jsonify({'used': bool(row)})
+
+# सशुल्क टेस्ट मोफत पास आहे का तपासण्यासाठी API रूट
+@app.route('/api/check_free_pass')
+def check_free_pass():
+    phone = request.args.get('phone', '').strip()
+    if len(phone) != 10:
+        return jsonify({'is_free': False})
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM special_free_pass WHERE phone=%s LIMIT 1", (phone,))
+            row = cur.fetchone()
+            return jsonify({'is_free': bool(row)})
 
 @app.route('/take_test/<int:test_id>')
 def take_test(test_id):
@@ -1139,6 +1311,10 @@ def request_paid_test(test_id):
     phone = request.form.get('phone', '').strip()
     t_date = date.today().strftime("%Y-%m-%d")
 
+    # भारतीय मोबाईल नंबर पडताळणी
+    if not re.match(r'^[6-9]\d{9}$', phone):
+        return "<h3 style='color:red; text-align:center;'>⚠️ आपण चुकीचा मोबाईल नंबर टाकत आहात!</h3><div style='text-align:center;'><a href='javascript:history.back()'>मागे जा व दुरुस्त करा</a></div>", 400
+
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM test_papers WHERE id=%s", (test_id,))
@@ -1146,6 +1322,26 @@ def request_paid_test(test_id):
 
     if not test: return "Test not found", 404
 
+    # तपासणी: विद्यार्थी मोफत पास यादीत आहे का?
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM special_free_pass WHERE phone=%s LIMIT 1", (phone,))
+            is_free_user = cur.fetchone()
+
+    # जर मोफत पास सवलतीत असेल तर थेट टोकन तयार करून २४ तासांसाठी अनलॉक करा
+    if is_free_user:
+        token = secrets.token_hex(8)
+        expires = (datetime.now() + timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO mock_test_leads (test_id, test_date, student_name, district, phone, payment_status, score, total_marks, test_name, access_token, token_expires_at)
+                    VALUES (%s, %s, %s, %s, %s, 'Approved', 0, 0, %s, %s, %s)
+                """, (test_id, t_date, name, district, phone, test['test_title'], token, expires))
+                conn.commit()
+        return redirect(f"/take_test/{test_id}?token={token}")
+
+    # सामान्य विद्यार्थ्यासाठी नेहमीप्रमाणे पडताळणी प्रलंबित
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM mock_test_leads WHERE test_id=%s AND phone=%s", (test_id, phone))
@@ -1181,14 +1377,23 @@ def submit_test(test_id):
 
     if not test: return "Test not found", 404
 
-    # एका नंबरवरून एकाच टेस्टचा प्रयत्न तपासणे (Duplicate Check)
+    # १. भारतीय मोबाईल नंबर व्हॅलिडेशन (६, ७, ८ किंवा ९ ने सुरुवात व १० आकडे)
+    if not re.match(r'^[6-9]\d{9}$', phone):
+        err_msg = "⚠️ आपण चुकीचा मोबाईल नंबर टाकत आहात!"
+        return render_template_string(EXAM_TEMPLATE, test=test, questions=questions, error_msg=err_msg)
+
+    # २. एका नंबरवरून एकाच टेस्टचा प्रयत्न तपासणे (Duplicate Check - जर नंबर अमर्याद यादीत नसेल तर)
     with get_db() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id FROM mock_test_leads WHERE test_id=%s AND phone=%s LIMIT 1", (test_id, phone))
-            already_submitted = cur.fetchone()
-            if already_submitted:
-                err_msg = "⚠️ हा मोबाईल नंबर या टेस्टसाठी आधीच वापरला गेला आहे! कृपया दुसरा नंबर टाकून टेस्ट सोडवा."
-                return render_template_string(EXAM_TEMPLATE, test=test, questions=questions, error_msg=err_msg)
+            cur.execute("SELECT id FROM special_unlimited_attempts WHERE phone=%s LIMIT 1", (phone,))
+            is_unlimited = cur.fetchone()
+
+            if not is_unlimited:
+                cur.execute("SELECT id FROM mock_test_leads WHERE test_id=%s AND phone=%s AND score > 0 LIMIT 1", (test_id, phone))
+                already_submitted = cur.fetchone()
+                if already_submitted:
+                    err_msg = "⚠️ आपण हा नंबर पूर्वी वापरलेला आहे! कृपया टेस्ट सोडवण्यासाठी दुसरा नंबर टाका."
+                    return render_template_string(EXAM_TEMPLATE, test=test, questions=questions, error_msg=err_msg)
 
     score = 0
     total = len(questions)
@@ -1202,7 +1407,7 @@ def submit_test(test_id):
 
     t_date = date.today().strftime("%Y-%m-%d")
     ans_json_str = json.dumps(user_answers)
-    pay_status = 'Approved' if test['test_type'] == 'Free' else 'Pending'
+    pay_status = 'Approved' if test['test_type'] == 'Free' else 'Approved'
 
     with get_db() as conn:
         with conn.cursor() as cur:
@@ -1269,7 +1474,6 @@ def detailed_answers(lead_id):
             'explanation': q['explanation']
         })
 
-    # WhatsApp शेअर मेसेजमध्ये 'राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका' ही ओळ ठळकपणे जोडणे
     main_portal_url = request.host_url.rstrip('/')
     share_msg = f"राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका\n\nपोलीस भरती व सैन्य भरती करणाऱ्या सर्व मित्रांसाठी राज्यस्तरीय सराव टेस्ट पोर्टल! मोफत टेस्ट सोडवा आणि संपूर्ण महाराष्ट्रात आपला रँक तपासा. सराव करण्यासाठी आत्ताच खालील लिंक ओपन करा आणि सेव्ह ठेवा:\n👉 {main_portal_url}"
     share_whatsapp_encoded = urllib.parse.quote(share_msg)
@@ -1336,7 +1540,6 @@ def admin_dashboard():
 
     with get_db() as conn:
         with conn.cursor() as cur:
-            # लीड्स
             query = "SELECT * FROM mock_test_leads WHERE 1=1"
             params = []
             if lead_dist:
@@ -1370,6 +1573,12 @@ def admin_dashboard():
             cur.execute("SELECT * FROM student_feedbacks ORDER BY id DESC")
             feedbacks = cur.fetchall()
 
+            cur.execute("SELECT * FROM special_unlimited_attempts ORDER BY id DESC")
+            unlimited_list = cur.fetchall()
+
+            cur.execute("SELECT * FROM special_free_pass ORDER BY id DESC")
+            free_pass_list = cur.fetchall()
+
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='qr_code_url'")
             r = cur.fetchone()
             qr_url = r['setting_value'] if r else ''
@@ -1400,6 +1609,8 @@ def admin_dashboard():
         payments=payments,
         top_leads=top_leads,
         feedbacks=feedbacks,
+        unlimited_list=unlimited_list,
+        free_pass_list=free_pass_list,
         all_districts=all_districts,
         lead_dist=lead_dist,
         lead_test_id=lead_test_id,
@@ -1412,6 +1623,60 @@ def admin_dashboard():
         recruitment_pdf=recruitment_pdf,
         eligibility_pdf=eligibility_pdf
     )
+
+@app.route('/admin/add_special_unlimited', methods=['POST'])
+def add_special_unlimited():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    phone = request.form.get('phone', '').strip()
+    name = request.form.get('student_name', '').strip()
+    note = request.form.get('note', '').strip()
+    added_on = datetime.now().strftime("%Y-%m-%d %H:%M")
+    if re.match(r'^[6-9]\d{9}$', phone):
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO special_unlimited_attempts (phone, student_name, note, added_on)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (phone) DO UPDATE SET student_name=EXCLUDED.student_name, note=EXCLUDED.note
+                """, (phone, name, note, added_on))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+@app.route('/admin/delete_special_unlimited/<int:uid>')
+def delete_special_unlimited(uid):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM special_unlimited_attempts WHERE id=%s", (uid,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+@app.route('/admin/add_special_free_pass', methods=['POST'])
+def add_special_free_pass():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    phone = request.form.get('phone', '').strip()
+    name = request.form.get('student_name', '').strip()
+    note = request.form.get('note', '').strip()
+    added_on = datetime.now().strftime("%Y-%m-%d %H:%M")
+    if re.match(r'^[6-9]\d{9}$', phone):
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO special_free_pass (phone, student_name, note, added_on)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (phone) DO UPDATE SET student_name=EXCLUDED.student_name, note=EXCLUDED.note
+                """, (phone, name, note, added_on))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+@app.route('/admin/delete_special_free_pass/<int:fid>')
+def delete_special_free_pass(fid):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM special_free_pass WHERE id=%s", (fid,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=special')
 
 @app.route('/admin/update_payment_settings', methods=['POST'])
 def admin_update_payment_settings():
@@ -1457,7 +1722,6 @@ def admin_add_question():
             conn.commit()
     return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
-# प्रश्न संपादित (Edit) करण्याचे रूट
 @app.route('/admin/edit_question/<int:q_id>', methods=['GET', 'POST'])
 def admin_edit_question(q_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
