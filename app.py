@@ -3,7 +3,7 @@ import os
 import secrets
 import urllib.parse
 from datetime import date, datetime, timedelta
-from flask import Flask, redirect, render_template_string, request, session, url_for
+from flask import Flask, redirect, render_template_string, request, session, url_for, send_from_directory
 from werkzeug.utils import secure_filename
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -73,7 +73,17 @@ def init_master_db():
                 cur.execute("ALTER TABLE mock_test_leads ADD COLUMN IF NOT EXISTS access_token TEXT DEFAULT ''")
                 cur.execute("ALTER TABLE mock_test_leads ADD COLUMN IF NOT EXISTS token_expires_at TEXT DEFAULT ''")
 
-                # ४. ॲकॅडमी सेटिंग्स
+                # ४. विद्यार्थी अभिप्राय (Feedback) टेबल
+                cur.execute('''CREATE TABLE IF NOT EXISTS student_feedbacks (
+                    id SERIAL PRIMARY KEY,
+                    lead_id INTEGER,
+                    student_name TEXT NOT NULL,
+                    phone TEXT NOT NULL,
+                    feedback_text TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )''')
+
+                # ५. ॲकॅडमी सेटिंग्स
                 cur.execute('''CREATE TABLE IF NOT EXISTS academy_settings (
                     id SERIAL PRIMARY KEY,
                     setting_key TEXT UNIQUE NOT NULL,
@@ -88,8 +98,8 @@ def init_master_db():
                     ('insta_link', ''),
                     ('yt_link', ''),
                     ('toppers_link', ''),
-                    ('recruitment_info', 'महाराष्ट्र पोलीस भरती व सैन्य भरती पूर्वतयारी सराव संच नियमित सोडवा.'),
-                    ('eligibility_info', 'पोलीस भरती पात्रता: १२ वी उत्तीर्ण, वय १८ ते २८ वर्षे, शारीरिक निकष नियमानुसार.')
+                    ('recruitment_pdf', ''),
+                    ('eligibility_pdf', '')
                 ]
                 for k, v in defaults:
                     cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES (%s, %s) ON CONFLICT (setting_key) DO NOTHING", (k, v))
@@ -113,7 +123,7 @@ def init_master_db():
 
 init_master_db()
 
-# ----------------- 1. PUBLIC HOME TEMPLATE (Secure Admin Conditional Button) -----------------
+# ----------------- 1. PUBLIC HOME TEMPLATE -----------------
 HOME_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -128,14 +138,15 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .box { max-width: 850px; margin: 0 auto; background: white; border-radius: 14px; padding: 25px; box-shadow: 0 12px 30px rgba(0,0,0,0.1); border-top: 6px solid #059669; }
         h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 26px; font-family: 'Baloo Bhaina 2', cursive; }
         .quote-box { background: #ecfdf5; border-left: 4px solid #059669; padding: 12px 15px; border-radius: 6px; font-size: 15px; color: #065f46; font-weight: 600; text-align: center; margin-bottom: 20px; line-height: 1.5; }
-        .info-card { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
-        .info-title { font-weight: bold; color: #92400e; font-size: 15px; margin-bottom: 6px; }
         .test-card { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; transition: 0.2s; }
         .test-card:hover { border-color: #059669; box-shadow: 0 4px 12px rgba(5,150,105,0.1); }
         .btn-start { background: linear-gradient(135deg, #059669, #047857); color: white; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; box-shadow: 0 3px 8px rgba(5,150,105,0.3); }
         .badge-free { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
         .badge-paid { background: #fef9c3; color: #854d0e; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .footer-terms { text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 12px; }
+        .bottom-docs { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 25px; margin-bottom: 15px; }
+        .doc-btn { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; color: #0f172a; padding: 9px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; border: 1.5px solid #cbd5e1; transition: 0.2s; }
+        .doc-btn:hover { background: #e2e8f0; border-color: #059669; color: #065f46; }
+        .footer-terms { text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 12px; }
         .footer-terms a { color: #0369a1; text-decoration: none; font-weight: 600; }
         .footer-terms a:hover { text-decoration: underline; }
     </style>
@@ -152,7 +163,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 <div class="top-bar">
     <div class="clock">🕒 <span id="live-clock">लोडिंग...</span></div>
     {% if is_admin %}
-    <div><a href="/admin/dashboard" style="background:#059669; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">⚙️ ॲडमिन डॅशबोर्ड</a></div>
+    <div><a href="/admin/dashboard" style="background:#059669; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">⚙️️ ॲडमिन डॅशबोर्ड</a></div>
     {% endif %}
 </div>
 
@@ -161,17 +172,6 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 
     <div class="quote-box">
         🔥 हातात उरलेल्या दिवसात काबाड कष्ट करून तुला तुझे वर्दीचे स्वप्न पूर्ण करायचे आहे (लक्षात ठेव तुला घडविण्यासाठी कुणाचे तरी हात झिजत आहेत) 🌟
-    </div>
-
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:15px; margin-bottom:20px;">
-        <div class="info-card">
-            <div class="info-title">📢 भरती अधिकृत सूचना / माहिती:</div>
-            <div style="font-size:13px; color:#451a03; line-height:1.5;">{{ recruitment_info }}</div>
-        </div>
-        <div class="info-card" style="background:#eff6ff; border-color:#bfdbfe;">
-            <div class="info-title" style="color:#1e40af;">📋 भरती पात्रता व निकष:</div>
-            <div style="font-size:13px; color:#172554; line-height:1.5;">{{ eligibility_info }}</div>
-        </div>
     </div>
 
     <p style="font-size:15px; font-weight:600; color:#0b3c5d; margin-bottom:20px; border-bottom:2px solid #e2e8f0; padding-bottom:8px; text-align:center;">
@@ -191,6 +191,16 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     </div>
     {% endfor %}
 
+    <!-- Terms च्या वर अधिकृत माहिती व पात्रता PDF बटन्स -->
+    <div class="bottom-docs">
+        {% if recruitment_pdf %}
+        <a href="{{ recruitment_pdf }}" target="_blank" class="doc-btn">📄 भरती अधिकृत माहिती (PDF)</a>
+        {% endif %}
+        {% if eligibility_pdf %}
+        <a href="{{ eligibility_pdf }}" target="_blank" class="doc-btn">📋 भरती पात्रता व निकष (PDF)</a>
+        {% endif %}
+    </div>
+
     <div class="footer-terms">
         <span>© 2026 Online Mock Platform. All rights reserved. | </span>
         <a href="/terms-and-conditions" target="_blank">Terms & Conditions</a>
@@ -199,7 +209,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- TERMS AND CONDITIONS TEMPLATE (English) -----------------
+# ----------------- TERMS AND CONDITIONS TEMPLATE -----------------
 TERMS_TEMPLATE = '''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -437,7 +447,7 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
     <h2 style="color:#065f46; margin:0 0 5px; text-align:center;">🎉 टेस्ट यशस्वीरीत्या पूर्ण झाली!</h2>
     <p style="font-size:14px; color:#64748b; margin-bottom:15px; text-align:center;">राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</p>
 
-    <!-- कलम १: रँक व नाव/जिल्हा (गुण लपवलेले आहेत) -->
+    <!-- कलम १: रँक व नाव/जिल्हा -->
     <div style="background:#ecfdf5; border:1px solid #86efac; border-radius:8px; padding:18px; margin-bottom:20px; text-align:center;">
         <p style="font-size:17px; margin:5px 0;">विद्यार्थ्याचे नाव: <b>{{ lead.student_name }}</b></p>
         <p style="font-size:15px; margin:5px 0; color:#334155;">जिल्हा: <b>{{ lead.district }}</b></p>
@@ -483,7 +493,7 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 4. DETAILED ANSWER KEY TEMPLATE -----------------
+# ----------------- 4. DETAILED ANSWER KEY TEMPLATE (With Feedback Box) -----------------
 DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -497,6 +507,9 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
         .item { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
         .correct-box { border-left: 5px solid #16a34a; }
         .wrong-box { border-left: 5px solid #dc2626; }
+        .feedback-card { background: #f0fdf4; border: 2px dashed #059669; border-radius: 10px; padding: 20px; margin-top: 30px; }
+        .feedback-card textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; margin: 10px 0; }
+        .btn-feedback { background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -526,6 +539,22 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
         {% endif %}
     </div>
     {% endfor %}
+
+    <!-- आपला अभिप्राय द्या बॉक्स -->
+    <div class="feedback-card">
+        <h4 style="margin:0; color:#065f46;">✍️ आपला मौल्यवान अभिप्राय (Feedback) नोंदवा:</h4>
+        <p style="font-size:12px; color:#64748b; margin:4px 0 0;">ही टेस्ट सोडवण्याचा तुमचा अनुभव कसा होता? काही सुधारणा हवी असल्यास नक्की कळवा:</p>
+        {% if feedback_done %}
+        <div style="background:#dcfce7; color:#166534; padding:10px; border-radius:6px; font-weight:bold; font-size:13px; margin-top:10px; text-align:center;">
+            ✅ धन्यवाद! तुमचा अभिप्राय यशस्वीरीत्या सेव्ह झाला आहे.
+        </div>
+        {% else %}
+        <form method="POST" action="/submit_feedback/{{ lead.id }}">
+            <textarea name="feedback_text" rows="3" placeholder="येथे आपला अभिप्राय लिहा..." required></textarea>
+            <button type="submit" class="btn-feedback">📩 अभिप्राय सबमिट करा</button>
+        </form>
+        {% endif %}
+    </div>
 
     <div style="text-align:center; margin-top:25px;">
         <a href="/" style="background:#0284c7; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:13px;">🏠 मुख्य पानावर जा</a>
@@ -576,7 +605,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #f1f5f9; color: #1e293b; padding: 15px; }
-        .container { max-width: 1120px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .container { max-width: 1150px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         h2 { margin: 0 0 15px; color: #065f46; text-align: center; }
         .nav-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
         .nav-tabs a { padding: 8px 14px; background: #e2e8f0; color: #334155; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; }
@@ -624,9 +653,10 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <a href="/admin/dashboard?tab=leads" class="{{ 'active' if active_tab == 'leads' else '' }}">📱 Leads (चौकशी व फिल्टर्स)</a>
         <a href="/admin/dashboard?tab=payments" class="{{ 'active' if active_tab == 'payments' else '' }}">💰 Payments & QR (पेमेंट्स व QR)</a>
         <a href="/admin/dashboard?tab=questions" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (प्रश्न व्यवस्थापन व AI)</a>
-        <a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Test Launch (टेस्ट व्यवस्थापन)</a>
+        <a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Test Launch & Edit (टेस्ट व्यवस्थापन)</a>
         <a href="/admin/dashboard?tab=leaderboard" class="{{ 'active' if active_tab == 'leaderboard' else '' }}">🏆 Leaderboard (टॉपर लिस्ट)</a>
-        <a href="/admin/dashboard?tab=notices" class="{{ 'active' if active_tab == 'notices' else '' }}">📢 Notice & Eligibility (भरती माहिती)</a>
+        <a href="/admin/dashboard?tab=feedback" class="{{ 'active' if active_tab == 'feedback' else '' }}">💬 Feedback (विद्यार्थी अभिप्राय)</a>
+        <a href="/admin/dashboard?tab=notices" class="{{ 'active' if active_tab == 'notices' else '' }}">📢 Recruitment PDF (भरती PDF व्यवस्थापन)</a>
         <a href="/admin/dashboard?tab=settings" class="{{ 'active' if active_tab == 'settings' else '' }}">🔐 Security & Settings</a>
     </div>
 
@@ -709,7 +739,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 3. QUESTIONS SUB-TAB -->
     {% elif active_tab == 'questions' %}
     <h3>📝 प्रश्न व्यवस्थापन (Typing Form with AI Assist & Bulk Upload)</h3>
-    
     <div style="background:#ecfdf5; padding:15px; border-radius:6px; margin-bottom:20px; border:1px solid #a7f3d0;">
         <form method="GET" action="/admin/dashboard" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <input type="hidden" name="tab" value="questions">
@@ -727,7 +756,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <form method="POST" action="/admin/add_question" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h4 style="margin:0; color:#065f46;">➕ एक प्रश्न टाईप करा / ॲड करा</h4>
-                <button type="button" onclick="openAiAssist('single_q_text')" style="background:#8b5cf6; color:white; border:none; padding:4px 9px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">🤖 AI Assist (व्याकरण व पर्याय)</button>
+                <button type="button" onclick="openAiAssist('single_q_text')" style="background:#8b5cf6; color:white; border:none; padding:4px 9px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">🤖 AI Assist</button>
             </div>
             
             <label style="font-weight:bold; font-size:12px; margin-top:8px; display:block;">टेस्ट निवडा:</label>
@@ -778,11 +807,11 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% endfor %}
     </table>
 
-    <!-- 4. TEST LAUNCH SUB-TAB -->
+    <!-- 4. TEST LAUNCH & EDIT SUB-TAB (Active/Closed & Edit Enabled) -->
     {% elif active_tab == 'launch' %}
-    <h3>🚀 नवीन टेस्ट व्यवस्थापन व प्रिंटिंग</h3>
+    <h3>🚀 नवीन टेस्ट लॉन्च करा व अस्तित्वात असलेल्या टेस्ट्स व्यवस्थापित करा</h3>
     <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:20px;">
-        <input type="text" name="test_title" placeholder="टेस्टचे नाव लिहा" required>
+        <input type="text" name="test_title" placeholder="नवीन टेस्टचे नाव लिहा" required>
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
             <select name="test_type">
                 <option value="Free">Free (मोफत)</option>
@@ -794,20 +823,34 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn">🚀 नवीन टेस्ट सेव्ह करा</button>
     </form>
 
+    <h4>सध्याच्या टेस्ट्स संपादन (Edit) व स्थिती (Active / Closed):</h4>
     <table>
-        <tr><th>ID</th><th>टेस्ट नाव</th><th>प्रकार</th><th>फी</th><th>वेळ</th><th>स्थिती</th><th>कृती</th></tr>
+        <tr><th>ID</th><th>टेस्ट नाव</th><th>प्रकार</th><th>फी (₹)</th><th>वेळ (मि.)</th><th>स्थिती (Status)</th><th>कृती</th></tr>
         {% for t in tests %}
         <tr>
-            <td>{{ t.id }}</td>
-            <td><b>{{ t.test_title }}</b></td>
-            <td>{{ t.test_type }}</td>
-            <td>₹{{ t.test_fee }}</td>
-            <td>{{ t.duration_minutes }} मि.</td>
-            <td><b>{{ t.status }}</b></td>
-            <td>
-                <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white;">🖨️ प्रिंट</a>
-                <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white; margin-left:4px;" onclick="return confirm('डिलीट करायची का?');">🗑️ डिलीट</a>
-            </td>
+            <form method="POST" action="/admin/update_test/{{ t.id }}">
+                <td>{{ t.id }}</td>
+                <td><input type="text" name="test_title" value="{{ t.test_title }}" style="margin-bottom:0;" required></td>
+                <td>
+                    <select name="test_type" style="margin-bottom:0;">
+                        <option value="Free" {% if t.test_type=='Free' %}selected{% endif %}>Free</option>
+                        <option value="Paid" {% if t.test_type=='Paid' %}selected{% endif %}>Paid</option>
+                    </select>
+                </td>
+                <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:75px; margin-bottom:0;"></td>
+                <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:75px; margin-bottom:0;"></td>
+                <td>
+                    <select name="status" style="margin-bottom:0; font-weight:bold; color:{{ '#16a34a' if t.status=='Active' else '#dc2626' }};">
+                        <option value="Active" {% if t.status=='Active' %}selected{% endif %}>Active (चालू)</option>
+                        <option value="Closed" {% if t.status=='Closed' %}selected{% endif %}>Closed (बंद)</option>
+                    </select>
+                </td>
+                <td style="white-space:nowrap;">
+                    <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; padding:5px 9px; cursor:pointer;">💾 अपडेट करा</button>
+                    <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white; margin-left:3px;">🖨️ प्रिंट</a>
+                    <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white; margin-left:3px;" onclick="return confirm('टेस्ट डिलीट करायची का?');">🗑️</a>
+                </td>
+            </form>
         </tr>
         {% endfor %}
     </table>
@@ -829,20 +872,50 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% endfor %}
     </table>
 
-    <!-- 6. NOTICES & ELIGIBILITY SUB-TAB -->
+    <!-- 6. FEEDBACK SUB-TAB (विद्यार्थ्यांचा अभिप्राय टॅब) -->
+    {% elif active_tab == 'feedback' %}
+    <h3>💬 विद्यार्थ्यांचे आलेले अभिप्राय (Feedback Desk)</h3>
+    <table>
+        <tr><th>क्र.</th><th>दिनांक व वेळ</th><th>विद्यार्थ्याचे नाव</th><th>मोबाईल नंबर</th><th>अभिप्राय (Feedback)</th></tr>
+        {% for f in feedbacks %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ f.created_at }}</td>
+            <td><b>{{ f.student_name }}</b></td>
+            <td><a href="https://wa.me/91{{ f.phone }}" target="_blank" style="color:green; font-weight:bold;">💬 {{ f.phone }}</a></td>
+            <td style="font-size:13px; line-height:1.4;">{{ f.feedback_text }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center; color:#64748b;">सध्या कोणताही अभिप्राय आलेला नाही.</td></tr>
+        {% endfor %}
+    </table>
+
+    <!-- 7. RECRUITMENT PDF MANAGEMENT -->
     {% elif active_tab == 'notices' %}
-    <h3>📢 भरती माहिती व पात्रता व्यवस्थापन</h3>
-    <form method="POST" action="/admin/update_notices" style="background:#f8fafc; padding:20px; border-radius:8px; border:1px solid #cbd5e1;">
-        <label style="font-weight:bold; font-size:13px; color:#92400e;">१. भरती अधिकृत सूचना / चालू घडामोडी (Recruitment Notice):</label>
-        <textarea name="recruitment_info" rows="4" required>{{ recruitment_info }}</textarea>
+    <h3>📢 भरती माहिती व पात्रता निकष PDF व्यवस्थापन</h3>
+    <div style="background:#f8fafc; padding:20px; border-radius:8px; border:1px solid #cbd5e1; max-width:650px;">
+        <form method="POST" action="/admin/update_pdf_docs" enctype="multipart/form-data">
+            <h4 style="margin:0 0 8px; color:#065f46;">१. भरती अधिकृत माहिती PDF:</h4>
+            {% if recruitment_pdf %}
+            <p style="font-size:12px; margin-top:0;">सध्याची फाईल: <a href="{{ recruitment_pdf }}" target="_blank">PDF पहा</a></p>
+            {% endif %}
+            <label style="font-size:12px; font-weight:bold;">नवीन PDF अपलोड करा:</label>
+            <input type="file" name="recruitment_pdf_file" accept=".pdf" style="margin-bottom:15px;">
 
-        <label style="font-weight:bold; font-size:13px; color:#1e40af; margin-top:10px; display:block;">२. भरती पात्रता व निकष (Eligibility Criteria):</label>
-        <textarea name="eligibility_info" rows="4" required>{{ eligibility_info }}</textarea>
+            <hr style="margin:15px 0; border:0; border-top:1px solid #cbd5e1;">
 
-        <button type="submit" class="btn" style="margin-top:10px;">💾 होमपेजवरील माहिती अपडेट करा</button>
-    </form>
+            <h4 style="margin:0 0 8px; color:#065f46;">२. भरती पात्रता व निकष PDF:</h4>
+            {% if eligibility_pdf %}
+            <p style="font-size:12px; margin-top:0;">सध्याची फाईल: <a href="{{ eligibility_pdf }}" target="_blank">PDF पहा</a></p>
+            {% endif %}
+            <label style="font-size:12px; font-weight:bold;">नवीन PDF अपलोड करा:</label>
+            <input type="file" name="eligibility_pdf_file" accept=".pdf" style="margin-bottom:15px;">
 
-    <!-- 7. SECURITY & SETTINGS -->
+            <button type="submit" class="btn">💾 PDF डॉक्युमेंट्स सेव्ह करा</button>
+        </form>
+    </div>
+
+    <!-- 8. SECURITY & SETTINGS -->
     {% elif active_tab == 'settings' %}
     <h3>🔐 ॲडमिन पासवर्ड व सोशल मीडिया सेटिंग्स</h3>
     <div style="background:#f8fafc; padding:20px; border-radius:6px; border:1px solid #cbd5e1; max-width:650px;">
@@ -880,13 +953,13 @@ def home_tests_list():
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM test_papers WHERE status='Active' ORDER BY id ASC")
             tests = cur.fetchall()
-            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='recruitment_info'")
-            rec_row = cur.fetchone()
-            rec_info = rec_row['setting_value'] if rec_row else ''
-            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='eligibility_info'")
-            elg_row = cur.fetchone()
-            elg_info = elg_row['setting_value'] if elg_row else ''
-    return render_template_string(HOME_TEMPLATE, tests=tests, recruitment_info=rec_info, eligibility_info=elg_info, is_admin=is_admin)
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='recruitment_pdf'")
+            r_row = cur.fetchone()
+            recruitment_pdf = r_row['setting_value'] if r_row else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='eligibility_pdf'")
+            e_row = cur.fetchone()
+            eligibility_pdf = e_row['setting_value'] if e_row else ''
+    return render_template_string(HOME_TEMPLATE, tests=tests, recruitment_pdf=recruitment_pdf, eligibility_pdf=eligibility_pdf, is_admin=is_admin)
 
 @app.route('/terms-and-conditions')
 def terms_and_conditions():
@@ -1042,6 +1115,9 @@ def detailed_answers(lead_id):
             cur.execute("SELECT * FROM questions WHERE test_id=%s ORDER BY id ASC", (lead['test_id'],))
             questions = cur.fetchall()
 
+            cur.execute("SELECT COUNT(*) as cnt FROM student_feedbacks WHERE lead_id=%s", (lead_id,))
+            feedback_done = cur.fetchone()['cnt'] > 0
+
     user_ans_dict = json.loads(lead['answers_json'] or '{}')
     evaluated_questions = []
 
@@ -1059,7 +1135,24 @@ def detailed_answers(lead_id):
             'explanation': q['explanation']
         })
 
-    return render_template_string(DETAILED_KEY_TEMPLATE, lead=lead, evaluated_questions=evaluated_questions)
+    return render_template_string(DETAILED_KEY_TEMPLATE, lead=lead, evaluated_questions=evaluated_questions, feedback_done=feedback_done)
+
+@app.route('/submit_feedback/<int:lead_id>', methods=['POST'])
+def submit_feedback(lead_id):
+    fb_text = request.form.get('feedback_text', '').strip()
+    if fb_text:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT student_name, phone FROM mock_test_leads WHERE id=%s", (lead_id,))
+                lead = cur.fetchone()
+                if lead:
+                    c_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    cur.execute("""
+                        INSERT INTO student_feedbacks (lead_id, student_name, phone, feedback_text, created_at)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (lead_id, lead['student_name'], lead['phone'], fb_text, c_date))
+                    conn.commit()
+    return redirect(f'/detailed_answers/{lead_id}')
 
 # ----------------- ADMIN ROUTES -----------------
 
@@ -1098,6 +1191,7 @@ def admin_dashboard():
 
     with get_db() as conn:
         with conn.cursor() as cur:
+            # लीड्स
             query = "SELECT * FROM mock_test_leads WHERE 1=1"
             params = []
             if lead_dist:
@@ -1128,6 +1222,9 @@ def admin_dashboard():
             cur.execute("SELECT * FROM mock_test_leads ORDER BY score DESC, id ASC LIMIT 100")
             all_leads_sorted = cur.fetchall()
 
+            cur.execute("SELECT * FROM student_feedbacks ORDER BY id DESC")
+            feedbacks = cur.fetchall()
+
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='qr_code_url'")
             r = cur.fetchone()
             qr_url = r['setting_value'] if r else ''
@@ -1142,10 +1239,10 @@ def admin_dashboard():
             yt_link = cur.fetchone()['setting_value']
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
             toppers_link = cur.fetchone()['setting_value']
-            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='recruitment_info'")
-            recruitment_info = cur.fetchone()['setting_value']
-            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='eligibility_info'")
-            eligibility_info = cur.fetchone()['setting_value']
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='recruitment_pdf'")
+            recruitment_pdf = cur.fetchone()['setting_value']
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='eligibility_pdf'")
+            eligibility_pdf = cur.fetchone()['setting_value']
 
     top_leads = [(idx, l) for idx, l in enumerate(all_leads_sorted, start=1)]
 
@@ -1157,6 +1254,7 @@ def admin_dashboard():
         all_questions=all_questions,
         payments=payments,
         top_leads=top_leads,
+        feedbacks=feedbacks,
         all_districts=all_districts,
         lead_dist=lead_dist,
         lead_test_id=lead_test_id,
@@ -1166,8 +1264,8 @@ def admin_dashboard():
         insta_link=insta_link,
         yt_link=yt_link,
         toppers_link=toppers_link,
-        recruitment_info=recruitment_info,
-        eligibility_info=eligibility_info
+        recruitment_pdf=recruitment_pdf,
+        eligibility_pdf=eligibility_pdf
     )
 
 @app.route('/admin/update_payment_settings', methods=['POST'])
@@ -1258,16 +1356,44 @@ def admin_approve_payment(lead_id):
     print(f"--- 24HR TEST LINK --- To: {row['phone']} | Link: {test_link}")
     return redirect('/admin/dashboard?tab=payments')
 
-@app.route('/admin/update_notices', methods=['POST'])
-def admin_update_notices():
+@app.route('/admin/update_test/<int:test_id>', methods=['POST'])
+def admin_update_test(test_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
-    rec = request.form.get('recruitment_info', '')
-    elg = request.form.get('eligibility_info', '')
+    title = request.form.get('test_title', '').strip()
+    ttype = request.form.get('test_type', 'Free')
+    fee = float(request.form.get('test_fee', 0))
+    duration = int(request.form.get('duration_minutes', 60))
+    status = request.form.get('status', 'Active')
+
     with get_db() as conn:
         with conn.cursor() as cur:
-            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='recruitment_info'", (rec,))
-            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='eligibility_info'", (elg,))
+            cur.execute("""
+                UPDATE test_papers 
+                SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, status=%s 
+                WHERE id=%s
+            """, (title, ttype, fee, duration, status, test_id))
             conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
+
+@app.route('/admin/update_pdf_docs', methods=['POST'])
+def admin_update_pdf_docs():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    rec_file = request.files.get('recruitment_pdf_file')
+    elg_file = request.files.get('eligibility_pdf_file')
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            if rec_file and rec_file.filename != '':
+                fname = secure_filename(f"recruitment_{int(datetime.now().timestamp())}_{rec_file.filename}")
+                rec_file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='recruitment_pdf'", (f"/static/uploads/{fname}",))
+            
+            if elg_file and elg_file.filename != '':
+                fname = secure_filename(f"eligibility_{int(datetime.now().timestamp())}_{elg_file.filename}")
+                elg_file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='eligibility_pdf'", (f"/static/uploads/{fname}",))
+            conn.commit()
+
     return redirect('/admin/dashboard?tab=notices')
 
 @app.route('/admin/update_password', methods=['POST'])
