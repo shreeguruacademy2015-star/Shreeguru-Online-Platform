@@ -26,7 +26,7 @@ UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# --- NEON POSTGRESQL THREADED CONNECTION POOLING ---
+# --- NEON POSTGRESQL POOLING ---
 DATABASE_URL = os.environ.get("DATABASE_URL")
 db_pool = None
 try:
@@ -54,7 +54,6 @@ def get_db():
 def get_razorpay_client():
     if not razorpay:
         return None, ""
-    
     key_id = os.environ.get("RAZORPAY_KEY_ID", "")
     key_secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
     try:
@@ -129,6 +128,13 @@ def init_master_db():
                     created_at TEXT NOT NULL
                 )''')
 
+                cur.execute('''CREATE TABLE IF NOT EXISTS referral_clicks (
+                    id SERIAL PRIMARY KEY,
+                    referrer_phone TEXT NOT NULL,
+                    visitor_ip TEXT NOT NULL,
+                    clicked_at TEXT NOT NULL
+                )''')
+
                 cur.execute('''CREATE TABLE IF NOT EXISTS student_feedbacks (
                     id SERIAL PRIMARY KEY,
                     lead_id INTEGER,
@@ -164,6 +170,10 @@ def init_master_db():
                     ('qr_code_url', 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=ShreeguruUPIpayment'),
                     ('upi_mobile', '9921111960'),
                     ('admin_pass', 'shreeguru2026'),
+                    ('admin_phone', '9921111960'),
+                    ('insta_link', ''),
+                    ('yt_link', ''),
+                    ('toppers_link', ''),
                     ('recruitment_pdf', ''),
                     ('eligibility_pdf', ''),
                     ('razorpay_key_id', ''),
@@ -174,7 +184,8 @@ def init_master_db():
 
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_leads_test_score ON mock_test_leads(test_id, score);")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_leads_phone ON mock_test_leads(phone);")
-                
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_ref_clicks_phone ON referral_clicks(referrer_phone);")
+
                 cur.execute('SELECT COUNT(*) as count FROM test_papers')
                 if cur.fetchone()['count'] == 0:
                     cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status) VALUES (1, 'पोलीस भरती विशेष महासराव टेस्ट #१', 'Free', 0, 60, 'Active')")
@@ -209,17 +220,26 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .badge-paid { background: #fef9c3; color: #854d0e; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
         .bottom-docs { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 25px; }
         .doc-btn { background: #f1f5f9; color: #0f172a; padding: 9px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; border: 1.5px solid #cbd5e1; }
+        .footer-terms { text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 12px; margin-top: 20px; }
+        .footer-terms a { color: #0369a1; text-decoration: none; font-weight: 600; }
     </style>
+    <script>
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').innerText = now.toLocaleDateString('mr-IN') + ' ' + now.toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+    </script>
 </head>
-<body>
+<body onload="updateClock()">
 <div class="top-bar">
-    <div class="clock">🕒 राज्यस्तरीय पोलीस भरती महा-सराव कक्ष २०२६</div>
+    <div class="clock">🕒 <span id="live-clock">लोडिंग...</span></div>
     {% if is_admin %}<a href="/admin/dashboard" style="background:#059669; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">⚙ ॲडमिन डॅशबोर्ड</a>{% endif %}
 </div>
 <div class="box">
     <h2>⚔ राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</h2>
     <div class="quote-box">
-        🔥 हातात उरलेल्या दिवसात काबाड कष्ट करून तुला तुझे वर्दीचे स्वप्न पूर्ण करायचे आहे 🌟
+        🔥 हातात उरलेल्या दिवसात काबाड कष्ट करून तुला तुझे वर्दीचे स्वप्न पूर्ण करायचे आहे (लक्षात ठेव तुला घडविण्यासाठी कुणाचे तरी हात झिजत आहेत) 🌟
     </div>
     {% for t in tests %}
     <div class="test-card">
@@ -237,6 +257,35 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         {% if recruitment_pdf %}<a href="{{ recruitment_pdf }}" target="_blank" class="doc-btn">📄 भरती अधिकृत माहिती (PDF)</a>{% endif %}
         {% if eligibility_pdf %}<a href="{{ eligibility_pdf }}" target="_blank" class="doc-btn">📋 भरती पात्रता व निकष (PDF)</a>{% endif %}
     </div>
+    <div class="footer-terms">
+        <span>© 2026 Online Mock Platform. All rights reserved. | </span>
+        <a href="/terms-and-conditions" target="_blank">Terms & Conditions</a>
+    </div>
+</div>
+</body>
+</html>'''
+
+TERMS_TEMPLATE = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms and Conditions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { margin: 0; background: #f8fafc; color: #1e293b; padding: 25px 15px; line-height: 1.6; }
+        .terms-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; padding: 35px; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border-top: 5px solid #059669; }
+        h1 { color: #065f46; font-size: 24px; margin-top: 0; }
+        p { font-size: 13.5px; color: #475569; margin: 6px 0 12px; }
+        .back-link { display: inline-block; margin-top: 20px; color: #0284c7; text-decoration: none; font-weight: 600; font-size: 13px; }
+    </style>
+</head>
+<body>
+<div class="terms-container">
+    <h1>Terms and Conditions</h1>
+    <p>Last updated: October 2026</p>
+    <p>This platform provides practice examinations for preparation. Mock scores are self-assessment metrics.</p>
+    <a href="/" class="back-link">⬅ Back to Home Platform</a>
 </div>
 </body>
 </html>'''
@@ -404,47 +453,23 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
         .share-lock-box { background: #fefce8; border: 2px dashed #ca8a04; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; color: #854d0e; }
         .btn-wa { display: inline-block; background: #25D366; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 15px; margin: 8px 4px; cursor: pointer; border: none; }
         .btn-pay { display: inline-block; background: #d97706; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 16px; margin-top: 10px; }
+        .live-tag { background: #e0e7ff; color: #3730a3; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; margin-top: 5px; }
+        .promo-box { background: #f8fafc; border: 1.5px solid #cbd5e1; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center; }
+        .btn-link { display: inline-block; background: #25D366; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; }
     </style>
     <script>
-        let currentShareCount = 0;
-        let canShare = true;
-
-        function recordShare() {
-            if (!canShare) {
-                alert("⏳ कृपया ५ सेकंद थांबा, मग पुढील ग्रुपवर शेअर करा!");
-                return;
-            }
-
-            const waShareMsg = encodeURIComponent("🚨 *महाराष्ट्र पोलीस भरती २०२६ महा-सराव टेस्ट* 🚨\\nमैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा! बघूया कोण मारतंय बाजी!\\n👉 मोफत टेस्ट सोडवा:\\n{{ main_portal_url }}");
-            window.open("https://wa.me/?text=" + waShareMsg, "_blank");
-
-            canShare = false;
-            let shareBtn = document.getElementById('shareActionBtn');
-            shareBtn.disabled = true;
-            shareBtn.innerText = "⏳ पडताळणी होत आहे (५ सेकंद)...";
-
-            setTimeout(() => {
-                currentShareCount++;
-                document.getElementById('shareProgressCount').innerText = currentShareCount;
-                canShare = true;
-                shareBtn.disabled = false;
-                shareBtn.innerText = "📲 पुढील ग्रुपवर शेअर करा";
-
-                if (currentShareCount >= 3) {
-                    fetch('/api/claim_share_bonus', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ phone: '{{ lead.phone }}' })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        document.getElementById('shareLockSection').style.display = 'none';
-                        document.getElementById('unlockedResultSection').style.display = 'block';
-                        alert("🎉 अभिनंदन! तुम्ही ३ ग्रुप्सवर शेअर केले आहे. टेस्ट क्र. १ ते ५ तुमच्यासाठी मोफत अनलॉक झाल्या आहेत!");
-                    });
+        function checkInboundClicks() {
+            fetch('/api/check_referral_status/{{ lead.phone }}')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('liveClickCount').innerText = data.clicks;
+                if (data.unlocked) {
+                    document.getElementById('shareLockSection').style.display = 'none';
+                    document.getElementById('unlockedResultSection').style.display = 'block';
                 }
-            }, 5000);
+            });
         }
+        setInterval(checkInboundClicks, 4000);
     </script>
 </head>
 <body>
@@ -470,18 +495,28 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
         <a href="https://wa.me/?text={{ ego_share_encoded }}" target="_blank" class="btn-wa">⚔️ मित्रांना WhatsApp वर चॅलेंज द्या</a>
     </div>
 
-    <!-- ३. ३-शेअर = ५ टेस्ट्स अनलॉक बॉक्स -->
+    <!-- ३. इनबाऊंड क्लिक पडताळणी लॉक (३ खऱ्या व्हिजिट्स) -->
     <div id="shareLockSection" class="share-lock-box">
-        <h3 style="margin:0 0 6px; font-size:17px; color:#92400e;">🔒 ५ टेस्ट्स मोफत अनलॉक ऑफर!</h3>
-        <p style="font-size:13px; margin:0 0 10px;">सविस्तर स्पष्टीकरण पाहण्यासाठी आणि <b>पुढील ५ टेस्ट्स मोफत अनलॉक करण्यासाठी</b> ही टेस्ट तुमच्या <b>३ WhatsApp ग्रुप्सवर शेअर करा</b>.</p>
-        <p style="font-weight:bold; font-size:14px; color:#065f46;">शेअर प्रगती: <span id="shareProgressCount">०</span> / ३ ग्रुप्स</p>
-        <button id="shareActionBtn" onclick="recordShare()" class="btn-wa">📲 ३ WhatsApp ग्रुप्सवर शेअर करा</button>
+        <h3 style="margin:0 0 6px; font-size:17px; color:#92400e;">🔒 ५ टेस्ट्स मोफत अनलॉक चॅलेंज!</h3>
+        <p style="font-size:13px; margin:0 0 10px; line-height:1.5;">
+            सविस्तर स्पष्टीकरण आणि <b>पुढील ५ टेस्ट्स मोफत अनलॉक करण्यासाठी</b> खालील लिंक तुमच्या ग्रुप्सवर शेअर करा.<br>
+            <b>तुमच्या लिंकवरून किमान ३ मित्रांनी टेस्ट पोर्टल उघडल्यावर टेस्ट्स आपोआप अनलॉक होतील!</b>
+        </p>
+        <div class="live-tag">📡 लाईव्ह पडताळणी: <span id="liveClickCount" style="color:#1e40af; font-size:14px;">०</span> / ३ मित्रांनी लिंक उघडली</div><br>
+        <a href="https://wa.me/?text={{ ego_share_encoded }}" target="_blank" class="btn-wa">📲 ३ WhatsApp ग्रुप्सवर शेअर करा</a>
     </div>
 
     <div id="unlockedResultSection" style="display:none; text-align:center; margin:20px 0; background:#dcfce7; padding:15px; border-radius:8px;">
-        <h4 style="color:#166534; margin:0 0 8px;">✅ अभिनंदन! सविस्तर उत्तरतालिका व पुढील ५ टेस्ट्स मोफत अनलॉक झाल्या आहेत!</h4>
+        <h4 style="color:#166534; margin:0 0 8px;">✅ अभिनंदन! ३ मित्रांनी पोर्टल उघडले आहे. उत्तरतालिका व टेस्ट १ ते ५ मोफत अनलॉक झाल्या आहेत!</h4>
         <a href="{{ result_url }}" target="_blank" style="background:#059669; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:bold; display:inline-block; margin-right:5px;">📖 स्पष्टीकरण शीट उघडा</a>
-        <a href="/" style="background:#0284c7; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:bold; display:inline-block;">🎯 पुढील ५ टेस्ट्स सोडवा</a>
+        <a href="/" style="background:#0284c7; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:bold; display:inline-block;">🎯 पुढील टेस्ट्स सोडवा</a>
+    </div>
+
+    <div class="promo-box">
+        <h4 style="margin:0 0 8px; color:#065f46;">🌟 अधिकृत सोशल मीडिया व यशोगाथा लिंक्स:</h4>
+        {% if insta_link %}<a href="{{ insta_link }}" target="_blank" class="btn-link" style="background:#E1306C;">📸 Instagram</a>{% endif %}
+        {% if yt_link %}<a href="{{ yt_link }}" target="_blank" class="btn-link" style="background:#FF0000;">▶ YouTube</a>{% endif %}
+        {% if toppers_link %}<a href="{{ toppers_link }}" target="_blank" class="btn-link" style="background:#0284c7;">🏆 यशवंतांचे फोटो</a>{% endif %}
     </div>
 </div>
 </body>
@@ -506,7 +541,7 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
     <p style="text-align:center; font-size:13px; color:#475569;">{{ test.test_title }} (फी: ₹{{ test.test_fee }})</p>
 
     <div style="background:#eff6ff; border:1px solid #93c5fd; padding:12px; border-radius:6px; margin-bottom:15px;">
-        <p style="margin:0 0 6px; font-size:12px; font-weight:bold; color:#1e40af;">🔄 तुम्ही आधी ३ ग्रुप्सवर शेअर केले असल्यास:</p>
+        <p style="margin:0 0 6px; font-size:12px; font-weight:bold; color:#1e40af;">🔄 तुम्ही आधी ३ मित्रांना जोडून अनलॉक केले असल्यास:</p>
         <form method="POST" action="/verify_share_phone/{{ test.id }}">
             <input type="tel" name="verify_phone" placeholder="नोंदवलेला 10 अंकी WhatsApp नंबर" maxlength="10" required style="margin-bottom:6px;">
             <button type="submit" style="background:#2563eb; color:white; border:none; padding:7px; border-radius:4px; font-weight:bold; width:100%; font-size:12px; cursor:pointer;">🔓 5 मोफत टेस्ट्स ॲक्सेस तपासा</button>
@@ -573,6 +608,8 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
         .item { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
         .correct-box { border-left: 5px solid #16a34a; }
         .wrong-box { border-left: 5px solid #dc2626; }
+        textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        .btn-fb { background: #059669; color: white; border: none; padding: 9px 18px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -599,6 +636,56 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
         {% endif %}
     </div>
     {% endfor %}
+
+    <!-- विद्यार्थी अभिप्राय बॉक्स -->
+    <div style="background:#f1f5f9; padding:18px; border-radius:8px; margin-top:25px; border:1px solid #cbd5e1;">
+        <h4 style="margin:0 0 8px; color:#065f46;">💬 या टेस्टबद्दल आपला अभिप्राय नोंदवा:</h4>
+        <form method="POST" action="/submit_feedback/{{ lead.id }}">
+            <textarea name="feedback_text" rows="3" placeholder="आपले मत किंवा सूचना येथे लिहा..." required></textarea>
+            <button type="submit" class="btn-fb">🚀 अभिप्राय सबमिट करा</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>'''
+
+EDIT_QUESTION_TEMPLATE = '''<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8"><title>प्रश्न संपादित करा</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { margin: 0; background: #f1f5f9; padding: 20px; }
+        .box { max-width: 650px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid #059669; }
+        input, textarea, select { width: 100%; padding: 9px; margin: 6px 0 14px; border: 1px solid #cbd5e1; border-radius: 5px; }
+        .btn { background: #059669; color: white; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h3 style="color:#065f46; margin-top:0;">✏️ प्रश्न व पर्याय संपादित करा (ID: {{ q.id }})</h3>
+    <form method="POST">
+        <label style="font-weight:600; font-size:13px;">प्रश्न:</label>
+        <textarea name="question" rows="3" required>{{ q.question }}</textarea>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div><label style="font-weight:600; font-size:13px;">पर्याय A:</label><input type="text" name="opt_a" value="{{ q.opt_a }}" required></div>
+            <div><label style="font-weight:600; font-size:13px;">पर्याय B:</label><input type="text" name="opt_b" value="{{ q.opt_b }}" required></div>
+            <div><label style="font-weight:600; font-size:13px;">पर्याय C:</label><input type="text" name="opt_c" value="{{ q.opt_c }}" required></div>
+            <div><label style="font-weight:600; font-size:13px;">पर्याय D:</label><input type="text" name="opt_d" value="{{ q.opt_d }}" required></div>
+        </div>
+        <label style="font-weight:600; font-size:13px;">अचूक उत्तर:</label>
+        <select name="correct">
+            <option value="A" {% if q.correct=='A' %}selected{% endif %}>A</option>
+            <option value="B" {% if q.correct=='B' %}selected{% endif %}>B</option>
+            <option value="C" {% if q.correct=='C' %}selected{% endif %}>C</option>
+            <option value="D" {% if q.correct=='D' %}selected{% endif %}>D</option>
+        </select>
+        <label style="font-weight:600; font-size:13px;">स्पष्टीकरण:</label>
+        <textarea name="explanation" rows="2">{{ q.explanation }}</textarea>
+        <button type="submit" class="btn">💾 बदल सेव्ह करा</button>
+        <a href="/admin/dashboard?tab=questions&filter_test_id={{ q.test_id }}" style="margin-left:10px; color:#dc2626; text-decoration:none; font-weight:600;">रद्द करा</a>
+    </form>
 </div>
 </body>
 </html>'''
@@ -636,7 +723,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #f1f5f9; color: #1e293b; padding: 15px; }
-        .container { max-width: 1180px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         h2 { margin: 0 0 15px; color: #065f46; text-align: center; }
         .nav-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
         .nav-tabs a { padding: 8px 14px; background: #e2e8f0; color: #334155; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; }
@@ -644,10 +731,18 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
         th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
         th { background: #f8fafc; color: #0f172a; }
-        input[type="text"], input[type="number"], select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; margin-bottom: 8px; font-size: 13px; }
+        input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; margin-bottom: 8px; font-size: 13px; }
         .btn { background: #059669; color: white; padding: 8px 14px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
         .btn-sm { padding: 4px 8px; font-size: 11px; text-decoration: none; border-radius: 3px; display: inline-block; }
     </style>
+    <script>
+        function togglePassVis() {
+            var p = document.getElementById("new_password");
+            var btn = document.getElementById("passEyeBtn");
+            if (p.type === "password") { p.type = "text"; btn.innerText = "🙈"; }
+            else { p.type = "password"; btn.innerText = "👁️"; }
+        }
+    </script>
 </head>
 <body>
 <div class="container">
@@ -658,20 +753,36 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     </div>
 
     <div class="nav-tabs">
-        <a href="/admin/dashboard?tab=leads" class="{{ 'active' if active_tab == 'leads' else '' }}">📱 Leads</a>
+        <a href="/admin/dashboard?tab=leads" class="{{ 'active' if active_tab == 'leads' else '' }}">📱 Leads (विद्यार्थी डेटा)</a>
         <a href="/admin/dashboard?tab=payments" class="{{ 'active' if active_tab == 'payments' else '' }}">💰 Payments & Razorpay</a>
         <a href="/admin/dashboard?tab=special" class="{{ 'active' if active_tab == 'special' else '' }}">👑 Special Access</a>
-        <a href="/admin/dashboard?tab=questions" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (CSV & Bulk)</a>
-        <a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Test Management</a>
+        <a href="/admin/dashboard?tab=questions" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions</a>
+        <a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Tests Management</a>
         <a href="/admin/dashboard?tab=leaderboard" class="{{ 'active' if active_tab == 'leaderboard' else '' }}">🏆 Leaderboard</a>
         <a href="/admin/dashboard?tab=feedback" class="{{ 'active' if active_tab == 'feedback' else '' }}">💬 Feedback</a>
-        <a href="/admin/dashboard?tab=notices" class="{{ 'active' if active_tab == 'notices' else '' }}">📢 Recruitment PDF</a>
+        <a href="/admin/dashboard?tab=notices" class="{{ 'active' if active_tab == 'notices' else '' }}">📢 PDF Docs</a>
         <a href="/admin/dashboard?tab=settings" class="{{ 'active' if active_tab == 'settings' else '' }}">🔐 Settings</a>
     </div>
 
     <!-- 1. LEADS TAB -->
     {% if active_tab == 'leads' %}
     <h3>📱 विद्यार्थ्यांची लीड्स यादी</h3>
+    <div style="background:#f8fafc; padding:12px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:15px;">
+        <form method="GET" action="/admin/dashboard" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <input type="hidden" name="tab" value="leads">
+            <label style="font-size:12px; font-weight:bold;">जिल्हा फिल्टर:</label>
+            <select name="lead_dist" style="width:160px; margin-bottom:0;" onchange="this.form.submit()">
+                <option value="">-- सर्व जिल्हे --</option>
+                {% for d in all_districts %}<option value="{{ d }}" {% if lead_dist==d %}selected{% endif %}>{{ d }}</option>{% endfor %}
+            </select>
+            <label style="font-size:12px; font-weight:bold; margin-left:10px;">टेस्ट फिल्टर:</label>
+            <select name="lead_test_id" style="width:200px; margin-bottom:0;" onchange="this.form.submit()">
+                <option value="">-- सर्व टेस्ट्स --</option>
+                {% for t in tests %}<option value="{{ t.id }}" {% if lead_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
+            </select>
+            <a href="/admin/dashboard?tab=leads" class="btn-sm" style="background:#64748b; color:white;">Clear</a>
+        </form>
+    </div>
     <table>
         <tr><th>दिनांक</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th><th>कृती</th></tr>
         {% for l in leads %}
@@ -781,21 +892,69 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 4. QUESTIONS TAB -->
     {% elif active_tab == 'questions' %}
-    <h3>📝 प्रश्न व्यवस्थापन (CSV Bulk Upload)</h3>
+    <h3>📝 प्रश्न व्यवस्थापन</h3>
+    <div style="background:#ecfdf5; padding:15px; border-radius:6px; margin-bottom:20px; border:1px solid #a7f3d0;">
+        <form method="GET" action="/admin/dashboard" style="display:flex; gap:10px; align-items:center;">
+            <input type="hidden" name="tab" value="questions">
+            <label style="font-weight:bold; font-size:13px; color:#065f46;">टेस्ट निवडा:</label>
+            <select name="filter_test_id" onchange="this.form.submit()" style="max-width:320px; margin-bottom:0;">
+                <option value="">-- सर्व टेस्ट्सचे प्रश्न --</option>
+                {% for t in tests %}
+                <option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:25px;">
+        <form method="POST" action="/admin/add_question" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
+            <h4 style="margin:0 0 8px; color:#065f46;">➕ एक प्रश्न ॲड करा</h4>
+            <select name="test_id">
+                {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
+            </select>
+            <input type="text" name="question" placeholder="प्रश्न लिहा" required>
+            <input type="text" name="opt_a" placeholder="पर्याय A" required>
+            <input type="text" name="opt_b" placeholder="पर्याय B" required>
+            <input type="text" name="opt_c" placeholder="पर्याय C" required>
+            <input type="text" name="opt_d" placeholder="पर्याय D" required>
+            <label style="font-weight:bold; font-size:12px;">अचूक उत्तर (A, B, C किंवा D):</label>
+            <input type="text" name="correct" placeholder="उदा. B" maxlength="1" required style="width:100px;">
+            <input type="text" name="explanation" placeholder="स्पष्टीकरण">
+            <button type="submit" class="btn">सेव्ह करा</button>
+        </form>
+
+        <form method="POST" action="/admin/bulk_questions" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
+            <h4 style="margin:0 0 8px; color:#065f46;">⚡ बल्क प्रश्न अपलोडर (Pipe |)</h4>
+            <select name="test_id" required>
+                {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
+            </select>
+            <textarea name="bulk_questions_text" rows="5" placeholder="प्रश्न | पर्यायA | पर्यायB | पर्यायC | पर्यायD | अचूक उत्तर | स्पष्टीकरण" required></textarea>
+            <button type="submit" class="btn" style="background:#0284c7; width:100%;">📥 अपलोड करा</button>
+        </form>
+    </div>
+
+    <!-- CSV BULK UPLOADER -->
     <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data" style="background:#f0fdf4; border:2px dashed #059669; padding:15px; border-radius:8px; margin-bottom:20px;">
         <h4 style="margin:0 0 8px; color:#065f46;">📥 १०० प्रश्नांची CSV फाईल अपलोड करा:</h4>
         <select name="test_id" required>
-            {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+            {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
         </select>
         <input type="file" name="csv_file" accept=".csv" required style="margin-bottom:10px;">
-        <button type="submit" class="btn" style="width:100%;">🚀 संपूर्ण १०० प्रश्न अपलोड करा</button>
+        <button type="submit" class="btn" style="width:100%;">🚀 संपूर्ण १०० प्रश्न CSV द्वारे अपलोड करा</button>
     </form>
+
     <table>
-        <tr><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>कृती</th></tr>
+        <tr><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>स्पष्टीकरण</th><th>कृती</th></tr>
         {% for q in all_questions %}
         <tr>
-            <td>{{ q.id }}</td><td><b>{{ q.question }}</b></td><td style="color:green; font-weight:bold;">{{ q.correct }}</td>
-            <td><a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;">🗑️</a></td>
+            <td>{{ q.id }}</td>
+            <td><b>{{ q.question }}</b></td>
+            <td style="color:green; font-weight:bold;">{{ q.correct }}</td>
+            <td style="color:#475569; font-size:12px;">{{ q.explanation }}</td>
+            <td style="white-space:nowrap;">
+                <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
+                <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे?');">🗑️</a>
+            </td>
         </tr>
         {% endfor %}
     </table>
@@ -805,20 +964,44 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <h3>🚀 नवीन टेस्ट लॉन्च करा</h3>
     <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:20px;">
         <input type="text" name="test_title" placeholder="नवीन टेस्टचे नाव" required>
-        <select name="test_type">
-            <option value="Free">Free</option>
-            <option value="Paid">Paid</option>
-        </select>
-        <input type="number" name="test_fee" placeholder="फी (₹)" value="99">
-        <input type="number" name="duration_minutes" placeholder="वेळ (मिनिटे)" value="60">
-        <button type="submit" class="btn">🚀 सेव्ह करा</button>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+            <select name="test_type">
+                <option value="Free">Free</option>
+                <option value="Paid">Paid</option>
+            </select>
+            <input type="number" name="test_fee" placeholder="फी (₹)" value="99">
+            <input type="number" name="duration_minutes" placeholder="वेळ (मिनिटे)" value="60">
+        </div>
+        <button type="submit" class="btn">🚀 नवीन टेस्ट सेव्ह करा</button>
     </form>
+
     <table>
-        <tr><th>ID</th><th>नाव</th><th>प्रकार</th><th>फी</th><th>कृती</th></tr>
+        <tr><th>ID</th><th>नाव</th><th>प्रकार</th><th>फी</th><th>वेळ</th><th>स्थिती</th><th>कृती</th></tr>
         {% for t in tests %}
         <tr>
-            <td>{{ t.id }}</td><td>{{ t.test_title }}</td><td>{{ t.test_type }}</td><td>₹{{ t.test_fee }}</td>
-            <td><a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;">🗑</a></td>
+            <form method="POST" action="/admin/update_test/{{ t.id }}">
+                <td>{{ t.id }}</td>
+                <td><input type="text" name="test_title" value="{{ t.test_title }}" style="margin-bottom:0;" required></td>
+                <td>
+                    <select name="test_type" style="margin-bottom:0;">
+                        <option value="Free" {% if t.test_type=='Free' %}selected{% endif %}>Free</option>
+                        <option value="Paid" {% if t.test_type=='Paid' %}selected{% endif %}>Paid</option>
+                    </select>
+                </td>
+                <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:75px; margin-bottom:0;"></td>
+                <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:75px; margin-bottom:0;"></td>
+                <td>
+                    <select name="status" style="margin-bottom:0;">
+                        <option value="Active" {% if t.status=='Active' %}selected{% endif %}>Active</option>
+                        <option value="Closed" {% if t.status=='Closed' %}selected{% endif %}>Closed</option>
+                    </select>
+                </td>
+                <td style="white-space:nowrap;">
+                    <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; cursor:pointer;">💾 अपडेट</button>
+                    <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white;">🖨️ प्रिंट</a>
+                    <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का?');">🗑</a>
+                </td>
+            </form>
         </tr>
         {% endfor %}
     </table>
@@ -862,10 +1045,19 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 9. SETTINGS TAB -->
     {% elif active_tab == 'settings' %}
-    <h3>🔐 ॲडमिन पासवर्ड व सेटिंग्स</h3>
+    <h3>🔐 ॲडमिन पासवर्ड व सोशल लिंक्स</h3>
     <form method="POST" action="/admin/update_password">
         <label>नवा पासवर्ड:</label>
-        <input type="password" name="new_password">
+        <div style="position:relative; width:100%; margin-bottom:12px;">
+            <input type="password" name="new_password" id="new_password" placeholder="नवा पासवर्ड टाका" style="padding-right:45px;">
+            <button type="button" id="passEyeBtn" onclick="togglePassVis()" style="position:absolute; right:10px; top:8px; background:none; border:none; cursor:pointer;">👁️</button>
+        </div>
+        <label>Instagram लिंक:</label>
+        <input type="text" name="insta_link" value="{{ insta_link }}">
+        <label>YouTube लिंक:</label>
+        <input type="text" name="yt_link" value="{{ yt_link }}">
+        <label>यशवंतांचे फोटो लिंक:</label>
+        <input type="text" name="toppers_link" value="{{ toppers_link }}">
         <button type="submit" class="btn">सेव्ह करा</button>
     </form>
     {% endif %}
@@ -879,6 +1071,30 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 @app.route('/')
 def home_tests_list():
     is_admin = session.get('admin_logged', False)
+    
+    # इनबाऊंड ३-क्लिक ट्रॅकर
+    ref_phone = request.args.get('ref', '').strip()
+    visitor_ip = request.headers.get('X-Forwarded-For', request.remote_addr or 'unknown').split(',')[0].strip()
+
+    if ref_phone and re.match(r'^[6-9]\d{9}$', ref_phone):
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id FROM referral_clicks WHERE referrer_phone=%s AND visitor_ip=%s", (ref_phone, visitor_ip))
+                already_clicked = cur.fetchone()
+                if not already_clicked:
+                    c_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    cur.execute("INSERT INTO referral_clicks (referrer_phone, visitor_ip, clicked_at) VALUES (%s, %s, %s)", (ref_phone, visitor_ip, c_time))
+                    
+                    cur.execute("SELECT COUNT(DISTINCT visitor_ip) as total_clicks FROM referral_clicks WHERE referrer_phone=%s", (ref_phone,))
+                    count_row = cur.fetchone()
+                    if count_row and count_row['total_clicks'] >= 3:
+                        cur.execute("""
+                            INSERT INTO shared_free_passes (phone, unlocked_until_test, created_at)
+                            VALUES (%s, 5, %s)
+                            ON CONFLICT (phone) DO UPDATE SET unlocked_until_test=5
+                        """, (ref_phone, c_time))
+                    conn.commit()
+
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM test_papers WHERE status='Active' ORDER BY id ASC")
@@ -889,25 +1105,30 @@ def home_tests_list():
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='eligibility_pdf'")
             e_row = cur.fetchone()
             eligibility_pdf = e_row['setting_value'] if e_row else ''
+            
     return render_template_string(HOME_TEMPLATE, tests=tests, recruitment_pdf=recruitment_pdf, eligibility_pdf=eligibility_pdf, is_admin=is_admin)
 
-@app.route('/api/claim_share_bonus', methods=['POST'])
-def claim_share_bonus():
-    data = request.get_json() or {}
-    phone = data.get('phone', '').strip()
-    if re.match(r'^[6-9]\d{9}$', phone):
-        session['user_phone'] = phone
-        c_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
-                    INSERT INTO shared_free_passes (phone, unlocked_until_test, created_at)
-                    VALUES (%s, 5, %s)
-                    ON CONFLICT (phone) DO UPDATE SET unlocked_until_test=5
-                """, (phone, c_date))
-                conn.commit()
-        return jsonify({'status': 'success', 'unlocked_until': 5})
-    return jsonify({'status': 'invalid_phone'}), 400
+@app.route('/terms-and-conditions')
+def terms_and_conditions():
+    return render_template_string(TERMS_TEMPLATE)
+
+@app.route('/api/check_referral_status/<phone>')
+def check_referral_status(phone):
+    phone = phone.strip()
+    if not re.match(r'^[6-9]\d{9}$', phone):
+        return jsonify({'clicks': 0, 'unlocked': False})
+    
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT COUNT(DISTINCT visitor_ip) as total_clicks FROM referral_clicks WHERE referrer_phone=%s", (phone,))
+            row = cur.fetchone()
+            clicks = row['total_clicks'] if row else 0
+            
+            cur.execute("SELECT unlocked_until_test FROM shared_free_passes WHERE phone=%s", (phone,))
+            pass_row = cur.fetchone()
+            unlocked = True if (pass_row and pass_row['unlocked_until_test'] >= 5) else False
+            
+    return jsonify({'clicks': min(clicks, 3), 'unlocked': unlocked})
 
 @app.route('/verify_share_phone/<int:test_id>', methods=['POST'])
 def verify_share_phone(test_id):
@@ -920,7 +1141,7 @@ def verify_share_phone(test_id):
                 pass_row = cur.fetchone()
                 if pass_row and test_id <= pass_row['unlocked_until_test']:
                     return redirect(f"/take_test/{test_id}")
-    return "<h3 style='color:red; text-align:center; padding:30px;'>⚠️ या नंबरवर मोफत पास आढळला नाही किंवा तुम्ही टेस्ट ६ च्या पुढील टेस्ट उघडत आहात!</h3>", 403
+    return "<h3 style='color:red; text-align:center; padding:30px;'>⚠️ या नंबरवर ३ मित्रांच्या व्हिजिट्स पूर्ण झालेल्या नाहीत किंवा तुम्ही टेस्ट ६ च्या पुढील टेस्ट उघडत आहात!</h3>", 403
 
 @app.route('/take_test/<int:test_id>')
 def take_test(test_id):
@@ -1083,11 +1304,23 @@ def submit_test(test_id):
             
             cur.execute("SELECT COUNT(*) as higher FROM mock_test_leads WHERE test_id=%s AND score > %s", (test_id, score))
             state_rank = cur.fetchone()['higher'] + 1
+            
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='insta_link'")
+            i_row = cur.fetchone()
+            insta_link = i_row['setting_value'] if i_row else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='yt_link'")
+            y_row = cur.fetchone()
+            yt_link = y_row['setting_value'] if y_row else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
+            tp_row = cur.fetchone()
+            toppers_link = tp_row['setting_value'] if tp_row else ''
             conn.commit()
 
     main_portal_url = request.host_url.rstrip('/')
     result_url = main_portal_url + url_for('detailed_answers', token=result_token)
-    ego_msg = f"🏆 *महाराष्ट्र पोलीस भरती ओपन चॅलेंज* 🏆\\nमैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा! बघूया कोण मारतंय बाजी!\\nमला १०० पैकी {score} गुण मिळाले आणि ऑल महाराष्ट्र रँक #{state_rank} आलाय!\\n👉 टेस्ट लिंक: {main_portal_url}"
+    
+    student_tracking_url = f"{main_portal_url}/?ref={phone}"
+    ego_msg = f"🏆 *महाराष्ट्र पोलीस भरती ओपन चॅलेंज* 🏆\\nमैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा! बघूया कोण मारतंय बाजी!\\nमला १०० पैकी {score} गुण मिळाले आणि ऑल महाराष्ट्र रँक #{state_rank} आलाय!\\n👉 मोफत टेस्ट सोडवा:\\n{student_tracking_url}"
     ego_share_encoded = urllib.parse.quote(ego_msg)
 
     return render_template_string(
@@ -1096,7 +1329,10 @@ def submit_test(test_id):
         state_rank=state_rank,
         result_url=result_url,
         main_portal_url=main_portal_url,
-        ego_share_encoded=ego_share_encoded
+        ego_share_encoded=ego_share_encoded,
+        insta_link=insta_link,
+        yt_link=yt_link,
+        toppers_link=toppers_link
     )
 
 @app.route('/detailed_answers/<token>')
@@ -1129,6 +1365,24 @@ def detailed_answers(token):
 
     return render_template_string(DETAILED_KEY_TEMPLATE, lead=lead, evaluated_questions=evaluated_questions)
 
+@app.route('/submit_feedback/<int:lead_id>', methods=['POST'])
+def submit_feedback(lead_id):
+    fb_text = request.form.get('feedback_text', '').strip()
+    if fb_text:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT student_name, phone, access_token FROM mock_test_leads WHERE id=%s", (lead_id,))
+                lead = cur.fetchone()
+                if lead:
+                    c_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    cur.execute("""
+                        INSERT INTO student_feedbacks (lead_id, student_name, phone, feedback_text, created_at)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (lead_id, lead['student_name'], lead['phone'], fb_text, c_date))
+                    conn.commit()
+                    return redirect(f"/detailed_answers/{lead['access_token']}")
+    return redirect('/')
+
 # ----------------- ADMIN CONTROLS -----------------
 
 @app.route('/admin/login', methods=['GET', 'POST'])
@@ -1160,25 +1414,41 @@ def admin_dashboard():
     if not session.get('admin_logged'): return redirect('/admin/login')
 
     active_tab = request.args.get('tab', 'leads')
+    filter_test_id = request.args.get('filter_test_id', '')
+    lead_dist = request.args.get('lead_dist', '')
+    lead_test_id = request.args.get('lead_test_id', '')
 
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM mock_test_leads ORDER BY id DESC")
+            query = "SELECT * FROM mock_test_leads WHERE 1=1"
+            params = []
+            if lead_dist:
+                query += " AND district = %s"
+                params.append(lead_dist)
+            if lead_test_id:
+                query += " AND test_id = %s"
+                params.append(lead_test_id)
+            query += " ORDER BY id DESC"
+            cur.execute(query, tuple(params))
             leads = cur.fetchall()
+
+            cur.execute("SELECT DISTINCT district FROM mock_test_leads WHERE district != ''")
+            all_districts = [r['district'] for r in cur.fetchall()]
+
             cur.execute("SELECT * FROM test_papers ORDER BY id ASC")
             tests = cur.fetchall()
-            cur.execute("SELECT * FROM questions ORDER BY id DESC")
+
+            if filter_test_id:
+                cur.execute("SELECT * FROM questions WHERE test_id=%s ORDER BY id DESC", (filter_test_id,))
+            else:
+                cur.execute("SELECT * FROM questions ORDER BY id DESC")
             all_questions = cur.fetchall()
+
             cur.execute("SELECT * FROM mock_test_leads WHERE payment_status != 'Not Required' ORDER BY id DESC")
             payments = cur.fetchall()
 
-            cur.execute("""
-                SELECT DISTINCT ON (phone) * 
-                FROM mock_test_leads 
-                ORDER BY phone, score DESC
-            """)
-            top_leads_raw = cur.fetchall()
-            top_leads_sorted = sorted(top_leads_raw, key=lambda x: x['score'], reverse=True)[:100]
+            cur.execute("SELECT * FROM mock_test_leads ORDER BY score DESC, id ASC LIMIT 100")
+            all_leads_sorted = cur.fetchall()
 
             cur.execute("SELECT * FROM student_feedbacks ORDER BY id DESC")
             feedbacks = cur.fetchall()
@@ -1198,7 +1468,14 @@ def admin_dashboard():
             r_ksec = cur.fetchone()
             razorpay_key_secret = r_ksec['setting_value'] if r_ksec else ''
 
-    top_leads = [(idx, l) for idx, l in enumerate(top_leads_sorted, start=1)]
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='insta_link'")
+            insta_link = cur.fetchone()['setting_value']
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='yt_link'")
+            yt_link = cur.fetchone()['setting_value']
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
+            toppers_link = cur.fetchone()['setting_value']
+
+    top_leads = [(idx, l) for idx, l in enumerate(all_leads_sorted, start=1)]
 
     return render_template_string(
         ADMIN_TEMPLATE,
@@ -1211,10 +1488,17 @@ def admin_dashboard():
         feedbacks=feedbacks,
         unlimited_list=unlimited_list,
         free_pass_list=free_pass_list,
+        all_districts=all_districts,
+        lead_dist=lead_dist,
+        lead_test_id=lead_test_id,
+        filter_test_id=filter_test_id,
         qr_url=qr_url,
         upi_mobile=upi_mobile,
         razorpay_key_id=razorpay_key_id,
-        razorpay_key_secret=razorpay_key_secret
+        razorpay_key_secret=razorpay_key_secret,
+        insta_link=insta_link,
+        yt_link=yt_link,
+        toppers_link=toppers_link
     )
 
 @app.route('/admin/update_razorpay_settings', methods=['POST'])
@@ -1259,6 +1543,84 @@ def admin_update_payment_settings():
             conn.commit()
     return redirect('/admin/dashboard?tab=payments')
 
+@app.route('/admin/add_question', methods=['POST'])
+def admin_add_question():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    test_id = request.form.get('test_id')
+    question = request.form.get('question', '').strip()
+    oa = request.form.get('opt_a', '').strip()
+    ob = request.form.get('opt_b', '').strip()
+    oc = request.form.get('opt_c', '').strip()
+    od = request.form.get('opt_d', '').strip()
+    correct = request.form.get('correct', 'A').strip().upper()
+    explanation = request.form.get('explanation', '').strip()
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (test_id, question, oa, ob, oc, od, correct, explanation))
+            conn.commit()
+    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
+
+@app.route('/admin/edit_question/<int:q_id>', methods=['GET', 'POST'])
+def admin_edit_question(q_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if request.method == 'POST':
+                q_text = request.form.get('question', '').strip()
+                oa = request.form.get('opt_a', '').strip()
+                ob = request.form.get('opt_b', '').strip()
+                oc = request.form.get('opt_c', '').strip()
+                od = request.form.get('opt_d', '').strip()
+                correct = request.form.get('correct', 'A').strip().upper()
+                explanation = request.form.get('explanation', '').strip()
+
+                cur.execute("""
+                    UPDATE questions
+                    SET question=%s, opt_a=%s, opt_b=%s, opt_c=%s, opt_d=%s, correct=%s, explanation=%s
+                    WHERE id=%s
+                """, (q_text, oa, ob, oc, od, correct, explanation, q_id))
+                conn.commit()
+
+                cur.execute("SELECT test_id FROM questions WHERE id=%s", (q_id,))
+                q_row = cur.fetchone()
+                test_id = q_row['test_id'] if q_row else ''
+                return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
+
+            cur.execute("SELECT * FROM questions WHERE id=%s", (q_id,))
+            question = cur.fetchone()
+
+    if not question: return "प्रश्न सापडला नाही!", 404
+    return render_template_string(EDIT_QUESTION_TEMPLATE, q=question)
+
+@app.route('/admin/bulk_questions', methods=['POST'])
+def admin_bulk_questions():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    test_id = request.form.get('test_id')
+    bulk_data = request.form.get('bulk_questions_text', '').strip()
+
+    lines = [l.strip() for l in bulk_data.split('\n') if l.strip()]
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            for line in lines:
+                parts = [p.strip() for p in line.split('|')]
+                if len(parts) >= 6:
+                    q = parts[0]
+                    oa, ob, oc, od = parts[1], parts[2], parts[3], parts[4]
+                    corr = parts[5].upper()
+                    exp = parts[6] if len(parts) > 6 else ''
+                    cur.execute("""
+                        INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (test_id, q, oa, ob, oc, od, corr, exp))
+            conn.commit()
+
+    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
+
 @app.route('/admin/upload_csv_questions', methods=['POST'])
 def admin_upload_csv_questions():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -1290,16 +1652,19 @@ def admin_upload_csv_questions():
                 """, questions_to_insert)
                 conn.commit()
 
-    return redirect('/admin/dashboard?tab=questions')
+    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
 @app.route('/admin/delete_question/<int:q_id>')
 def admin_delete_question(q_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT test_id FROM questions WHERE id=%s", (q_id,))
+            q_row = cur.fetchone()
+            t_id = q_row['test_id'] if q_row else ''
             cur.execute("DELETE FROM questions WHERE id=%s", (q_id,))
             conn.commit()
-    return redirect('/admin/dashboard?tab=questions')
+    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={t_id}')
 
 @app.route('/admin/add_test', methods=['POST'])
 def admin_add_test():
@@ -1314,6 +1679,25 @@ def admin_add_test():
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
 
+@app.route('/admin/update_test/<int:test_id>', methods=['POST'])
+def admin_update_test(test_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    title = request.form.get('test_title', '').strip()
+    ttype = request.form.get('test_type', 'Free')
+    fee = float(request.form.get('test_fee', 0))
+    duration = int(request.form.get('duration_minutes', 60))
+    status = request.form.get('status', 'Active')
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                UPDATE test_papers 
+                SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, status=%s 
+                WHERE id=%s
+            """, (title, ttype, fee, duration, status, test_id))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
+
 @app.route('/admin/delete_test/<int:test_id>')
 def admin_delete_test(test_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -1323,6 +1707,26 @@ def admin_delete_test(test_id):
             cur.execute("DELETE FROM test_papers WHERE id=%s", (test_id,))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
+
+@app.route('/admin/print_test/<int:test_id>')
+def admin_print_test(test_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM test_papers WHERE id=%s", (test_id,))
+            test = cur.fetchone()
+            cur.execute("SELECT * FROM questions WHERE test_id=%s ORDER BY id ASC", (test_id,))
+            questions = cur.fetchall()
+
+    html = f'''<!DOCTYPE html><html lang="mr"><head><meta charset="UTF-8"><title>{test['test_title']} - Print</title></head>
+    <body style="font-family:sans-serif; padding:30px; color:#000;">
+        <h2 style="text-align:center;">राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</h2>
+        <h3 style="text-align:center;">{test['test_title']}</h3>
+        <hr>
+        <ol>{ "".join([f"<li style='margin-bottom:15px;'><b>{q['question']}</b><br>A) {q['opt_a']}&nbsp;&nbsp;&nbsp;B) {q['opt_b']}&nbsp;&nbsp;&nbsp;C) {q['opt_c']}&nbsp;&nbsp;&nbsp;D) {q['opt_d']}<br><small style='color:green;'>अचूक उत्तर: {q['correct']} | स्पष्टीकरण: {q['explanation']}</small></li>" for q in questions]) }</ol>
+        <script>window.print();</script>
+    </body></html>'''
+    return render_template_string(html)
 
 @app.route('/admin/approve_payment/<int:lead_id>', methods=['POST'])
 def admin_approve_payment(lead_id):
@@ -1420,11 +1824,18 @@ def admin_update_pdf_docs():
 def admin_update_password():
     if not session.get('admin_logged'): return redirect('/admin/login')
     new_pass = request.form.get('new_password')
-    if new_pass:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+    insta = request.form.get('insta_link', '')
+    yt = request.form.get('yt_link', '')
+    top = request.form.get('toppers_link', '')
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if new_pass:
                 cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_pass'", (new_pass,))
-                conn.commit()
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='insta_link'", (insta,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='yt_link'", (yt,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='toppers_link'", (top,))
+            conn.commit()
     return redirect('/admin/dashboard?tab=settings')
 
 @app.route('/admin/delete_lead/<int:lead_id>')
