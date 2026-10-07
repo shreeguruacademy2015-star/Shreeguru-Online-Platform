@@ -1,14 +1,3 @@
-
-
-Skip to content
-Using Gmail with screen readers
-(no subject)
-Inbox
-
-Shreeguru Academy Adur पोलीस भरती पूर्व प्रशिक्षण केंद्र <sachinchougale1987@gmail.com>
-23:42 (0 minutes ago)
-to me
-
 import csv
 import io
 import json
