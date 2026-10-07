@@ -12,7 +12,12 @@ from werkzeug.utils import secure_filename
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
-import razorpay
+
+# --- सुरक्षित RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
+try:
+    import razorpay
+except ImportError:
+    razorpay = None
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "shreeguru_master_test_platform_2026_ultimate_safe")
@@ -21,7 +26,7 @@ UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# --- NEON POSTGRESQL POOLING ---
+# --- NEON POSTGRESQL THREADED CONNECTION POOLING ---
 DATABASE_URL = os.environ.get("DATABASE_URL")
 db_pool = None
 try:
@@ -47,6 +52,9 @@ def get_db():
             conn.close()
 
 def get_razorpay_client():
+    if not razorpay:
+        return None, ""
+    
     key_id = os.environ.get("RAZORPAY_KEY_ID", "")
     key_secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
     try:
@@ -63,7 +71,10 @@ def get_razorpay_client():
         pass
     
     if key_id and key_secret:
-        return razorpay.Client(auth=(key_id, key_secret)), key_id
+        try:
+            return razorpay.Client(auth=(key_id, key_secret)), key_id
+        except Exception:
+            return None, key_id
     return None, key_id
 
 def init_master_db():
@@ -1436,4 +1447,3 @@ def admin_delete_payment(lead_id):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
