@@ -5,8 +5,6 @@ import os
 import re
 import secrets
 import urllib.parse
-import hmac
-import hashlib
 from datetime import date, datetime, timedelta
 from contextlib import contextmanager
 from flask import Flask, jsonify, redirect, render_template_string, request, session, url_for
@@ -23,12 +21,7 @@ UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# --- १. RAZORPAY CONFIGURATION (Environment Variables किंवा Defaults) ---
-RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_YourKeyHere")
-RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "YourSecretHere")
-razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
-
-# --- २. NEON POSTGRESQL THREADED CONNECTION POOLING ---
+# --- NEON POSTGRESQL POOLING ---
 DATABASE_URL = os.environ.get("DATABASE_URL")
 db_pool = None
 try:
@@ -53,11 +46,30 @@ def get_db():
         elif conn:
             conn.close()
 
+def get_razorpay_client():
+    key_id = os.environ.get("RAZORPAY_KEY_ID", "")
+    key_secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT setting_key, setting_value FROM academy_settings WHERE setting_key IN ('razorpay_key_id', 'razorpay_key_secret')")
+                rows = cur.fetchall()
+                for r in rows:
+                    if r['setting_key'] == 'razorpay_key_id' and r['setting_value']:
+                        key_id = r['setting_value']
+                    elif r['setting_key'] == 'razorpay_key_secret' and r['setting_value']:
+                        key_secret = r['setting_value']
+    except Exception:
+        pass
+    
+    if key_id and key_secret:
+        return razorpay.Client(auth=(key_id, key_secret)), key_id
+    return None, key_id
+
 def init_master_db():
     try:
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # टेस्ट पेपर्स टेबल
                 cur.execute('''CREATE TABLE IF NOT EXISTS test_papers (
                     id SERIAL PRIMARY KEY,
                     test_title TEXT NOT NULL,
@@ -67,7 +79,6 @@ def init_master_db():
                     status TEXT DEFAULT 'Active'
                 )''')
 
-                # प्रश्न टेबल
                 cur.execute('''CREATE TABLE IF NOT EXISTS questions (
                     id SERIAL PRIMARY KEY,
                     test_id INTEGER DEFAULT 1,
@@ -80,7 +91,6 @@ def init_master_db():
                     explanation TEXT DEFAULT ''
                 )''')
 
-                # लीड्स व निकाल टेबल
                 cur.execute('''CREATE TABLE IF NOT EXISTS mock_test_leads (
                     id SERIAL PRIMARY KEY,
                     test_id INTEGER DEFAULT 1,
@@ -101,7 +111,6 @@ def init_master_db():
                     razorpay_payment_id TEXT DEFAULT ''
                 )''')
 
-                # ३ ग्रुप्समध्ये शेअर करणाऱ्यांसाठी ५ टेस्ट्स मोफत अनलॉक टेबल
                 cur.execute('''CREATE TABLE IF NOT EXISTS shared_free_passes (
                     id SERIAL PRIMARY KEY,
                     phone TEXT UNIQUE NOT NULL,
@@ -109,7 +118,6 @@ def init_master_db():
                     created_at TEXT NOT NULL
                 )''')
 
-                # विद्यार्थी अभिप्राय (Feedback) टेबल
                 cur.execute('''CREATE TABLE IF NOT EXISTS student_feedbacks (
                     id SERIAL PRIMARY KEY,
                     lead_id INTEGER,
@@ -119,7 +127,6 @@ def init_master_db():
                     created_at TEXT NOT NULL
                 )''')
 
-                # स्पेशल ॲक्सेस टेबल्स
                 cur.execute('''CREATE TABLE IF NOT EXISTS special_unlimited_attempts (
                     id SERIAL PRIMARY KEY,
                     phone TEXT UNIQUE NOT NULL,
@@ -136,7 +143,6 @@ def init_master_db():
                     added_on TEXT NOT NULL
                 )''')
 
-                # ॲकॅडमी सेटिंग्स
                 cur.execute('''CREATE TABLE IF NOT EXISTS academy_settings (
                     id SERIAL PRIMARY KEY,
                     setting_key TEXT UNIQUE NOT NULL,
@@ -147,11 +153,10 @@ def init_master_db():
                     ('qr_code_url', 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=ShreeguruUPIpayment'),
                     ('upi_mobile', '9921111960'),
                     ('admin_pass', 'shreeguru2026'),
-                    ('insta_link', ''),
-                    ('yt_link', ''),
-                    ('toppers_link', ''),
                     ('recruitment_pdf', ''),
-                    ('eligibility_pdf', '')
+                    ('eligibility_pdf', ''),
+                    ('razorpay_key_id', ''),
+                    ('razorpay_key_secret', '')
                 ]
                 for k, v in defaults:
                     cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES (%s, %s) ON CONFLICT (setting_key) DO NOTHING", (k, v))
@@ -171,7 +176,8 @@ def init_master_db():
 
 init_master_db()
 
-# ----------------- 3. मुख्य सार्वजनिक टेम्पलेट (HOME) -----------------
+# ----------------- TEMPLATES -----------------
+
 HOME_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -184,44 +190,32 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .top-bar { max-width: 850px; margin: 0 auto 10px; display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .clock { font-weight: bold; color: #065f46; font-size: 14px; }
         .box { max-width: 850px; margin: 0 auto; background: white; border-radius: 14px; padding: 25px; box-shadow: 0 12px 30px rgba(0,0,0,0.1); border-top: 6px solid #059669; }
-        h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 26px; font-family: 'Baloo Bhaina 2', cursive; }
+        h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 26px; }
         .quote-box { background: #ecfdf5; border-left: 4px solid #059669; padding: 12px 15px; border-radius: 6px; font-size: 15px; color: #065f46; font-weight: 600; text-align: center; margin-bottom: 20px; line-height: 1.5; }
         .test-card { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .btn-start { background: linear-gradient(135deg, #059669, #047857); color: white; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; }
         .badge-free { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
         .badge-paid { background: #fef9c3; color: #854d0e; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .bottom-docs { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 25px; margin-bottom: 15px; }
-        .doc-btn { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; color: #0f172a; padding: 9px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; border: 1.5px solid #cbd5e1; }
+        .bottom-docs { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 25px; }
+        .doc-btn { background: #f1f5f9; color: #0f172a; padding: 9px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; border: 1.5px solid #cbd5e1; }
     </style>
-    <script>
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('live-clock').innerText = now.toLocaleDateString('mr-IN') + ' ' + now.toLocaleTimeString();
-        }
-        setInterval(updateClock, 1000);
-    </script>
 </head>
-<body onload="updateClock()">
+<body>
 <div class="top-bar">
-    <div class="clock">🕒 <span id="live-clock">लोडिंग...</span></div>
-    {% if is_admin %}
-    <div><a href="/admin/dashboard" style="background:#059669; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">⚙ ॲडमिन डॅशबोर्ड</a></div>
-    {% endif %}
+    <div class="clock">🕒 राज्यस्तरीय पोलीस भरती महा-सराव कक्ष २०२६</div>
+    {% if is_admin %}<a href="/admin/dashboard" style="background:#059669; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">⚙ ॲडमिन डॅशबोर्ड</a>{% endif %}
 </div>
 <div class="box">
     <h2>⚔ राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</h2>
     <div class="quote-box">
-        🔥 हातात उरलेल्या दिवसात काबाड कष्ट करून तुला तुझे वर्दीचे स्वप्न पूर्ण करायचे आहे (लक्षात ठेव तुला घडविण्यासाठी कुणाचे तरी हात झिजत आहेत) 🌟
+        🔥 हातात उरलेल्या दिवसात काबाड कष्ट करून तुला तुझे वर्दीचे स्वप्न पूर्ण करायचे आहे 🌟
     </div>
-    <p style="font-size:15px; font-weight:600; color:#0b3c5d; margin-bottom:20px; border-bottom:2px solid #e2e8f0; padding-bottom:8px; text-align:center;">
-        खालील प्रश्नपत्रिका सोडवा आणि संपूर्ण राज्यात तुमचा रँक तपासा
-    </p>
     {% for t in tests %}
     <div class="test-card">
         <div>
-            <h4 style="margin:0 0 6px; color:#0f172a; font-size:17px; font-family:'Baloo Bhaina 2', cursive;">{{ t.test_title }}</h4>
+            <h4 style="margin:0 0 6px; color:#0f172a; font-size:17px;">{{ t.test_title }}</h4>
             <span class="{{ 'badge-free' if t.test_type == 'Free' else 'badge-paid' }}">
-                {{ '🟢 मोफत महासराव टेस्ट' if t.test_type == 'Free' else '⭐ सशुल्क (Paid) संच - ₹' ~ t.test_fee }}
+                {{ '🟢 मोफत महासराव टेस्ट' if t.test_type == 'Free' else '⭐ सशुल्क संच - ₹' ~ t.test_fee }}
             </span>
             <div style="font-size:12px; color:#64748b; margin-top:4px;">⏱️ वेळ मर्यादा: {{ t.duration_minutes }} मिनिटे</div>
         </div>
@@ -236,7 +230,6 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 4. परीक्षा कक्ष (AUTO-SAVE + EXIT CONFIRMATION) -----------------
 EXAM_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -285,7 +278,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 
                 if (--timeLeft < 0) {
                     clearInterval(timer);
-                    alert("⏰ वेळ संपली! टेस्ट आपोआप सबमिट होत आहे.");
+                    alert("⏰ वेळ संपली! टेस्ट सबमिट होत आहे.");
                     isFormSubmitted = true;
                     localStorage.removeItem(testStorageKey);
                     localStorage.removeItem(timerStorageKey);
@@ -385,7 +378,6 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 5. निकाल व आक्रमक चॅलेंज टेम्पलेट (३-SHARE = ५ TESTS) -----------------
 RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -484,7 +476,6 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 6. सशुल्क प्रवेशद्वार (RAZORPAY + UPI DUAL GATEWAY) -----------------
 ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -503,7 +494,6 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
     <h2 style="color:#065f46; text-align:center; margin:0 0 5px;">🔒 ५० टेस्ट्स महासंच प्रवेश द्वार</h2>
     <p style="text-align:center; font-size:13px; color:#475569;">{{ test.test_title }} (फी: ₹{{ test.test_fee }})</p>
 
-    <!-- तुम्ही आधी शेअर केले असल्यास थेट तपासणी -->
     <div style="background:#eff6ff; border:1px solid #93c5fd; padding:12px; border-radius:6px; margin-bottom:15px;">
         <p style="margin:0 0 6px; font-size:12px; font-weight:bold; color:#1e40af;">🔄 तुम्ही आधी ३ ग्रुप्सवर शेअर केले असल्यास:</p>
         <form method="POST" action="/verify_share_phone/{{ test.id }}">
@@ -512,12 +502,12 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
         </form>
     </div>
 
-    <!-- १. RAZORPAY INSTANT १-क्लिक UNLOCK BUTTON -->
+    <!-- RAZORPAY 1-CLICK BUTTON -->
     <div style="text-align:center;">
         <button id="rzp-button" class="btn-rzp">⚡ GooglePay / PhonePe द्वारे त्वरित अनलॉक करा (₹९९)</button>
     </div>
 
-    <!-- २. मॅन्युअल UPI / QR कोड बॅकअप -->
+    <!-- मॅन्युअल UPI / QR बॅकअप -->
     <div style="background:#fffbeb; padding:12px; border-radius:6px; border:1px solid #fcd34d; text-align:center; margin-bottom:15px;">
         <p style="margin:0 0 6px; font-weight:bold; color:#92400e; font-size:12px;">किंवा QR स्कॅन करून <b>{{ upi_mobile }}</b> वर पे करा:</p>
         <img src="{{ qr_url }}" alt="QR" style="max-width:130px; max-height:130px; border-radius:6px;">
@@ -536,6 +526,10 @@ document.getElementById('rzp-button').onclick = function(e){
     fetch('/create_razorpay_order/{{ test.id }}', {method: 'POST'})
     .then(res => res.json())
     .then(data => {
+        if (data.error) {
+            alert("⚠️ " + data.error);
+            return;
+        }
         var options = {
             "key": data.key_id,
             "amount": data.amount,
@@ -557,7 +551,6 @@ document.getElementById('rzp-button').onclick = function(e){
 </body>
 </html>'''
 
-# ----------------- 7. सविस्तर उत्तरपत्रिका टेम्पलेट -----------------
 DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -599,7 +592,6 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 8. ADMIN DASHBOARD TEMPLATES (ALL 9 TABS FULL) -----------------
 ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -656,7 +648,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <div class="nav-tabs">
         <a href="/admin/dashboard?tab=leads" class="{{ 'active' if active_tab == 'leads' else '' }}">📱 Leads</a>
-        <a href="/admin/dashboard?tab=payments" class="{{ 'active' if active_tab == 'payments' else '' }}">💰 Payments & QR</a>
+        <a href="/admin/dashboard?tab=payments" class="{{ 'active' if active_tab == 'payments' else '' }}">💰 Payments & Razorpay</a>
         <a href="/admin/dashboard?tab=special" class="{{ 'active' if active_tab == 'special' else '' }}">👑 Special Access</a>
         <a href="/admin/dashboard?tab=questions" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (CSV & Bulk)</a>
         <a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Test Management</a>
@@ -684,26 +676,49 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% endfor %}
     </table>
 
-    <!-- 2. PAYMENTS TAB -->
+    <!-- 2. PAYMENTS & RAZORPAY TAB -->
     {% elif active_tab == 'payments' %}
-    <h3>💰 पेमेंट व QR व्यवस्थापन</h3>
-    <div style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:20px;">
-        <form method="POST" action="/admin/update_payment_settings" enctype="multipart/form-data">
-            <label style="font-weight:bold; font-size:12px;">UPI मोबाईल नंबर:</label>
-            <input type="text" name="upi_mobile" value="{{ upi_mobile }}" required>
-            <label style="font-weight:bold; font-size:12px;">QR कोड URL किंवा नवीन इमेज:</label>
-            <input type="text" name="qr_url" value="{{ qr_url }}">
-            <input type="file" name="qr_file" accept="image/*" style="margin-bottom:10px;">
-            <button type="submit" class="btn">💾 अपडेट करा</button>
-        </form>
+    <h3>💰 पेमेंट व्यवस्थापन (Razorpay + UPI QR)</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
+        <div style="background:#eff6ff; padding:15px; border-radius:6px; border:1px solid #bfdbfe;">
+            <h4 style="margin:0 0 10px; color:#1e40af;">⚡ Razorpay ऑटोमॅटिक गेटवे सेटिंग्स:</h4>
+            <form method="POST" action="/admin/update_razorpay_settings">
+                <label style="font-weight:bold; font-size:12px;">Razorpay Key ID:</label>
+                <input type="text" name="razorpay_key_id" value="{{ razorpay_key_id }}" placeholder="उदा. rzp_live_xxxxxxxx">
+                <label style="font-weight:bold; font-size:12px;">Razorpay Key Secret:</label>
+                <input type="text" name="razorpay_key_secret" value="{{ razorpay_key_secret }}" placeholder="उदा. abc123xyz...">
+                <button type="submit" class="btn" style="background:#2563eb; width:100%;">💾 Razorpay Keys सेव्ह करा</button>
+            </form>
+        </div>
+
+        <div style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
+            <h4 style="margin:0 0 10px; color:#065f46;">📱 मॅन्युअल UPI / QR कोड सेटिंग्स:</h4>
+            <form method="POST" action="/admin/update_payment_settings" enctype="multipart/form-data">
+                <label style="font-weight:bold; font-size:12px;">UPI मोबाईल नंबर:</label>
+                <input type="text" name="upi_mobile" value="{{ upi_mobile }}" required>
+                <label style="font-weight:bold; font-size:12px;">QR कोड URL किंवा नवीन इमेज:</label>
+                <input type="text" name="qr_url" value="{{ qr_url }}">
+                <input type="file" name="qr_file" accept="image/*" style="margin-bottom:10px;">
+                <button type="submit" class="btn" style="width:100%;">💾 UPI/QR सेव्ह करा</button>
+            </form>
+        </div>
     </div>
+
+    <h4>सर्व पेमेंट्स यादी:</h4>
     <table>
-        <tr><th>नाव</th><th>मोबाईल</th><th>टेस्ट</th><th>स्थिती</th><th>कृती</th></tr>
+        <tr><th>नाव</th><th>मोबाईल</th><th>टेस्ट</th><th>पद्धत / Payment ID</th><th>स्थिती</th><th>कृती</th></tr>
         {% for p in payments %}
         <tr>
             <td>{{ p.student_name }}</td>
             <td>{{ p.phone }}</td>
             <td>{{ p.test_name }}</td>
+            <td>
+                {% if p.razorpay_payment_id %}
+                <span style="color:#2563eb; font-weight:bold;">Razorpay: {{ p.razorpay_payment_id }}</span>
+                {% else %}
+                <span style="color:#d97706; font-weight:bold;">मॅन्युअल UPI</span>
+                {% endif %}
+            </td>
             <td><span style="color:{{ 'green' if p.payment_status == 'Approved' else 'orange' }}; font-weight:bold;">{{ p.payment_status }}</span></td>
             <td>
                 {% if p.payment_status != 'Approved' %}
@@ -711,7 +726,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     <button type="submit" class="btn-sm" style="background:#16a34a; color:white; border:none; padding:5px 10px; cursor:pointer;">✅ Unlock करा</button>
                 </form>
                 {% endif %}
-                <a href="/admin/delete_payment/{{ p.id }}" class="btn-sm" style="background:#dc2626; color:white;">🗑</a>
+                <a href="/admin/delete_payment/{{ p.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे का?');">🗑</a>
             </td>
         </tr>
         {% endfor %}
@@ -792,9 +807,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% for t in tests %}
         <tr>
             <td>{{ t.id }}</td><td>{{ t.test_title }}</td><td>{{ t.test_type }}</td><td>₹{{ t.test_fee }}</td>
-            <td>
-                <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;">🗑</a>
-            </td>
+            <td><a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;">🗑</a></td>
         </tr>
         {% endfor %}
     </table>
@@ -850,7 +863,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# ----------------- 9. FLASK MAIN ROUTES & CONTROLLERS -----------------
+# ----------------- FLASK MAIN ROUTES -----------------
 
 @app.route('/')
 def home_tests_list():
@@ -867,7 +880,6 @@ def home_tests_list():
             eligibility_pdf = e_row['setting_value'] if e_row else ''
     return render_template_string(HOME_TEMPLATE, tests=tests, recruitment_pdf=recruitment_pdf, eligibility_pdf=eligibility_pdf, is_admin=is_admin)
 
-# शेअर बोनस क्लेम API (३ ग्रुप्सवर शेअर केल्यावर ५ टेस्ट्स मोफत अनलॉक)
 @app.route('/api/claim_share_bonus', methods=['POST'])
 def claim_share_bonus():
     data = request.get_json() or {}
@@ -886,7 +898,6 @@ def claim_share_bonus():
         return jsonify({'status': 'success', 'unlocked_until': 5})
     return jsonify({'status': 'invalid_phone'}), 400
 
-# Access Check पेजवरून नंबर टाकून शेअर स्टेटस तपासणे
 @app.route('/verify_share_phone/<int:test_id>', methods=['POST'])
 def verify_share_phone(test_id):
     phone = request.form.get('verify_phone', '').strip()
@@ -900,7 +911,6 @@ def verify_share_phone(test_id):
                     return redirect(f"/take_test/{test_id}")
     return "<h3 style='color:red; text-align:center; padding:30px;'>⚠️ या नंबरवर मोफत पास आढळला नाही किंवा तुम्ही टेस्ट ६ च्या पुढील टेस्ट उघडत आहात!</h3>", 403
 
-# परीक्षा कक्ष राऊट
 @app.route('/take_test/<int:test_id>')
 def take_test(test_id):
     token = request.args.get('token', '')
@@ -918,7 +928,6 @@ def take_test(test_id):
 
     if not test or test['status'] != 'Active': return "Test not found or closed", 404
 
-    # १. मोफत टेस्ट थेट सुरू होईल
     if test['test_type'] == 'Free':
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -926,7 +935,6 @@ def take_test(test_id):
                 questions = cur.fetchall()
         return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
 
-    # २. शेअर बोनस तपासणी: टेस्ट २ ते ५ पर्यंत मोफत ॲक्सेस
     user_phone = session.get('user_phone', '')
     is_share_unlocked = False
     if user_phone and test_id <= 5:
@@ -944,7 +952,6 @@ def take_test(test_id):
                 questions = cur.fetchall()
         return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
 
-    # ३. सशुल्क टोकन तपासणी
     if token:
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -961,19 +968,23 @@ def take_test(test_id):
 
     return render_template_string(ACCESS_CHECK_TEMPLATE, test=test, qr_url=qr_url, upi_mobile=upi_mobile)
 
-# --- RAZORPAY ORDERS & AUTO-APPROVAL ---
+# --- RAZORPAY ORDERS & VERIFY ---
 @app.route('/create_razorpay_order/<int:test_id>', methods=['POST'])
 def create_razorpay_order(test_id):
+    client, key_id = get_razorpay_client()
+    if not client or not key_id:
+        return jsonify({"error": "Razorpay Keys सेट केलेल्या नाहीत! कृपया अ‍ॅडमिन पॅनेलमध्ये Key ID व Key Secret भरा किंवा खालील QR स्कॅन करून पे करा."}), 400
+
     try:
-        order = razorpay_client.order.create({
-            "amount": 9900,  # ₹99 (paise मध्ये)
+        order = client.order.create({
+            "amount": 9900,  # ₹99 paise मध्ये
             "currency": "INR",
             "receipt": f"rcpt_test_{test_id}_{int(datetime.now().timestamp())}",
             "payment_capture": 1
         })
-        return jsonify({"order_id": order['id'], "amount": 9900, "key_id": RAZORPAY_KEY_ID})
+        return jsonify({"order_id": order['id'], "amount": 9900, "key_id": key_id})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Razorpay एरर: {str(e)}"}), 500
 
 @app.route('/verify_razorpay_payment')
 def verify_razorpay_payment():
@@ -1018,7 +1029,6 @@ def request_paid_test(test_id):
 
     return "<h3 style='color:green; text-align:center; padding:40px;'>✅ मॅन्युअल पडताळणी प्रलंबित! २४ तासांत लिंक WhatsApp वर मिळेल.</h3>"
 
-# --- टेस्ट सबमिशन व आक्रमक निकाल रूट ---
 @app.route('/submit_test/<int:test_id>', methods=['POST'])
 def submit_test(test_id):
     student_name = request.form.get('student_name', '').strip()
@@ -1066,7 +1076,6 @@ def submit_test(test_id):
 
     main_portal_url = request.host_url.rstrip('/')
     result_url = main_portal_url + url_for('detailed_answers', token=result_token)
-
     ego_msg = f"🏆 *महाराष्ट्र पोलीस भरती ओपन चॅलेंज* 🏆\\nमैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा! बघूया कोण मारतंय बाजी!\\nमला १०० पैकी {score} गुण मिळाले आणि ऑल महाराष्ट्र रँक #{state_rank} आलाय!\\n👉 टेस्ट लिंक: {main_portal_url}"
     ego_share_encoded = urllib.parse.quote(ego_msg)
 
@@ -1079,7 +1088,6 @@ def submit_test(test_id):
         ego_share_encoded=ego_share_encoded
     )
 
-# सुरक्षित टोकन आधारित रिझल्ट पेज
 @app.route('/detailed_answers/<token>')
 def detailed_answers(token):
     with get_db() as conn:
@@ -1153,7 +1161,6 @@ def admin_dashboard():
             cur.execute("SELECT * FROM mock_test_leads WHERE payment_status != 'Not Required' ORDER BY id DESC")
             payments = cur.fetchall()
 
-            # प्रत्येक विद्यार्थ्याचा फक्त सर्वोच्च (Highest) गुण गुणवत्ता यादीत दाखवणे
             cur.execute("""
                 SELECT DISTINCT ON (phone) * 
                 FROM mock_test_leads 
@@ -1173,6 +1180,12 @@ def admin_dashboard():
             qr_url = cur.fetchone()['setting_value']
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='upi_mobile'")
             upi_mobile = cur.fetchone()['setting_value']
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='razorpay_key_id'")
+            r_kid = cur.fetchone()
+            razorpay_key_id = r_kid['setting_value'] if r_kid else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='razorpay_key_secret'")
+            r_ksec = cur.fetchone()
+            razorpay_key_secret = r_ksec['setting_value'] if r_ksec else ''
 
     top_leads = [(idx, l) for idx, l in enumerate(top_leads_sorted, start=1)]
 
@@ -1188,8 +1201,52 @@ def admin_dashboard():
         unlimited_list=unlimited_list,
         free_pass_list=free_pass_list,
         qr_url=qr_url,
-        upi_mobile=upi_mobile
+        upi_mobile=upi_mobile,
+        razorpay_key_id=razorpay_key_id,
+        razorpay_key_secret=razorpay_key_secret
     )
+
+@app.route('/admin/update_razorpay_settings', methods=['POST'])
+def admin_update_razorpay_settings():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    kid = request.form.get('razorpay_key_id', '').strip()
+    ksec = request.form.get('razorpay_key_secret', '').strip()
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                INSERT INTO academy_settings (setting_key, setting_value) VALUES ('razorpay_key_id', %s)
+                ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value
+            """, (kid,))
+            cur.execute("""
+                INSERT INTO academy_settings (setting_key, setting_value) VALUES ('razorpay_key_secret', %s)
+                ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value
+            """, (ksec,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=payments')
+
+@app.route('/admin/update_payment_settings', methods=['POST'])
+def admin_update_payment_settings():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    new_mobile = request.form.get('upi_mobile', '').strip()
+    qr_url_input = request.form.get('qr_url', '').strip()
+    qr_file = request.files.get('qr_file')
+    
+    final_qr_url = qr_url_input
+    if qr_file and qr_file.filename != '':
+        fname = secure_filename(f"qr_{int(datetime.now().timestamp())}_{qr_file.filename}")
+        save_path = os.path.join(app.config['UPLOAD_FOLDER'], fname)
+        qr_file.save(save_path)
+        final_qr_url = f"/static/uploads/{fname}"
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if final_qr_url:
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='qr_code_url'", (final_qr_url,))
+            if new_mobile:
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='upi_mobile'", (new_mobile,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=payments')
 
 @app.route('/admin/upload_csv_questions', methods=['POST'])
 def admin_upload_csv_questions():
@@ -1271,29 +1328,6 @@ def admin_approve_payment(lead_id):
             """, (token, expires, lead_id))
             conn.commit()
 
-    return redirect('/admin/dashboard?tab=payments')
-
-@app.route('/admin/update_payment_settings', methods=['POST'])
-def admin_update_payment_settings():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    new_mobile = request.form.get('upi_mobile', '').strip()
-    qr_url_input = request.form.get('qr_url', '').strip()
-    qr_file = request.files.get('qr_file')
-    
-    final_qr_url = qr_url_input
-    if qr_file and qr_file.filename != '':
-        fname = secure_filename(f"qr_{int(datetime.now().timestamp())}_{qr_file.filename}")
-        save_path = os.path.join(app.config['UPLOAD_FOLDER'], fname)
-        qr_file.save(save_path)
-        final_qr_url = f"/static/uploads/{fname}"
-
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            if final_qr_url:
-                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='qr_code_url'", (final_qr_url,))
-            if new_mobile:
-                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='upi_mobile'", (new_mobile,))
-            conn.commit()
     return redirect('/admin/dashboard?tab=payments')
 
 @app.route('/admin/add_special_unlimited', methods=['POST'])
