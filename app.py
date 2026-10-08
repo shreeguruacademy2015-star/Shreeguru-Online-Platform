@@ -1,3 +1,4 @@
+import csv
 import io
 import json
 import os
@@ -642,7 +643,7 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
     </div>
     {% else %}
     <div style="text-align:center; margin:20px 0;">
-        <a href="{{ result_url }}" target="_blank" style="background:#10b981; color:#064e3b; padding:12px 26px; border-radius:8px; text-decoration:none; font-weight:800; display:inline-block;">📖 सविस्तर स्पष्टीकरण शीट पहा</a>
+        <a href="{{ result_url }}" target="_blank" style="background:#10b981; color:#064e3b; padding:12px 26px; border-radius:8px; text-decoration:none; font-weight:800; display:inline-block;">📖 स्पष्टीकरण शीट पहा</a>
     </div>
     {% endif %}
 
@@ -814,7 +815,7 @@ EDIT_QUESTION_TEMPLATE = '''<!DOCTYPE html>
         </select>
         <label style="font-weight:600; font-size:13px;">स्पष्टीकरण:</label>
         <textarea name="explanation" rows="2">{{ q.explanation }}</textarea>
-        <button type="submit" class="btn">💾 बदल सेव्ह करा</button>
+        <button type="submit" class="btn">💾 बदल सेव्ह करा</>
         <a href="/admin/dashboard?tab=questions&filter_test_id={{ q.test_id }}" style="margin-left:10px; color:#dc2626; text-decoration:none; font-weight:600;">रद्द करा</a>
     </form>
 </div>
@@ -1046,7 +1047,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- 4. QUESTIONS TAB -->
+    <!-- 4. QUESTIONS TAB (WITH AI GENERATOR) -->
     {% elif active_tab == 'questions' %}
     <h3>📝 प्रश्न व्यवस्थापन व AI प्रश्न जनरेटर</h3>
     
@@ -1314,10 +1315,10 @@ def init_master_db():
                 )''')
 
                 for col_query in [
-                    "ALTER TABLE test_papers ADD COLUMN is_deleted INTEGER DEFAULT 0;",
-                    "ALTER TABLE test_papers ADD COLUMN category TEXT DEFAULT 'free';",
-                    "ALTER TABLE test_papers ADD COLUMN publish_at TIMESTAMP DEFAULT NULL;",
-                    "ALTER TABLE test_papers ADD COLUMN sequence_order INTEGER DEFAULT 1;"
+                    "ALTER TABLE test_papers ADD COLUMN IF NOT EXISTS is_deleted INTEGER DEFAULT 0;",
+                    "ALTER TABLE test_papers ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'free';",
+                    "ALTER TABLE test_papers ADD COLUMN IF NOT EXISTS publish_at TIMESTAMP DEFAULT NULL;",
+                    "ALTER TABLE test_papers ADD COLUMN IF NOT EXISTS sequence_order INTEGER DEFAULT 1;"
                 ]:
                     try:
                         cur.execute(col_query)
@@ -1338,7 +1339,7 @@ def init_master_db():
                     is_deleted INTEGER DEFAULT 0
                 )''')
                 try:
-                    cur.execute("ALTER TABLE questions ADD COLUMN is_deleted INTEGER DEFAULT 0;")
+                    cur.execute("ALTER TABLE questions ADD COLUMN IF NOT EXISTS is_deleted INTEGER DEFAULT 0;")
                     conn.commit()
                 except Exception:
                     conn.rollback()
@@ -1365,8 +1366,8 @@ def init_master_db():
                     is_deleted INTEGER DEFAULT 0
                 )''')
                 try:
-                    cur.execute("ALTER TABLE mock_test_leads ADD COLUMN is_deleted INTEGER DEFAULT 0;")
-                    cur.execute("ALTER TABLE mock_test_leads ADD COLUMN referred_by_phone TEXT DEFAULT '';")
+                    cur.execute("ALTER TABLE mock_test_leads ADD COLUMN IF NOT EXISTS is_deleted INTEGER DEFAULT 0;")
+                    cur.execute("ALTER TABLE mock_test_leads ADD COLUMN IF NOT EXISTS referred_by_phone TEXT DEFAULT '';")
                     conn.commit()
                 except Exception:
                     conn.rollback()
@@ -2374,7 +2375,6 @@ def admin_update_password():
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('wa_groups_multiline', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (wa_groups,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='insta_link'", (insta,))
-            cur.execute("UPDATE academy_settings SET setting_key='yt_link' WHERE 1=0;") # dummy to ensure syntax match or actual update
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='yt_link'", (yt,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='toppers_link'", (top,))
             conn.commit()
@@ -2391,7 +2391,7 @@ def admin_delete_lead(lead_id):
 
 @app.route('/admin/delete_payment/<int:lead_id>')
 def admin_delete_payment(lead_id):
-    if not session.get('admin_logged', False): return redirect('/admin/login')
+    if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id=%s", (lead_id,))
