@@ -86,8 +86,11 @@ def init_master_db():
                     test_type TEXT DEFAULT 'Free',
                     test_fee REAL DEFAULT 0,
                     duration_minutes INTEGER DEFAULT 60,
-                    status TEXT DEFAULT 'Active'
+                    status TEXT DEFAULT 'Active',
+                    category TEXT DEFAULT 'free'
                 )''')
+                # आधीचे टेबल असल्यास category कॉलम जोडणे
+                cur.execute("ALTER TABLE test_papers ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'free'")
 
                 cur.execute('''CREATE TABLE IF NOT EXISTS questions (
                     id SERIAL PRIMARY KEY,
@@ -188,9 +191,11 @@ def init_master_db():
 
                 cur.execute('SELECT COUNT(*) as count FROM test_papers')
                 if cur.fetchone()['count'] == 0:
-                    cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status) VALUES (1, 'पोलीस भरती विशेष महासराव टेस्ट #१', 'Free', 0, 60, 'Active')")
-                    for i in range(2, 7):
-                        cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status) VALUES (%s, %s, 'Paid', 99, 60, 'Active')", (i, f'महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट पेपर #{i}'))
+                    cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status, category) VALUES (1, 'पोलीस भरती विशेष महासराव टेस्ट #१', 'Free', 0, 60, 'Active', 'free')")
+                    cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status, category) VALUES (2, '🔴 मिशन खाकी रविवार थेट महासंग्राम #१', 'Free', 0, 60, 'Active', 'live')")
+                    for i in range(3, 7):
+                        cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status, category) VALUES (%s, %s, 'Paid', 99, 60, 'Active', 'paid')", (i, f'महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट पेपर #{i}'))
+                    cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status, category) VALUES (7, '⚡ पोलीस भरती मराठी व्याकरण रॅपिड फायर', 'Free', 0, 15, 'Active', 'rapid')")
 
                 conn.commit()
     except Exception as e:
@@ -217,7 +222,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .hero-banner h1 { margin: 0 0 8px; color: #34d399; font-size: 28px; font-weight: 800; font-family: 'Baloo Bhaina 2', cursive; letter-spacing: 0.5px; }
         .quote-box { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,95,70,0.2)); border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 8px; font-size: 14.5px; color: #a7f3d0; font-weight: 600; margin-bottom: 20px; text-align: center; line-height: 1.5; }
         
-        /* ६ मुख्य टॅब बटणे (PILL BUTTONS) */
+        /* ६ मुख्य टॅब बटणे */
         .tabs-wrapper { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 25px; padding-bottom: 8px; }
         .tab-btn { background: #334155; color: #cbd5e1; border: 1.5px solid #475569; padding: 10px 16px; border-radius: 30px; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
         .tab-btn:hover, .tab-btn.active { background: #10b981; color: #064e3b; border-color: #34d399; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
@@ -257,21 +262,20 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                 document.getElementById('docsContainer').style.display = 'block';
             } else {
                 document.getElementById('testsContainer').style.display = 'grid';
+                let visibleCount = 0;
                 document.querySelectorAll('.test-card').forEach(card => {
-                    const type = card.getAttribute('data-type');
-                    const id = parseInt(card.getAttribute('data-id'), 10);
-                    if (category === 'all') {
+                    const cardCat = card.getAttribute('data-cat');
+                    if (category === 'all' || cardCat === category) {
                         card.style.display = 'flex';
-                    } else if (category === 'live') {
-                        card.style.display = (id === 1 || id === 6) ? 'flex' : 'none';
-                    } else if (category === 'paid') {
-                        card.style.display = (type === 'Paid') ? 'flex' : 'none';
-                    } else if (category === 'free') {
-                        card.style.display = (type === 'Free' || id <= 5) ? 'flex' : 'none';
-                    } else if (category === 'rapid') {
-                        card.style.display = (id % 2 === 0) ? 'flex' : 'none';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
                     }
                 });
+                const noTestMsg = document.getElementById('noTestMsg');
+                if (noTestMsg) {
+                    noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
+                }
             }
         }
     </script>
@@ -306,7 +310,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     <!-- टेस्ट कार्ड्स यादी -->
     <div id="testsContainer" class="test-grid">
         {% for t in tests %}
-        <div class="test-card" data-id="{{ t.id }}" data-type="{{ t.test_type }}">
+        <div class="test-card" data-id="{{ t.id }}" data-type="{{ t.test_type }}" data-cat="{{ t.category }}">
             <div>
                 <h4 class="test-title">{{ t.test_title }}</h4>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -314,12 +318,21 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                         {{ '🟢 मोफत महासराव' if t.test_type == 'Free' else '⭐ अतिसंभाव्य संच - ₹' ~ t.test_fee }}
                     </span>
                     <span class="badge-rapid">⏱️ {{ t.duration_minutes }} मिनिटे</span>
-                    <span style="font-size:12px; color:#94a3b8;">🎯 १०० गुण (TCS/IBPS पॅटर्न)</span>
+                    <span style="font-size:12px; color:#94a3b8;">
+                        {% if t.category == 'live' %}🔴 थेट महासंग्राम
+                        {% elif t.category == 'paid' %}🎯 सशुल्क संच
+                        {% elif t.category == 'rapid' %}⚡ रॅपिड फायर
+                        {% else %}🟢 मोफत सराव
+                        {% endif %}
+                    </span>
                 </div>
             </div>
             <a href="/take_test/{{ t.id }}" class="btn-start">🚀 टेस्ट सोडवा</a>
         </div>
         {% endfor %}
+        <div id="noTestMsg" style="display:none; text-align:center; padding:30px; color:#94a3b8; font-size:14px;">
+            ⚠️ या कॅटेगरीमध्ये सध्या कोणतीही टेस्ट उपलब्ध नाही. लवकरच नवीन टेस्ट जोडली जाईल!
+        </div>
     </div>
 
     <!-- जिल्हा मुकाबला व गुणवत्ता यादी -->
@@ -365,28 +378,23 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; transition: all 0.15s ease; }
         body { margin: 0; background: #0b1329; color: #f1f5f9; padding: 10px; }
         
-        /* स्टिकी प्रीमियम हेडर */
         .exam-header { background: #1e293b; color: white; padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; max-width: 850px; margin: 0 auto 15px; position: sticky; top: 10px; z-index: 100; box-shadow: 0 8px 25px rgba(0,0,0,0.4); border: 1.5px solid #334155; }
         .timer-box { background: rgba(239,68,68,0.15); border: 1.5px solid #ef4444; color: #fca5a5; padding: 6px 14px; border-radius: 8px; font-weight: 800; font-size: 16px; letter-spacing: 0.5px; }
         
-        /* लाईव्ह प्रोग्रेस बार */
         .progress-bar-container { max-width: 850px; margin: 0 auto 15px; background: #1e293b; height: 8px; border-radius: 10px; overflow: hidden; border: 1px solid #334155; }
         .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #10b981, #34d399); }
 
         .box { max-width: 850px; margin: 0 auto; background: #162036; border-radius: 16px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: 1px solid #334155; }
         
-        /* प्रश्न कार्ड */
         .q-item { background: #0f172a; border: 1.5px solid #27354f; border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; }
         .q-item:hover { border-color: #3b82f6; }
         .q-text { font-weight: 700; margin-bottom: 14px; font-size: 16px; color: #f8fafc; line-height: 1.6; }
         
-        /* मोठे, क्लीक-फ्रेंडली ऑप्शन्स */
         .opt-label { display: flex; align-items: center; margin-bottom: 10px; font-size: 14.5px; cursor: pointer; background: #1e293b; padding: 12px 16px; border-radius: 10px; border: 1.5px solid #334155; color: #cbd5e1; font-weight: 500; }
         .opt-label:hover { background: #27354f; border-color: #38bdf8; color: white; transform: translateX(3px); }
         .opt-label input[type="radio"] { margin-right: 12px; width: 18px; height: 18px; accent-color: #10b981; }
         .opt-label.selected { background: rgba(16,185,129,0.15); border-color: #10b981; color: #a7f3d0; font-weight: 700; }
 
-        /* सबमिशन कार्ड */
         .bottom-submission-card { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(15,23,42,0.9)); border: 2px solid #10b981; border-radius: 14px; padding: 22px; margin-top: 30px; margin-bottom: 15px; }
         .bottom-submission-card input { width: 100%; padding: 13px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; margin-top: 5px; font-size: 14.5px; margin-bottom: 12px; color: white; outline: none; }
         .bottom-submission-card input:focus { border-color: #10b981; }
@@ -442,7 +450,6 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             const answers = {};
             document.querySelectorAll('#questionsArea input[type="radio"]:checked').forEach(radio => {
                 answers[radio.name] = radio.value;
-                // हायलाइट क्लास
                 radio.closest('.q-item').querySelectorAll('.opt-label').forEach(l => l.classList.remove('selected'));
                 radio.closest('.opt-label').classList.add('selected');
             });
@@ -586,21 +593,18 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
         <p style="font-size:20px; font-weight:bold; color:#f8fafc; margin-top:4px;">प्राप्त गुण: <span style="color:#10b981;">{{ lead.score }}</span> / {{ lead.total_marks }}</p>
     </div>
 
-    <!-- १. रँक-प्रेशर आणि जिल्हा कट-ऑफ वॉर्निंग -->
     <div class="cutoff-warning-box">
         <h4 style="margin:0 0 5px; color:#ef4444; font-size:17px;">⚠️ सावधान! मेरिट लिस्ट धोक्यात आहे!</h4>
         <p style="font-size:14px; margin:0; line-height:1.5;">तुमच्या <b>{{ lead.district }}</b> जिल्ह्याचा संभाव्य कट-ऑफ <b>८२ गुण</b> आहे, आणि तुमचे <b>{{ lead.score }} गुण</b> आले आहेत.</p>
         <a href="/take_test/6" class="btn-pay">⚡ '५० संभाव्य टेस्ट्स संच' फक्त ₹९९ मध्ये आत्ताच अनलॉक करा</a>
     </div>
 
-    <!-- २. स्वाभिमान डिजिटल चॅलेंज कार्ड -->
     <div class="cert-card">
         <h3 style="color:#fde047; margin:0 0 6px; font-size:20px;">🎖️ मिशन खाकी २०२६ — स्वाभिमान प्रमाणपत्र</h3>
         <p style="font-size:13.5px; color:#e2e8f0; margin:10px 0; line-height:1.5;">"मैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा! बघूया कोण मारतंय बाजी!"</p>
         <a href="https://wa.me/?text={{ ego_share_encoded }}" target="_blank" class="btn-wa">⚔️ मित्रांना WhatsApp वर चॅलेंज द्या</a>
     </div>
 
-    <!-- ३. इनबाऊंड क्लिक पडताळणी लॉक (३ खऱ्या व्हिजिट्स) -->
     <div id="shareLockSection" class="share-lock-box">
         <h3 style="margin:0 0 6px; font-size:18px; color:#fbbf24;">🔒 ५ टेस्ट्स मोफत अनलॉक चॅलेंज!</h3>
         <p style="font-size:13.5px; margin:0 0 10px; line-height:1.5;">
@@ -822,6 +826,7 @@ ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
+# --- सुधारित ADMIN DASHBOARD (कॅटेगरी ड्रॉपडाउनसह) ---
 ADMIN_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -830,7 +835,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #f1f5f9; color: #1e293b; padding: 15px; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .container { max-width: 1250px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         h2 { margin: 0 0 15px; color: #065f46; text-align: center; }
         .nav-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
         .nav-tabs a { padding: 8px 14px; background: #e2e8f0; color: #334155; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; }
@@ -864,7 +869,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <a href="/admin/dashboard?tab=payments" class="{{ 'active' if active_tab == 'payments' else '' }}">💰 Payments & Razorpay</a>
         <a href="/admin/dashboard?tab=special" class="{{ 'active' if active_tab == 'special' else '' }}">👑 Special Access</a>
         <a href="/admin/dashboard?tab=questions" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions</a>
-        <a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Tests Management</a>
+        <a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Tests Management (टॅब निवड)</a>
         <a href="/admin/dashboard?tab=leaderboard" class="{{ 'active' if active_tab == 'leaderboard' else '' }}">🏆 Leaderboard</a>
         <a href="/admin/dashboard?tab=feedback" class="{{ 'active' if active_tab == 'feedback' else '' }}">💬 Feedback</a>
         <a href="/admin/dashboard?tab=notices" class="{{ 'active' if active_tab == 'notices' else '' }}">📢 PDF Docs</a>
@@ -1056,37 +1061,66 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% endfor %}
     </table>
 
-    <!-- 5. TEST MANAGEMENT TAB -->
+    <!-- 5. TEST MANAGEMENT TAB (येथे कॅटेगरी ड्रॉपडाउन जोडला आहे) -->
     {% elif active_tab == 'launch' %}
-    <h3>🚀 नवीन टेस्ट लॉन्च करा</h3>
-    <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:20px;">
-        <input type="text" name="test_title" placeholder="नवीन टेस्टचे नाव" required>
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
-            <select name="test_type">
-                <option value="Free">Free</option>
-                <option value="Paid">Paid</option>
-            </select>
-            <input type="number" name="test_fee" placeholder="फी (₹)" value="99">
-            <input type="number" name="duration_minutes" placeholder="वेळ (मिनिटे)" value="60">
+    <h3>🚀 नवीन टेस्ट लॉन्च करा व टॅब निवडा</h3>
+    <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:18px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:25px;">
+        <label style="font-weight:bold; font-size:12.5px;">टेस्टचे नाव:</label>
+        <input type="text" name="test_title" placeholder="उदा. महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट संच #१०" required>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px;">
+            <div>
+                <label style="font-weight:bold; font-size:12.5px;">होम पेज टॅब (कॅटेगरी):</label>
+                <select name="category" required>
+                    <option value="free">🟢 मोफत टेस्ट्स</option>
+                    <option value="paid" selected>🎯 अतिसंभाव्य संच (₹९९)</option>
+                    <option value="live">🔴 मिशन खाकी महासंग्राम</option>
+                    <option value="rapid">⚡ २० गुण रॅपिड फायर</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12.5px;">प्रकार:</label>
+                <select name="test_type">
+                    <option value="Free">Free</option>
+                    <option value="Paid" selected>Paid</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12.5px;">फी (₹):</label>
+                <input type="number" name="test_fee" placeholder="फी" value="99">
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12.5px;">वेळ (मिनिटे):</label>
+                <input type="number" name="duration_minutes" placeholder="वेळ" value="60">
+            </div>
         </div>
-        <button type="submit" class="btn">🚀 नवीन टेस्ट सेव्ह करा</button>
+        <button type="submit" class="btn" style="margin-top:8px;">🚀 नवीन टेस्ट सेव्ह करा</button>
     </form>
 
+    <h4>सध्याच्या टेस्ट्स व टॅब व्यवस्थापन:</h4>
     <table>
-        <tr><th>ID</th><th>नाव</th><th>प्रकार</th><th>फी</th><th>वेळ</th><th>स्थिती</th><th>कृती</th></tr>
+        <tr><th>ID</th><th>नाव</th><th>होम पेज टॅब</th><th>प्रकार</th><th>फी</th><th>वेळ</th><th>स्थिती</th><th>कृती</th></tr>
         {% for t in tests %}
         <tr>
             <form method="POST" action="/admin/update_test/{{ t.id }}">
                 <td>{{ t.id }}</td>
                 <td><input type="text" name="test_title" value="{{ t.test_title }}" style="margin-bottom:0;" required></td>
                 <td>
+                    <select name="category" style="margin-bottom:0; font-weight:600;">
+                        <option value="free" {% if t.category=='free' %}selected{% endif %}>🟢 मोफत टेस्ट्स</option>
+                        <option value="paid" {% if t.category=='paid' %}selected{% endif %}>🎯 अतिसंभाव्य संच</option>
+                        <option value="live" {% if t.category=='live' %}selected{% endif %}>🔴 महासंग्राम</option>
+                        <option value="rapid" {% if t.category=='rapid' %}selected{% endif %}>⚡ रॅपिड फायर</option>
+                    </select>
+                </td>
+                <td>
                     <select name="test_type" style="margin-bottom:0;">
                         <option value="Free" {% if t.test_type=='Free' %}selected{% endif %}>Free</option>
                         <option value="Paid" {% if t.test_type=='Paid' %}selected{% endif %}>Paid</option>
                     </select>
                 </td>
-                <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:75px; margin-bottom:0;"></td>
-                <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:75px; margin-bottom:0;"></td>
+                <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:70px; margin-bottom:0;"></td>
+                <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:70px; margin-bottom:0;"></td>
                 <td>
                     <select name="status" style="margin-bottom:0;">
                         <option value="Active" {% if t.status=='Active' %}selected{% endif %}>Active</option>
@@ -1131,7 +1165,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 8. RECRUITMENT PDF TAB -->
     {% elif active_tab == 'notices' %}
-    <h3>📢 भरती PDF व्यवस्थापन</h3>
+    <h3>📢 भरती PDF व्यवस्थापन (६ व्या टॅबसाठी)</h3>
+    <p style="font-size:13px; color:#64748b;">येथे अपलोड केलेल्या PDF थेट होम पेजवरील '📄 भरती PDF व PYQ' या टॅबमध्ये दिसतील.</p>
     <form method="POST" action="/admin/update_pdf_docs" enctype="multipart/form-data">
         <label>भरती अधिकृत माहिती PDF:</label><input type="file" name="recruitment_pdf_file" accept=".pdf">
         <label>भरती पात्रता PDF:</label><input type="file" name="eligibility_pdf_file" accept=".pdf">
@@ -1753,24 +1788,31 @@ def admin_delete_question(q_id):
             conn.commit()
     return redirect(f'/admin/dashboard?tab=questions&filter_test_id={t_id}')
 
+# --- सुधारित ADD TEST (कॅटेगरीसह) ---
 @app.route('/admin/add_test', methods=['POST'])
 def admin_add_test():
     if not session.get('admin_logged'): return redirect('/admin/login')
     title = request.form.get('test_title')
-    ttype = request.form.get('test_type')
+    category = request.form.get('category', 'paid')
+    ttype = request.form.get('test_type', 'Paid')
     fee = float(request.form.get('test_fee', 99))
     duration = int(request.form.get('duration_minutes', 60))
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status) VALUES (%s, %s, %s, %s, 'Active')", (title, ttype, fee, duration))
+            cur.execute("""
+                INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category) 
+                VALUES (%s, %s, %s, %s, 'Active', %s)
+            """, (title, ttype, fee, duration, category))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
 
+# --- सुधारित UPDATE TEST (कॅटेगरीसह) ---
 @app.route('/admin/update_test/<int:test_id>', methods=['POST'])
 def admin_update_test(test_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
     title = request.form.get('test_title', '').strip()
-    ttype = request.form.get('test_type', 'Free')
+    category = request.form.get('category', 'paid')
+    ttype = request.form.get('test_type', 'Paid')
     fee = float(request.form.get('test_fee', 0))
     duration = int(request.form.get('duration_minutes', 60))
     status = request.form.get('status', 'Active')
@@ -1779,9 +1821,9 @@ def admin_update_test(test_id):
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 UPDATE test_papers 
-                SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, status=%s 
+                SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, status=%s, category=%s 
                 WHERE id=%s
-            """, (title, ttype, fee, duration, status, test_id))
+            """, (title, ttype, fee, duration, status, category, test_id))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
 
