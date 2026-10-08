@@ -15,7 +15,7 @@ import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
-# --- SURAKSHIT RAZORPAY IMPORT ---
+# --- SURAKSHIT RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
 try:
     import razorpay
 except ImportError:
@@ -54,7 +54,7 @@ def get_db():
         elif conn:
             conn.close()
 
-# क्रिप्टोग्राफिक लिंक सिग्नेचर जनरेटर व व्हेरिफायर (HMAC-SHA256)
+# HMAC Signature functions for anti-tamper links
 def generate_tamper_signature(data_str):
     return hmac.new(SECURITY_SALT.encode(), str(data_str).encode(), hashlib.sha256).hexdigest()[:12]
 
@@ -88,8 +88,9 @@ def get_razorpay_client():
     return None, key_id
 
 # =============================================================================
-# 1. TERMS AND CONDITIONS & LEGAL DISCLAIMER (ENGLISH)
+# TEMPLATES SECTION (TERMS, MAINTENANCE, HOME, EXAM, RESULT, ADMIN)
 # =============================================================================
+
 TERMS_TEMPLATE = '''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -601,6 +602,7 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
         <p style="font-size:20px; font-weight:bold; color:#f8fafc; margin-top:4px;">प्राप्त गुण: <span style="color:#10b981;">{{ lead.score }}</span> / {{ lead.total_marks }}</p>
     </div>
 
+    <!-- फ्री टेस्ट नंतर ३ मित्रांना शेअर करून २ पेड टेस्ट अनलॉक करण्याचे लॉजिक -->
     {% if test_category == 'free' %}
     <div class="share-unlock-box">
         <h3 style="margin:0 0 6px; font-size:18px; color:#fbbf24;">🎁 विशेष ऑफर: पहिल्या २ अतिसंभाव्य पेड टेस्ट्स मोफत अनलॉक करा!</h3>
@@ -674,6 +676,7 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
     <h2 style="color:#34d399; text-align:center; margin:0 0 5px;">🔒 अतिसंभाव्य १०० गुण टेस्ट प्रवेश द्वार</h2>
     <p style="text-align:center; font-size:13px; color:#94a3b8;">{{ test.test_title }} (फी: ₹{{ test.test_fee }})</p>
 
+    <!-- मोफत रेफरल अनलॉक फोन तपासणी -->
     <div style="background:#0f172a; border:1px solid #334155; padding:14px; border-radius:8px; margin-bottom:15px;">
         <p style="margin:0 0 8px; font-size:12.5px; font-weight:bold; color:#60a5fa;">🔄 तुम्ही ३ मित्रांना जोडून टेस्ट अनलॉक केली असल्यास:</p>
         <form method="POST" action="/verify_share_phone/{{ test.id }}">
@@ -682,6 +685,7 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
         </form>
     </div>
 
+    <!-- RAZORPAY BUTTON -->
     <div style="text-align:center;">
         <button id="rzp-button" class="btn-rzp">⚡ GooglePay / PhonePe द्वारे पेमेंट करा (₹{{ test.test_fee }})</button>
     </div>
@@ -902,7 +906,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <a href="/admin/logout" style="font-weight:bold; color:#dc2626; text-decoration:none;">🚪 लॉगआऊट</a>
     </div>
 
-    <!-- Undo Notification Panel -->
+    <!-- Undo Alert Panel -->
     {% if undo_items %}
     <div style="background:#fef3c7; border:1px solid #f59e0b; padding:10px 15px; border-radius:6px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:12.5px; color:#92400e;">⚠️ अलीकडे डिलीट केलेली नोंद: <b>{{ undo_items[0].title[:35] }}...</b></span>
@@ -945,7 +949,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </form>
     </div>
     <table>
-        <tr><th>दिनांक</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th><th>रेफरल?</th><th>कृती</th></tr>
+        <tr><th>दिनांक</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th><th>रेफरल द्वारे?</th><th>कृती</th></tr>
         {% for l in leads %}
         <tr>
             <td>{{ l.test_date }}</td>
@@ -1046,7 +1050,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- 4. QUESTIONS TAB (WITH AI GENERATOR) -->
+    <!-- 4. QUESTIONS TAB -->
     {% elif active_tab == 'questions' %}
     <h3>📝 प्रश्न व्यवस्थापन व AI प्रश्न जनरेटर</h3>
     
@@ -1125,10 +1129,11 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
+
     <div style="background:#ecfdf5; border:2px solid #10b981; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
-            <h4 style="margin:0; color:#065f46;">⚡ १-क्लिक रॅपिड फायर शेड्युलिंग</h4>
-            <small style="color:#047857;">५० रॅपिड फायर टेस्ट्स रोज सकाळी १०:०० वाजता अनलॉक होतील.</small>
+            <h4 style="margin:0; color:#065f46;">⚡ १-क्लिक रॅपिड फायर शेड्युलिंग (फक्त रॅपिड फायर टेस्ट्ससाठी)</h4>
+            <small style="color:#047857;">५० रॅपिड फायर टेस्ट्स रोज सकाळी १०:०० वाजता अनलॉक होतील; सशुल्क टेस्ट्स पेमेंटनेच चालू राहतील.</small>
         </div>
         <form method="POST" action="/admin/bulk_schedule_all" onsubmit="return confirm('सर्व ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करायच्या का?');">
             <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold;">🚀 ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करा</button>
@@ -1221,7 +1226,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% endfor %}
     </table>
 
-    <!-- 7. FEEDBACK TAB (WITH BULK SELECT & DELETE) -->
+    <!-- 7. FEEDBACK TAB -->
     {% elif active_tab == 'feedback' %}
     <h3>💬 विद्यार्थ्यांचे अभिप्राय</h3>
     <form method="POST" action="/admin/bulk_delete_feedback" onsubmit="return confirm('निवडलेले सर्व अभिप्राय कायमचे डिलीट करायचे का?');">
@@ -1251,12 +1256,11 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn">सेव्ह करा</button>
     </form>
 
-    <!-- 9. SETTINGS TAB (MAINTENANCE TOGGLE & POWER BUTTON) -->
+    <!-- 9. SETTINGS TAB (स्वतंत्र टॅब क्रम, मेंटेनन्स व अमर्यादित WhatsApp व्यवस्थापन) -->
     {% elif active_tab == 'settings' %}
     <h3>🔐 ॲडमिन पासवर्ड, मेंटेनन्स मोड व टॅब व्यवस्थापन</h3>
     <form method="POST" action="/admin/update_password">
         
-        <!-- वेबसाइट मेंटेनन्स पॉवर टॉगल -->
         <div style="background:#fef3c7; border:1.5px solid #f59e0b; padding:15px; border-radius:8px; margin-bottom:20px;">
             <label style="font-weight:bold; color:#b45309; font-size:14px;">🚧 संपूर्ण वेबसाईट चालू/बंद स्थिती (पॉवर बटण):</label>
             <select name="site_status" style="margin-top:6px; font-weight:bold;">
@@ -1274,17 +1278,17 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
             <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:6px;">
-                <label style="font-weight:bold; color:#065f46;">🌐 होम पेज टॅबचा क्रम:</label>
+                <label style="font-weight:bold; color:#065f46;">🌐 होम पेज टॅबचा क्रम (कॉमाने वेगळे करा):</label>
                 <input type="text" name="home_tab_order" value="{{ home_tab_order }}">
                 <small style="color:#64748b;">(पर्याय: all, live, paid, free, rapid, battle, docs)</small>
             </div>
             <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:6px;">
-                <label style="font-weight:bold; color:#1e40af;">⚙️ ॲडमिन डॅशबोर्ड टॅबचा क्रम:</label>
+                <label style="font-weight:bold; color:#1e40af;">⚙️ ॲडमिन डॅशबोर्ड टॅबचा क्रम (कॉमाने वेगळे करा):</label>
                 <input type="text" name="admin_tab_order" value="{{ admin_tab_order }}">
             </div>
         </div>
 
-        <label style="font-weight:bold; color:#1e40af;">📱 अधिकृत WhatsApp ग्रुप लिंक्स (एकाखाली एक टाका):</label>
+        <label style="font-weight:bold; color:#1e40af;">📱 अधिकृत WhatsApp ग्रुप लिंक्स (एकाखाली एक नवीन ग्रुप लिंक टाका):</label>
         <textarea name="wa_groups_multiline" rows="4">{{ wa_groups_multiline }}</textarea>
 
         <label>Instagram लिंक:</label><input type="text" name="insta_link" value="{{ insta_link }}">
@@ -1296,6 +1300,10 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 </div>
 </body>
 </html>'''
+
+# =============================================================================
+# DATABASE INITIALIZATION
+# =============================================================================
 
 def init_master_db():
     try:
@@ -1450,7 +1458,553 @@ def init_master_db():
 
 init_master_db()
 
-# --- ॲडमिनसाठी AI जनरेटर API ---
+# =============================================================================
+# FLASK MAIN ROUTES
+# =============================================================================
+
+@app.route('/')
+def home_tests_list():
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='site_status'")
+            s_row = cur.fetchone()
+            if s_row and s_row['setting_value'] == 'maintenance' and not session.get('admin_logged'):
+                return render_template_string(MAINTENANCE_TEMPLATE)
+
+    # HMAC Signature verification on referral link
+    ref_phone = request.args.get('ref', '').strip()
+    ref_sig = request.args.get('sig', '').strip()
+    if ref_phone:
+        if ref_sig and verify_tamper_signature(ref_phone, ref_sig):
+            session['referred_by'] = ref_phone
+        elif not ref_sig and re.match(r'^[6-9]\d{9}$', ref_phone):
+            session['referred_by'] = ref_phone
+
+    user_phone = session.get('user_phone', '')
+    now_time = datetime.now()
+
+    if user_phone:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO student_registrations (phone, first_visited_at)
+                    VALUES (%s, NOW()) ON CONFLICT (phone) DO NOTHING
+                """, (user_phone,))
+                conn.commit()
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY id ASC")
+            raw_tests = cur.fetchall()
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='recruitment_pdf'")
+            r_row = cur.fetchone()
+            recruitment_pdf = r_row['setting_value'] if r_row else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='eligibility_pdf'")
+            e_row = cur.fetchone()
+            eligibility_pdf = e_row['setting_value'] if e_row else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='home_tab_order'")
+            hto_row = cur.fetchone()
+            home_tab_order = hto_row['setting_value'] if hto_row else 'all,live,paid,free,rapid,battle,docs'
+
+            cur.execute("""
+                SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
+                FROM mock_test_leads
+                WHERE district IS NOT NULL AND district != '' AND is_deleted=0
+                GROUP BY district
+                ORDER BY avg_score DESC, total_students DESC
+                LIMIT 15
+            """)
+            live_district_battles = cur.fetchall()
+
+    ordered_tabs = [t.strip() for t in home_tab_order.split(',') if t.strip()]
+
+    tests = []
+    for t in raw_tests:
+        t_dict = dict(t)
+        if t_dict.get('category') == 'rapid':
+            seq = t_dict.get('sequence_order') or 1
+            if seq == 1:
+                t_dict['is_locked'] = False
+            else:
+                if t_dict.get('publish_at') and t_dict['publish_at'] > now_time:
+                    t_dict['is_locked'] = True
+                else:
+                    t_dict['is_locked'] = False
+        else:
+            t_dict['is_locked'] = False
+        tests.append(t_dict)
+            
+    return render_template_string(
+        HOME_TEMPLATE,
+        tests=tests,
+        recruitment_pdf=recruitment_pdf,
+        eligibility_pdf=eligibility_pdf,
+        ordered_tabs=ordered_tabs,
+        live_district_battles=live_district_battles
+    )
+
+@app.route('/terms-and-conditions')
+def terms_and_conditions():
+    return render_template_string(TERMS_TEMPLATE)
+
+@app.route('/verify_share_phone/<int:test_id>', methods=['POST'])
+def verify_share_phone(test_id):
+    phone = request.form.get('verify_phone', '').strip()
+    if re.match(r'^[6-9]\d{9}$', phone):
+        session['user_phone'] = phone
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT unlocked_paid_count FROM shared_free_passes WHERE phone=%s", (phone,))
+                pass_row = cur.fetchone()
+                if pass_row and pass_row['unlocked_paid_count'] >= 2 and test_id in [3, 4]:
+                    return redirect(f"/take_test/{test_id}")
+    return "<h3 style='color:red; text-align:center; padding:30px;'>⚠️ तुमच्या ३ मित्रांनी अजून १०० गुणांची मोफत टेस्ट सबमिट केलेली नाही किंवा ही टेस्ट अनलॉक झालेली नाही!</h3>", 403
+
+@app.route('/take_test/<int:test_id>')
+def take_test(test_id):
+    token = request.args.get('token', '')
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
+            test = cur.fetchone()
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='qr_code_url'")
+            qr_row = cur.fetchone()
+            qr_url = qr_row['setting_value'] if qr_row else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='upi_mobile'")
+            upi_row = cur.fetchone()
+            upi_mobile = upi_row['setting_value'] if upi_row else '9921111960'
+
+    if not test or test['status'] != 'Active': return "Test not found or closed", 404
+
+    if test.get('category') == 'rapid' and test.get('publish_at') and test['publish_at'] > datetime.now():
+        return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⏳ ही रॅपिड फायर टेस्ट दररोज सकाळी १०:०० वाजता अनलॉक होईल! कृपया वेळेवर भेट द्या.</h3>", 403
+
+    if test['test_type'] == 'Free':
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
+                questions = cur.fetchall()
+        return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
+
+    user_phone = session.get('user_phone', '')
+    is_share_unlocked = False
+    if user_phone and test_id in [3, 4]:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT unlocked_paid_count FROM shared_free_passes WHERE phone=%s", (user_phone,))
+                pass_row = cur.fetchone()
+                if pass_row and pass_row['unlocked_paid_count'] >= 2:
+                    is_share_unlocked = True
+
+    if is_share_unlocked:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
+                questions = cur.fetchall()
+        return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
+
+    if token:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM mock_test_leads WHERE test_id=%s AND access_token=%s AND payment_status='Approved' AND is_deleted=0", (test_id, token))
+                lead = cur.fetchone()
+        if lead and lead['token_expires_at']:
+            expires_at = datetime.strptime(lead['token_expires_at'], "%Y-%m-%d %H:%M:%S")
+            if datetime.now() <= expires_at:
+                with get_db() as conn:
+                    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                        cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
+                        questions = cur.fetchall()
+                return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
+
+    return render_template_string(ACCESS_CHECK_TEMPLATE, test=test, qr_url=qr_url, upi_mobile=upi_mobile)
+
+# --- RAZORPAY ORDERS & VERIFY ---
+@app.route('/create_razorpay_order/<int:test_id>', methods=['POST'])
+def create_razorpay_order(test_id):
+    client, key_id = get_razorpay_client()
+    if not client or not key_id:
+        return jsonify({"error": "Razorpay Keys सेट केलेल्या नाहीत!"}), 400
+
+    try:
+        order = client.order.create({
+            "amount": 9900,
+            "currency": "INR",
+            "receipt": f"rcpt_test_{test_id}_{int(datetime.now().timestamp())}",
+            "payment_capture": 1
+        })
+        return jsonify({"order_id": order['id'], "amount": 9900, "key_id": key_id})
+    except Exception as e:
+        return jsonify({"error": f"Razorpay एरर: {str(e)}"}), 500
+
+@app.route('/verify_razorpay_payment')
+def verify_razorpay_payment():
+    order_id = request.args.get('order_id')
+    payment_id = request.args.get('payment_id')
+    test_id = request.args.get('test_id')
+    token = secrets.token_hex(8)
+    expires = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                INSERT INTO mock_test_leads (test_id, test_date, student_name, district, phone, payment_status, access_token, token_expires_at, razorpay_order_id, razorpay_payment_id, test_name)
+                VALUES (%s, %s, 'Paid Candidate', 'Maharashtra', '9999999999', 'Approved', %s, %s, %s, %s, 'Paid Mock Pack')
+            """, (test_id, date.today().strftime("%Y-%m-%d"), token, expires, order_id, payment_id))
+            conn.commit()
+
+    return redirect(f"/take_test/{test_id}?token={token}")
+
+@app.route('/request_paid_test/<int:test_id>', methods=['POST'])
+def request_paid_test(test_id):
+    name = request.form.get('student_name', '').strip()
+    district = request.form.get('district', '').strip()
+    phone = request.form.get('phone', '').strip()
+    t_date = date.today().strftime("%Y-%m-%d")
+
+    if not re.match(r'^[6-9]\d{9}$', phone):
+        return "<h3 style='color:red; text-align:center;'>⚠️ चुकीचा मोबाईल नंबर!</h3>", 400
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
+            test = cur.fetchone()
+            if not test: return "Test not found", 404
+
+            cur.execute("""
+                INSERT INTO mock_test_leads (test_id, test_date, student_name, district, phone, payment_status, score, total_marks, test_name)
+                VALUES (%s, %s, %s, %s, %s, 'Pending', 0, 0, %s)
+            """, (test_id, t_date, name, district, phone, test['test_title']))
+            conn.commit()
+
+    return "<h3 style='color:green; text-align:center; padding:40px;'>✅ मॅन्युअल पडताळणी प्रलंबित! २४ तासांत लिंक WhatsApp वर मिळेल.</h3>"
+
+@app.route('/submit_test/<int:test_id>', methods=['POST'])
+def submit_test(test_id):
+    student_name = request.form.get('student_name', '').strip()
+    district = request.form.get('district', '').strip()
+    phone = request.form.get('phone', '').strip()
+    referred_by = session.get('referred_by', '')
+
+    if not re.match(r'^[6-9]\d{9}$', phone):
+        return "⚠️ अवैध मोबाईल नंबर!", 400
+
+    session['user_phone'] = phone
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
+            test = cur.fetchone()
+            cur.execute("SELECT id, correct FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
+            questions = cur.fetchall()
+
+    if not test: return "Test not found", 404
+
+    score = 0
+    total = len(questions)
+    user_answers = {}
+
+    for q in questions:
+        ans = request.form.get(f"q_{q['id']}", "")
+        user_answers[str(q['id'])] = ans
+        if ans == q['correct']:
+            score += 1
+
+    t_date = date.today().strftime("%Y-%m-%d")
+    ans_json_str = json.dumps(user_answers)
+    result_token = secrets.token_hex(10)
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                INSERT INTO mock_test_leads (test_id, test_date, student_name, district, phone, whatsapp_verified, payment_status, score, total_marks, test_name, answers_json, access_token, referred_by_phone)
+                VALUES (%s, %s, %s, %s, %s, 1, 'Approved', %s, %s, %s, %s, %s, %s) RETURNING id
+            """, (test_id, t_date, student_name, district, phone, score, total, test['test_title'], ans_json_str, result_token, referred_by))
+            
+            if referred_by and test.get('category') == 'free':
+                cur.execute("""
+                    SELECT COUNT(DISTINCT phone) as valid_friends
+                    FROM mock_test_leads
+                    WHERE referred_by_phone=%s AND test_id=%s AND is_deleted=0
+                """, (referred_by, test_id))
+                friends_count = cur.fetchone()['valid_friends']
+                if friends_count >= 3:
+                    c_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    cur.execute("""
+                        INSERT INTO shared_free_passes (phone, unlocked_paid_count, created_at)
+                        VALUES (%s, 2, %s)
+                        ON CONFLICT (phone) DO UPDATE SET unlocked_paid_count=2
+                    """, (referred_by, c_time))
+
+            cur.execute("""
+                SELECT COUNT(DISTINCT phone) as my_friends
+                FROM mock_test_leads
+                WHERE referred_by_phone=%s AND test_id=%s AND is_deleted=0
+            """, (phone, test_id))
+            f_row = cur.fetchone()
+            completed_friends_count = f_row['my_friends'] if f_row else 0
+
+            cur.execute("SELECT COUNT(*) as higher FROM mock_test_leads WHERE test_id=%s AND score > %s AND is_deleted=0", (test_id, score))
+            state_rank = cur.fetchone()['higher'] + 1
+            
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='insta_link'")
+            i_row = cur.fetchone()
+            insta_link = i_row['setting_value'] if i_row else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='yt_link'")
+            y_row = cur.fetchone()
+            yt_link = y_row['setting_value'] if y_row else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
+            tp_row = cur.fetchone()
+            toppers_link = tp_row['setting_value'] if tp_row else ''
+            
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='wa_groups_multiline'")
+            wg_row = cur.fetchone()
+            wa_groups_str = wg_row['setting_value'] if wg_row else ''
+            group_list = [g.strip() for g in wa_groups_str.split('\n') if g.strip()]
+
+            cur.execute("SELECT COUNT(*) as cnt FROM mock_test_leads WHERE is_deleted=0")
+            total_students_count = cur.fetchone()['cnt']
+            
+            group_index = min(total_students_count // 1000, max(0, len(group_list) - 1)) if group_list else 0
+            wa_active_link = group_list[group_index] if group_list else ''
+
+            conn.commit()
+
+    main_portal_url = request.host_url.rstrip('/')
+    result_url = main_portal_url + url_for('detailed_answers', token=result_token)
+    
+    # Tamper-proof HMAC referral link
+    sig = generate_tamper_signature(phone)
+    student_tracking_url = f"{main_portal_url}/?ref={phone}&sig={sig}"
+    
+    ego_msg = f"🏆 *महाराष्ट्र पोलीस भरती ओपन चॅलेंज* 🏆\\nमैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा!\\nमला {total} पैकी {score} गुण मिळाले आणि ऑल महाराष्ट्र रँक #{state_rank} आलाय!\\n🔥 तुझ्यासोबत तुझा मित्रही भरती झाला पाहिजे! त्यालाही ही लिंक पाठव आणि उद्याची रॅपिड टेस्ट मिळव!\\n👉 मोफत टेस्ट सोडवण्यासाठी येथे क्लिक करा:\\n{student_tracking_url}"
+    ego_share_encoded = urllib.parse.quote(ego_msg)
+
+    return render_template_string(
+        RESULT_SUMMARY_TEMPLATE,
+        lead={'student_name': student_name, 'district': district, 'phone': phone, 'test_name': test['test_title'], 'score': score, 'total_marks': total, 'access_token': result_token},
+        state_rank=state_rank,
+        result_url=result_url,
+        main_portal_url=main_portal_url,
+        ego_share_encoded=ego_share_encoded,
+        test_category=test.get('category', 'free'),
+        insta_link=insta_link,
+        yt_link=yt_link,
+        toppers_link=toppers_link,
+        wa_active_link=wa_active_link,
+        completed_friends_count=completed_friends_count
+    )
+
+@app.route('/verify_rapid_key/<token>', methods=['POST'])
+def verify_rapid_key(token):
+    phone = request.form.get('verify_phone', '').strip()
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT phone FROM mock_test_leads WHERE access_token=%s AND is_deleted=0", (token,))
+            lead = cur.fetchone()
+            if lead and lead['phone'] == phone:
+                return redirect(url_for('detailed_answers', token=token))
+    return "<h3 style='color:red; text-align:center; padding:30px;'>⚠️ चुकीचा WhatsApp नंबर! कृपया टेस्ट सबमिट करताना वापरलेला मूळ नंबर टाका.</h3>", 403
+
+@app.route('/detailed_answers/<token>')
+def detailed_answers(token):
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM mock_test_leads WHERE access_token=%s AND is_deleted=0", (token,))
+            lead = cur.fetchone()
+            if not lead: return "Result not found", 404
+
+            cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (lead['test_id'],))
+            questions = cur.fetchall()
+
+    user_ans_dict = json.loads(lead['answers_json'] or '{}')
+    evaluated_questions = []
+
+    for q in questions:
+        u_ans = user_ans_dict.get(str(q['id']), 'सोडवले नाही')
+        evaluated_questions.append({
+            'q_text': q['question'],
+            'opt_a': q['opt_a'],
+            'opt_b': q['opt_b'],
+            'opt_c': q['opt_c'],
+            'opt_d': q['opt_d'],
+            'user_ans': u_ans,
+            'correct_ans': q['correct'],
+            'is_correct': (u_ans == q['correct']),
+            'explanation': q['explanation']
+        })
+
+    return render_template_string(DETAILED_KEY_TEMPLATE, lead=lead, evaluated_questions=evaluated_questions)
+
+@app.route('/submit_feedback/<int:lead_id>', methods=['POST'])
+def submit_feedback(lead_id):
+    fb_text = request.form.get('feedback_text', '').strip()
+    if fb_text:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT student_name, phone, access_token FROM mock_test_leads WHERE id=%s AND is_deleted=0", (lead_id,))
+                lead = cur.fetchone()
+                if lead:
+                    c_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    cur.execute("""
+                        INSERT INTO student_feedbacks (lead_id, student_name, phone, feedback_text, created_at)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (lead_id, lead['student_name'], lead['phone'], fb_text, c_date))
+                    conn.commit()
+                    return redirect(f"/detailed_answers/{lead['access_token']}")
+    return redirect('/')
+
+# =============================================================================
+# ADMIN CONTROLS & NEW FEATURES (AI, UNDO, BULK DELETE)
+# =============================================================================
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    error = None
+    if request.method == 'POST':
+        password = request.form.get('admin_pass')
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='admin_pass'")
+                row = cur.fetchone()
+                db_pass = row['setting_value'] if row else 'admin2026'
+
+        if password == db_pass:
+            session['admin_logged'] = True
+            return redirect('/admin/dashboard')
+        else:
+            error = "चुकीचा पासवर्ड! कृपया पुन्हा प्रयत्न करा."
+            
+    return render_template_string(ADMIN_LOGIN_TEMPLATE, error=error)
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_logged', None)
+    return redirect('/admin/login')
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+
+    active_tab = request.args.get('tab', 'leads')
+    filter_test_id = request.args.get('filter_test_id', '')
+    lead_dist = request.args.get('lead_dist', '')
+    lead_test_id = request.args.get('lead_test_id', '')
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            query = "SELECT * FROM mock_test_leads WHERE is_deleted=0"
+            params = []
+            if lead_dist:
+                query += " AND district = %s"
+                params.append(lead_dist)
+            if lead_test_id:
+                query += " AND test_id = %s"
+                params.append(lead_test_id)
+            query += " ORDER BY id DESC"
+            cur.execute(query, tuple(params))
+            leads = cur.fetchall()
+
+            cur.execute("SELECT DISTINCT district FROM mock_test_leads WHERE district != '' AND is_deleted=0")
+            all_districts = [r['district'] for r in cur.fetchall()]
+
+            cur.execute("SELECT * FROM test_papers WHERE is_deleted=0 ORDER BY id ASC")
+            tests = cur.fetchall()
+
+            if filter_test_id:
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id DESC", (filter_test_id,))
+            else:
+                cur.execute("SELECT * FROM questions WHERE is_deleted=0 ORDER BY id DESC")
+            all_questions = cur.fetchall()
+
+            cur.execute("SELECT * FROM mock_test_leads WHERE payment_status != 'Not Required' AND is_deleted=0 ORDER BY id DESC")
+            payments = cur.fetchall()
+
+            cur.execute("SELECT * FROM mock_test_leads WHERE is_deleted=0 ORDER BY score DESC, id ASC LIMIT 100")
+            all_leads_sorted = cur.fetchall()
+
+            cur.execute("SELECT * FROM student_feedbacks ORDER BY id DESC")
+            feedbacks = cur.fetchall()
+            cur.execute("SELECT * FROM special_unlimited_attempts ORDER BY id DESC")
+            unlimited_list = cur.fetchall()
+            cur.execute("SELECT * FROM special_free_pass ORDER BY id DESC")
+            free_pass_list = cur.fetchall()
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='qr_code_url'")
+            qr_url = cur.fetchone()['setting_value']
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='upi_mobile'")
+            upi_mobile = cur.fetchone()['setting_value']
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='razorpay_key_id'")
+            r_kid = cur.fetchone()
+            razorpay_key_id = r_kid['setting_value'] if r_kid else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='razorpay_key_secret'")
+            r_ksec = cur.fetchone()
+            razorpay_key_secret = r_ksec['setting_value'] if r_ksec else ''
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='insta_link'")
+            insta_link = cur.fetchone()['setting_value']
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='yt_link'")
+            yt_link = cur.fetchone()['setting_value']
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
+            toppers_link = cur.fetchone()['setting_value']
+            
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='wa_groups_multiline'")
+            wg_val = cur.fetchone()
+            wa_groups_multiline = wg_val['setting_value'] if wg_val else ''
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='home_tab_order'")
+            hto_val = cur.fetchone()
+            home_tab_order = hto_val['setting_value'] if hto_val else 'all,live,paid,free,rapid,battle,docs'
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='admin_tab_order'")
+            ato_val = cur.fetchone()
+            admin_tab_order = ato_val['setting_value'] if ato_val else 'leads,payments,special,questions,launch,leaderboard,feedback,notices,settings'
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='site_status'")
+            ss_val = cur.fetchone()
+            site_status = ss_val['setting_value'] if ss_val else 'active'
+
+            cur.execute("SELECT id, question as title, 'question' as type FROM questions WHERE is_deleted=1 ORDER BY id DESC LIMIT 5")
+            deleted_q = cur.fetchall()
+            cur.execute("SELECT id, student_name as title, 'lead' as type FROM mock_test_leads WHERE is_deleted=1 ORDER BY id DESC LIMIT 5")
+            deleted_l = cur.fetchall()
+            undo_items = deleted_q + deleted_l
+
+    top_leads = [(idx, l) for idx, l in enumerate(all_leads_sorted, start=1)]
+    ordered_admin_tabs = [t.strip() for t in admin_tab_order.split(',') if t.strip()]
+
+    return render_template_string(
+        ADMIN_TEMPLATE,
+        active_tab=active_tab,
+        leads=leads,
+        tests=tests,
+        all_questions=all_questions,
+        payments=payments,
+        top_leads=top_leads,
+        feedbacks=feedbacks,
+        unlimited_list=unlimited_list,
+        free_pass_list=free_pass_list,
+        all_districts=all_districts,
+        lead_dist=lead_dist,
+        lead_test_id=lead_test_id,
+        filter_test_id=filter_test_id,
+        qr_url=qr_url,
+        upi_mobile=upi_mobile,
+        razorpay_key_id=razorpay_key_id,
+        razorpay_key_secret=razorpay_key_secret,
+        insta_link=insta_link,
+        yt_link=yt_link,
+        toppers_link=toppers_link,
+        wa_groups_multiline=wa_groups_multiline,
+        home_tab_order=home_tab_order,
+        admin_tab_order=admin_tab_order,
+        ordered_admin_tabs=ordered_admin_tabs,
+        site_status=site_status,
+        undo_items=undo_items
+    )
+
+# AI Question Generator Route
 @app.route('/admin/ai_generate_mock', methods=['POST'])
 def admin_ai_generate_mock():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -1465,7 +2019,7 @@ def admin_ai_generate_mock():
     ]
     return jsonify({"success": True, "questions_text": "\n".join(sample_ai_questions)})
 
-# --- पूर्ववत करा (Undo) राऊट्स ---
+# Undo deletion route
 @app.route('/admin/undo_delete/<item_type>/<int:item_id>')
 def admin_undo_delete(item_type, item_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -1478,7 +2032,7 @@ def admin_undo_delete(item_type, item_id):
             conn.commit()
     return redirect('/admin/dashboard')
 
-# --- फीडबॅक बल्क डिलीट ---
+# Bulk feedback delete route
 @app.route('/admin/bulk_delete_feedback', methods=['POST'])
 def admin_bulk_delete_feedback():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -1490,7 +2044,7 @@ def admin_bulk_delete_feedback():
                 conn.commit()
     return redirect('/admin/dashboard?tab=feedback')
 
-# --- १-क्लिक रॅपिड फायर शेड्युलिंग ---
+# Bulk rapid schedule route
 @app.route('/admin/bulk_schedule_all', methods=['POST'])
 def admin_bulk_schedule_all():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -1534,7 +2088,7 @@ def admin_update_payment_settings():
         final_qr_url = f"/static/uploads/{fname}"
 
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             if final_qr_url:
                 cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='qr_code_url'", (final_qr_url,))
             if new_mobile:
@@ -1652,7 +2206,6 @@ def admin_upload_csv_questions():
 
     return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
-# सॉफ्ट डिलीट (Soft-Delete सह Undo सपोर्ट)
 @app.route('/admin/delete_question/<int:q_id>')
 def admin_delete_question(q_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -1708,7 +2261,7 @@ def admin_update_test(test_id):
 def admin_delete_test(test_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor():
             cur.execute("UPDATE test_papers SET is_deleted=1 WHERE id=%s", (test_id,))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
@@ -1870,3 +2423,4 @@ def admin_delete_payment(lead_id):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
