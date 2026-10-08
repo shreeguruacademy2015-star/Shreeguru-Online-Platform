@@ -13,7 +13,7 @@ import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
-# --- सुरक्षित RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
+# --- SURAKSHIT RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
 try:
     import razorpay
 except ImportError:
@@ -31,7 +31,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 db_pool = None
 try:
     if DATABASE_URL:
-        db_pool = pool.ThreadedConnectionPool(minconn=5, maxconn=50, dsn=DATABASE_URL)
+        db_pool = pool.ThreadedConnectionPool(minconn=1, maxconn=20, dsn=DATABASE_URL)
         print("✅ Neon PostgreSQL Threaded Connection Pool Ready!")
 except Exception as e:
     print(f"❌ DB Pool Error: {e}")
@@ -89,8 +89,13 @@ def init_master_db():
                     status TEXT DEFAULT 'Active',
                     category TEXT DEFAULT 'free'
                 )''')
-                # आधीचे टेबल असल्यास category कॉलम जोडणे
-                cur.execute("ALTER TABLE test_papers ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'free'")
+
+                # Table aadhi aslyas category column auto add karne
+                try:
+                    cur.execute("ALTER TABLE test_papers ADD COLUMN category TEXT DEFAULT 'free';")
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
 
                 cur.execute('''CREATE TABLE IF NOT EXISTS questions (
                     id SERIAL PRIMARY KEY,
@@ -195,7 +200,6 @@ def init_master_db():
                     cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status, category) VALUES (2, '🔴 मिशन खाकी रविवार थेट महासंग्राम #१', 'Free', 0, 60, 'Active', 'live')")
                     for i in range(3, 7):
                         cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status, category) VALUES (%s, %s, 'Paid', 99, 60, 'Active', 'paid')", (i, f'महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट पेपर #{i}'))
-                    cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status, category) VALUES (7, '⚡ पोलीस भरती मराठी व्याकरण रॅपिड फायर', 'Free', 0, 15, 'Active', 'rapid')")
 
                 conn.commit()
     except Exception as e:
@@ -203,7 +207,7 @@ def init_master_db():
 
 init_master_db()
 
-# ----------------- 1. PREMIUM VIRAL HOME TEMPLATE -----------------
+# ----------------- TEMPLATES -----------------
 
 HOME_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
@@ -219,33 +223,24 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .box { max-width: 950px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 25px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border-top: 5px solid #10b981; }
         .hero-banner { text-align: center; margin-bottom: 22px; }
-        .hero-banner h1 { margin: 0 0 8px; color: #34d399; font-size: 28px; font-weight: 800; font-family: 'Baloo Bhaina 2', cursive; letter-spacing: 0.5px; }
-        .quote-box { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,95,70,0.2)); border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 8px; font-size: 14.5px; color: #a7f3d0; font-weight: 600; margin-bottom: 20px; text-align: center; line-height: 1.5; }
-        
-        /* ६ मुख्य टॅब बटणे */
-        .tabs-wrapper { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 25px; padding-bottom: 8px; }
-        .tab-btn { background: #334155; color: #cbd5e1; border: 1.5px solid #475569; padding: 10px 16px; border-radius: 30px; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
-        .tab-btn:hover, .tab-btn.active { background: #10b981; color: #064e3b; border-color: #34d399; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
-
-        /* टेस्ट कार्ड्स */
+        .hero-banner h1 { margin: 0 0 8px; color: #34d399; font-size: 28px; font-weight: 800; font-family: 'Baloo Bhaina 2', cursive; }
+        .quote-box { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,95,70,0.2)); border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 8px; font-size: 14.5px; color: #a7f3d0; font-weight: 600; margin-bottom: 20px; text-align: center; }
+        .tabs-wrapper { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 25px; }
+        .tab-btn { background: #334155; color: #cbd5e1; border: 1.5px solid #475569; padding: 10px 16px; border-radius: 30px; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .tab-btn:hover, .tab-btn.active { background: #10b981; color: #064e3b; border-color: #34d399; }
         .test-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
         .test-card { background: #0f172a; border: 1.5px solid #334155; border-radius: 12px; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        .test-card:hover { border-color: #10b981; transform: scale(1.01); background: #131d31; }
         .test-title { margin: 0 0 6px; color: #f1f5f9; font-size: 17px; font-weight: 700; }
         .badge-free { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid #059669; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .badge-paid { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid #d97706; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .badge-rapid { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid #2563eb; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .btn-start { background: linear-gradient(135deg, #10b981, #059669); color: #022c22; padding: 10px 22px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 13.5px; box-shadow: 0 4px 12px rgba(16,185,129,0.25); }
-        .btn-start:hover { background: #34d399; transform: scale(1.05); }
-
-        /* इतर सेक्शन्स */
+        .btn-start { background: linear-gradient(135deg, #10b981, #059669); color: #022c22; padding: 10px 22px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 13.5px; }
         .section-box { display: none; background: #0f172a; border: 1.5px solid #334155; border-radius: 12px; padding: 22px; text-align: center; }
         .rank-table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; font-size: 13.5px; }
         .rank-table th, .rank-table td { padding: 10px 12px; border-bottom: 1px solid #334155; }
         .rank-table th { color: #34d399; }
         .doc-link { display: inline-block; background: #1e293b; color: #38bdf8; border: 1.5px solid #0284c7; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; margin: 6px; }
         .footer { text-align: center; font-size: 12px; color: #64748b; margin-top: 25px; border-top: 1px solid #334155; padding-top: 15px; }
-        .footer a { color: #38bdf8; text-decoration: none; }
     </style>
     <script>
         function filterTab(category, btn) {
@@ -264,7 +259,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                 document.getElementById('testsContainer').style.display = 'grid';
                 let visibleCount = 0;
                 document.querySelectorAll('.test-card').forEach(card => {
-                    const cardCat = card.getAttribute('data-cat');
+                    const cardCat = card.getAttribute('data-cat') || 'free';
                     if (category === 'all' || cardCat === category) {
                         card.style.display = 'flex';
                         visibleCount++;
@@ -273,9 +268,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                     }
                 });
                 const noTestMsg = document.getElementById('noTestMsg');
-                if (noTestMsg) {
-                    noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
-                }
+                if (noTestMsg) noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
             }
         }
     </script>
@@ -296,7 +289,6 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ६ मुख्य टॅब बटणे -->
     <div class="tabs-wrapper">
         <button class="tab-btn active" onclick="filterTab('all', this)">🌐 सर्व संच</button>
         <button class="tab-btn" onclick="filterTab('live', this)">🔴 मिशन खाकी महासंग्राम</button>
@@ -307,10 +299,9 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         <button class="tab-btn" onclick="filterTab('docs', this)">📄 भरती PDF व PYQ</button>
     </div>
 
-    <!-- टेस्ट कार्ड्स यादी -->
     <div id="testsContainer" class="test-grid">
         {% for t in tests %}
-        <div class="test-card" data-id="{{ t.id }}" data-type="{{ t.test_type }}" data-cat="{{ t.category }}">
+        <div class="test-card" data-id="{{ t.id }}" data-type="{{ t.test_type }}" data-cat="{{ t.category or 'free' }}">
             <div>
                 <h4 class="test-title">{{ t.test_title }}</h4>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -318,55 +309,64 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                         {{ '🟢 मोफत महासराव' if t.test_type == 'Free' else '⭐ अतिसंभाव्य संच - ₹' ~ t.test_fee }}
                     </span>
                     <span class="badge-rapid">⏱️ {{ t.duration_minutes }} मिनिटे</span>
-                    <span style="font-size:12px; color:#94a3b8;">
-                        {% if t.category == 'live' %}🔴 थेट महासंग्राम
-                        {% elif t.category == 'paid' %}🎯 सशुल्क संच
-                        {% elif t.category == 'rapid' %}⚡ रॅपिड फायर
-                        {% else %}🟢 मोफत सराव
-                        {% endif %}
-                    </span>
                 </div>
             </div>
             <a href="/take_test/{{ t.id }}" class="btn-start">🚀 टेस्ट सोडवा</a>
         </div>
         {% endfor %}
-        <div id="noTestMsg" style="display:none; text-align:center; padding:30px; color:#94a3b8; font-size:14px;">
-            ⚠️ या कॅटेगरीमध्ये सध्या कोणतीही टेस्ट उपलब्ध नाही. लवकरच नवीन टेस्ट जोडली जाईल!
+        <div id="noTestMsg" style="display:none; text-align:center; padding:30px; color:#94a3b8;">
+            ⚠️ या कॅटेगरीमध्ये सध्या कोणतीही टेस्ट उपलब्ध नाही.
         </div>
     </div>
 
-    <!-- जिल्हा मुकाबला व गुणवत्ता यादी -->
     <div id="battleContainer" class="section-box">
         <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा मुकाबला (टॉप ५ जिल्हे)</h3>
-        <p style="font-size:13px; color:#94a3b8;">तुमच्या जिल्ह्याला १ नंबरवर आणण्यासाठी सर्व मित्रांना टेस्ट सोडवायला लावा!</p>
         <table class="rank-table">
-            <tr><th>रँक</th><th>जिल्हा</th><th>सरासरी गुण</th><th>सहभागी विद्यार्थी</th></tr>
-            <tr><td>🥇 १</td><td><b>कोल्हापूर</b></td><td style="color:#34d399; font-weight:bold;">८६.५</td><td>१,२४०</td></tr>
-            <tr><td>🥈 २</td><td><b>सोलापूर</b></td><td style="color:#34d399; font-weight:bold;">८४.२</td><td>१,०९०</td></tr>
-            <tr><td>🥉 ३</td><td><b>पुणे ग्रामीण</b></td><td style="color:#34d399; font-weight:bold;">८२.०</td><td>९८०</td></tr>
-            <tr><td>४</td><td><b>छत्रपती संभाजीनगर</b></td><td>८०.५</td><td>८५०</td></tr>
-            <tr><td>५</td><td><b>नाशिक</b></td><td>७९.८</td><td>७६०</td></tr>
+            <tr><th>रँक</th><th>जिल्हा</th><th>सरासरी गुण</th></tr>
+            <tr><td>🥇 १</td><td><b>कोल्हापूर</b></td><td style="color:#34d399; font-weight:bold;">८६.५</td></tr>
+            <tr><td>🥈 २</td><td><b>सोलापूर</b></td><td style="color:#34d399; font-weight:bold;">८४.२</td></tr>
+            <tr><td>🥉 ३</td><td><b>पुणे ग्रामीण</b></td><td style="color:#34d399; font-weight:bold;">८२.०</td></tr>
         </table>
     </div>
 
-    <!-- अधिकृत भरती PDF व PYQ -->
     <div id="docsContainer" class="section-box">
         <h3 style="color:#38bdf8; margin-top:0;">📄 अधिकृत भरती कागदपत्रे व मागील प्रश्नपत्रिका</h3>
-        <p style="font-size:13px; color:#94a3b8;">अभ्यासासाठी आवश्यक मूळ शासन निर्णय व प्रश्नपत्रिका एका क्लिकवर डाऊनलोड करा:</p>
         {% if recruitment_pdf %}<a href="{{ recruitment_pdf }}" target="_blank" class="doc-link">📑 पोलीस भरती अधिकृत जाहिरात (PDF)</a>{% endif %}
         {% if eligibility_pdf %}<a href="{{ eligibility_pdf }}" target="_blank" class="doc-link">📋 शारीरिक व लेखी पात्रता निकष (PDF)</a>{% endif %}
-        <a href="https://wa.me/?text=पोलीस%20भरती%20अतिसंभाव्य%20टेस्ट%20सोडवा" target="_blank" class="doc-link" style="border-color:#10b981; color:#34d399;">📲 WhatsApp ग्रुपवर शेअर करा</a>
     </div>
 
     <div class="footer">
         <span>© 2026 मिशन खाकी ऑनलाईन महा-सराव कक्ष | </span>
-        <a href="/terms-and-conditions" target="_blank">Terms & Conditions</a>
+        <a href="/terms-and-conditions" target="_blank" style="color:#38bdf8;">Terms & Conditions</a>
     </div>
 </div>
 </body>
 </html>'''
 
-# ----------------- 2. FRESH-MOOD ZERO-FRICTION EXAM TEMPLATE -----------------
+TERMS_TEMPLATE = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms and Conditions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { margin: 0; background: #f8fafc; color: #1e293b; padding: 25px 15px; line-height: 1.6; }
+        .terms-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; padding: 35px; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border-top: 5px solid #059669; }
+        h1 { color: #065f46; font-size: 24px; margin-top: 0; }
+        p { font-size: 13.5px; color: #475569; margin: 6px 0 12px; }
+        .back-link { display: inline-block; margin-top: 20px; color: #0284c7; text-decoration: none; font-weight: 600; font-size: 13px; }
+    </style>
+</head>
+<body>
+<div class="terms-container">
+    <h1>Terms and Conditions</h1>
+    <p>Last updated: October 2026</p>
+    <p>This platform provides practice examinations for preparation. Mock scores are self-assessment metrics.</p>
+    <a href="/" class="back-link">⬅ Back to Home Platform</a>
+</div>
+</body>
+</html>'''
 
 EXAM_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
@@ -377,29 +377,21 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; transition: all 0.15s ease; }
         body { margin: 0; background: #0b1329; color: #f1f5f9; padding: 10px; }
-        
-        .exam-header { background: #1e293b; color: white; padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; max-width: 850px; margin: 0 auto 15px; position: sticky; top: 10px; z-index: 100; box-shadow: 0 8px 25px rgba(0,0,0,0.4); border: 1.5px solid #334155; }
-        .timer-box { background: rgba(239,68,68,0.15); border: 1.5px solid #ef4444; color: #fca5a5; padding: 6px 14px; border-radius: 8px; font-weight: 800; font-size: 16px; letter-spacing: 0.5px; }
-        
+        .exam-header { background: #1e293b; color: white; padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; max-width: 850px; margin: 0 auto 15px; position: sticky; top: 10px; z-index: 100; border: 1.5px solid #334155; }
+        .timer-box { background: rgba(239,68,68,0.15); border: 1.5px solid #ef4444; color: #fca5a5; padding: 6px 14px; border-radius: 8px; font-weight: 800; font-size: 16px; }
         .progress-bar-container { max-width: 850px; margin: 0 auto 15px; background: #1e293b; height: 8px; border-radius: 10px; overflow: hidden; border: 1px solid #334155; }
         .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #10b981, #34d399); }
-
-        .box { max-width: 850px; margin: 0 auto; background: #162036; border-radius: 16px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: 1px solid #334155; }
-        
+        .box { max-width: 850px; margin: 0 auto; background: #162036; border-radius: 16px; padding: 25px; border: 1px solid #334155; }
         .q-item { background: #0f172a; border: 1.5px solid #27354f; border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; }
-        .q-item:hover { border-color: #3b82f6; }
-        .q-text { font-weight: 700; margin-bottom: 14px; font-size: 16px; color: #f8fafc; line-height: 1.6; }
-        
-        .opt-label { display: flex; align-items: center; margin-bottom: 10px; font-size: 14.5px; cursor: pointer; background: #1e293b; padding: 12px 16px; border-radius: 10px; border: 1.5px solid #334155; color: #cbd5e1; font-weight: 500; }
+        .q-text { font-weight: 700; margin-bottom: 14px; font-size: 16px; color: #f8fafc; }
+        .opt-label { display: flex; align-items: center; margin-bottom: 10px; font-size: 14.5px; cursor: pointer; background: #1e293b; padding: 12px 16px; border-radius: 10px; border: 1.5px solid #334155; color: #cbd5e1; }
         .opt-label:hover { background: #27354f; border-color: #38bdf8; color: white; transform: translateX(3px); }
         .opt-label input[type="radio"] { margin-right: 12px; width: 18px; height: 18px; accent-color: #10b981; }
         .opt-label.selected { background: rgba(16,185,129,0.15); border-color: #10b981; color: #a7f3d0; font-weight: 700; }
-
-        .bottom-submission-card { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(15,23,42,0.9)); border: 2px solid #10b981; border-radius: 14px; padding: 22px; margin-top: 30px; margin-bottom: 15px; }
-        .bottom-submission-card input { width: 100%; padding: 13px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; margin-top: 5px; font-size: 14.5px; margin-bottom: 12px; color: white; outline: none; }
-        .bottom-submission-card input:focus { border-color: #10b981; }
-        .btn-submit { width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: #022c22; padding: 15px; border: none; border-radius: 8px; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.3); }
-        .btn-submit:disabled { background: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
+        .bottom-submission-card { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(15,23,42,0.9)); border: 2px solid #10b981; border-radius: 14px; padding: 22px; margin-top: 30px; }
+        .bottom-submission-card input { width: 100%; padding: 13px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; margin-top: 5px; font-size: 14.5px; margin-bottom: 12px; color: white; }
+        .btn-submit { width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: #022c22; padding: 15px; border: none; border-radius: 8px; font-size: 17px; font-weight: 800; cursor: pointer; }
+        .btn-submit:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
     </style>
     <script>
         let isFormSubmitted = false;
@@ -422,9 +414,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             let timer = setInterval(function () {
                 let minutes = parseInt(timeLeft / 60, 10);
                 let seconds = parseInt(timeLeft % 60, 10);
-                minutes = minutes < 10 ? "0" + minutes : minutes;
-                seconds = seconds < 10 ? "0" + seconds : seconds;
-                timerDisplay.innerText = minutes + ":" + seconds;
+                timerDisplay.innerText = (minutes < 10 ? "0" + minutes : minutes) + ":" + (seconds < 10 ? "0" + seconds : seconds);
                 localStorage.setItem(timerStorageKey, timeLeft);
 
                 if (--timeLeft < 0) {
@@ -535,7 +525,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 
         <div class="bottom-submission-card">
             <h3 style="margin:0 0 6px; color:#34d399; font-size:18px;">🎯 निकाल, मेरिट रँक व सविस्तर स्पष्टीकरणासाठी माहिती भरा:</h3>
-            <p style="font-size:13px; color:#94a3b8; margin:0 0 14px;">⚠️ १०० प्रश्नांची अचूक उत्तरतालिका व स्पष्टीकरण याच WhatsApp नंबरवर पाठवले जाईल.</p>
+            <p style="font-size:13px; color:#94a3b8; margin:0 0 14px;">⚠️ १०० प्रश्नांची अचूक उत्तरतालिका याच WhatsApp नंबरवर पाठवली जाईल.</p>
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
                 <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">पूर्ण नाव *:</label><input type="text" name="student_name" id="s_name" placeholder="उदा. राहुल पाटील" onkeyup="validateAndReady()" required></div>
                 <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">जिल्हा *:</label><input type="text" name="district" id="s_dist" placeholder="उदा. कोल्हापूर" onkeyup="validateAndReady()" required></div>
@@ -547,8 +537,6 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 </div>
 </body>
 </html>'''
-
-# ----------------- 3. VIRAL RESULT & PROMO TEMPLATE -----------------
 
 RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
@@ -757,50 +745,42 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-TERMS_TEMPLATE = '''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8"><title>Terms and Conditions</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>body { margin:0; background:#0f172a; color:#f8fafc; font-family:'Poppins', sans-serif; padding:25px; } .box { max-width:800px; margin:auto; background:#1e293b; padding:30px; border-radius:12px; border-top:5px solid #10b981; } a { color:#38bdf8; text-decoration:none; }</style>
-</head>
-<body>
-<div class="box">
-    <h2 style="color:#34d399;">Terms & Conditions</h2>
-    <p>This platform provides mock tests for Maharashtra Police recruitment practice. All scores and ranks are for self-assessment purposes.</p>
-    <a href="/">⬅ Back to Home</a>
-</div>
-</body>
-</html>'''
-
 EDIT_QUESTION_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><title>प्रश्न संपादित करा</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>body { margin:0; background:#f1f5f9; padding:20px; font-family:'Poppins', sans-serif; } .box { max-width:650px; margin:auto; background:white; padding:25px; border-radius:8px; border-top:5px solid #059669; } input, textarea, select { width:100%; padding:9px; margin:6px 0 14px; border:1px solid #cbd5e1; border-radius:5px; } .btn { background:#059669; color:white; border:none; padding:10px 18px; border-radius:5px; font-weight:bold; cursor:pointer; }</style>
+    <style>
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { margin: 0; background: #f1f5f9; padding: 20px; }
+        .box { max-width: 650px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid #059669; }
+        input, textarea, select { width: 100%; padding: 9px; margin: 6px 0 14px; border: 1px solid #cbd5e1; border-radius: 5px; }
+        .btn { background: #059669; color: white; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
 </head>
 <body>
 <div class="box">
     <h3 style="color:#065f46; margin-top:0;">✏️ प्रश्न व पर्याय संपादित करा (ID: {{ q.id }})</h3>
     <form method="POST">
-        <label>प्रश्न:</label><textarea name="question" rows="3" required>{{ q.question }}</textarea>
+        <label style="font-weight:600; font-size:13px;">प्रश्न:</label>
+        <textarea name="question" rows="3" required>{{ q.question }}</textarea>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <div><label>पर्याय A:</label><input type="text" name="opt_a" value="{{ q.opt_a }}" required></div>
-            <div><label>पर्याय B:</label><input type="text" name="opt_b" value="{{ q.opt_b }}" required></div>
-            <div><label>पर्याय C:</label><input type="text" name="opt_c" value="{{ q.opt_c }}" required></div>
-            <div><label>पर्याय D:</label><input type="text" name="opt_d" value="{{ q.opt_d }}" required></div>
+            <div><label style="font-weight:600; font-size:13px;">पर्याय A:</label><input type="text" name="opt_a" value="{{ q.opt_a }}" required></div>
+            <div><label style="font-weight:600; font-size:13px;">पर्याय B:</label><input type="text" name="opt_b" value="{{ q.opt_b }}" required></div>
+            <div><label style="font-weight:600; font-size:13px;">पर्याय C:</label><input type="text" name="opt_c" value="{{ q.opt_c }}" required></div>
+            <div><label style="font-weight:600; font-size:13px;">पर्याय D:</label><input type="text" name="opt_d" value="{{ q.opt_d }}" required></div>
         </div>
-        <label>अचूक उत्तर:</label>
+        <label style="font-weight:600; font-size:13px;">अचूक उत्तर:</label>
         <select name="correct">
             <option value="A" {% if q.correct=='A' %}selected{% endif %}>A</option>
             <option value="B" {% if q.correct=='B' %}selected{% endif %}>B</option>
             <option value="C" {% if q.correct=='C' %}selected{% endif %}>C</option>
             <option value="D" {% if q.correct=='D' %}selected{% endif %}>D</option>
         </select>
-        <label>स्पष्टीकरण:</label><textarea name="explanation" rows="2">{{ q.explanation }}</textarea>
+        <label style="font-weight:600; font-size:13px;">स्पष्टीकरण:</label>
+        <textarea name="explanation" rows="2">{{ q.explanation }}</textarea>
         <button type="submit" class="btn">💾 बदल सेव्ह करा</button>
-        <a href="/admin/dashboard?tab=questions&filter_test_id={{ q.test_id }}" style="margin-left:10px; color:#dc2626; text-decoration:none;">रद्द करा</a>
+        <a href="/admin/dashboard?tab=questions&filter_test_id={{ q.test_id }}" style="margin-left:10px; color:#dc2626; text-decoration:none; font-weight:600;">रद्द करा</a>
     </form>
 </div>
 </body>
@@ -811,12 +791,17 @@ ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8"><title>ॲडमिन सुरक्षित लॉगिन</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>body { margin:0; background:#0f172a; color:white; display:flex; justify-content:center; align-items:center; height:100vh; font-family:'Poppins', sans-serif; } .login-box { background:#1e293b; padding:35px 30px; border-radius:10px; width:360px; border-top:5px solid #059669; text-align:center; } input { width:100%; padding:12px; margin:15px 0 20px; border-radius:6px; border:1.5px solid #475569; background:#0f172a; color:white; box-sizing:border-box; } button { width:100%; background:#059669; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer; }</style>
+    <style>
+        body { margin:0; background:#0f172a; color:white; display:flex; justify-content:center; align-items:center; height:100vh; font-family:'Poppins', sans-serif; }
+        .login-box { background:#1e293b; padding:35px 30px; border-radius:10px; width:360px; box-shadow:0 10px 25px rgba(0,0,0,0.4); border-top:5px solid #059669; text-align:center; }
+        input { width:100%; padding:12px; margin:15px 0 20px; border-radius:6px; border:1.5px solid #475569; background:#0f172a; color:white; font-size:14px; text-align:center; box-sizing:border-box; }
+        button { width:100%; background:#059669; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:15px; }
+    </style>
 </head>
 <body>
 <div class="login-box">
     <h2 style="color:#34d399; margin:0 0 10px;">⚙️ ॲडमिन सुरक्षित कक्ष</h2>
-    {% if error %}<div style="color:#f87171; font-size:13px; margin-bottom:10px;">{{ error }}</div>{% endif %}
+    {% if error %}<div style="color:#f87171; font-size:13px; font-weight:bold; margin-bottom:10px;">{{ error }}</div>{% endif %}
     <form method="POST" action="/admin/login">
         <input type="password" name="admin_pass" placeholder="पासवर्ड टाका" required autocomplete="off">
         <button type="submit">🔐 लॉगिन करा</button>
@@ -826,7 +811,6 @@ ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# --- सुधारित ADMIN DASHBOARD (कॅटेगरी ड्रॉपडाउनसह) ---
 ADMIN_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
@@ -1061,7 +1045,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% endfor %}
     </table>
 
-    <!-- 5. TEST MANAGEMENT TAB (येथे कॅटेगरी ड्रॉपडाउन जोडला आहे) -->
+    <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 नवीन टेस्ट लॉन्च करा व टॅब निवडा</h3>
     <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:18px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:25px;">
@@ -1166,7 +1150,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 8. RECRUITMENT PDF TAB -->
     {% elif active_tab == 'notices' %}
     <h3>📢 भरती PDF व्यवस्थापन (६ व्या टॅबसाठी)</h3>
-    <p style="font-size:13px; color:#64748b;">येथे अपलोड केलेल्या PDF थेट होम पेजवरील '📄 भरती PDF व PYQ' या टॅबमध्ये दिसतील.</p>
     <form method="POST" action="/admin/update_pdf_docs" enctype="multipart/form-data">
         <label>भरती अधिकृत माहिती PDF:</label><input type="file" name="recruitment_pdf_file" accept=".pdf">
         <label>भरती पात्रता PDF:</label><input type="file" name="eligibility_pdf_file" accept=".pdf">
@@ -1322,16 +1305,15 @@ def take_test(test_id):
 
     return render_template_string(ACCESS_CHECK_TEMPLATE, test=test, qr_url=qr_url, upi_mobile=upi_mobile)
 
-# --- RAZORPAY ORDERS & VERIFY ---
 @app.route('/create_razorpay_order/<int:test_id>', methods=['POST'])
 def create_razorpay_order(test_id):
     client, key_id = get_razorpay_client()
     if not client or not key_id:
-        return jsonify({"error": "Razorpay Keys सेट केलेल्या नाहीत! कृपया अ‍ॅडमिन पॅनेलमध्ये Key ID व Key Secret भरा किंवा खालील QR स्कॅन करून पे करा."}), 400
+        return jsonify({"error": "Razorpay Keys सेट केलेल्या नाहीत!"}), 400
 
     try:
         order = client.order.create({
-            "amount": 9900,  # ₹99 paise मध्ये
+            "amount": 9900,
             "currency": "INR",
             "receipt": f"rcpt_test_{test_id}_{int(datetime.now().timestamp())}",
             "payment_capture": 1
@@ -1345,7 +1327,6 @@ def verify_razorpay_payment():
     order_id = request.args.get('order_id')
     payment_id = request.args.get('payment_id')
     test_id = request.args.get('test_id')
-
     token = secrets.token_hex(8)
     expires = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -1440,7 +1421,6 @@ def submit_test(test_id):
 
     main_portal_url = request.host_url.rstrip('/')
     result_url = main_portal_url + url_for('detailed_answers', token=result_token)
-    
     student_tracking_url = f"{main_portal_url}/?ref={phone}"
     ego_msg = f"🏆 *महाराष्ट्र पोलीस भरती ओपन चॅलेंज* 🏆\\nमैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा! बघूया कोण मारतंय बाजी!\\nमला १०० पैकी {score} गुण मिळाले आणि ऑल महाराष्ट्र रँक #{state_rank} आलाय!\\n👉 मोफत टेस्ट सोडवा:\\n{student_tracking_url}"
     ego_share_encoded = urllib.parse.quote(ego_msg)
@@ -1788,43 +1768,63 @@ def admin_delete_question(q_id):
             conn.commit()
     return redirect(f'/admin/dashboard?tab=questions&filter_test_id={t_id}')
 
-# --- सुधारित ADD TEST (कॅटेगरीसह) ---
 @app.route('/admin/add_test', methods=['POST'])
 def admin_add_test():
     if not session.get('admin_logged'): return redirect('/admin/login')
-    title = request.form.get('test_title')
+    title = request.form.get('test_title', '').strip()
     category = request.form.get('category', 'paid')
     ttype = request.form.get('test_type', 'Paid')
-    fee = float(request.form.get('test_fee', 99))
-    duration = int(request.form.get('duration_minutes', 60))
+    fee = float(request.form.get('test_fee', 99) or 0)
+    duration = int(request.form.get('duration_minutes', 60) or 60)
+    
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category) 
-                VALUES (%s, %s, %s, %s, 'Active', %s)
-            """, (title, ttype, fee, duration, category))
-            conn.commit()
+            try:
+                cur.execute("""
+                    INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category) 
+                    VALUES (%s, %s, %s, %s, 'Active', %s)
+                """, (title, ttype, fee, duration, category))
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                try:
+                    cur.execute("ALTER TABLE test_papers ADD COLUMN category TEXT DEFAULT 'free';")
+                    cur.execute("""
+                        INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category) 
+                        VALUES (%s, %s, %s, %s, 'Active', %s)
+                    """, (title, ttype, fee, duration, category))
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+                    cur.execute("INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status) VALUES (%s, %s, %s, %s, 'Active')", (title, ttype, fee, duration))
+                    conn.commit()
+
     return redirect('/admin/dashboard?tab=launch')
 
-# --- सुधारित UPDATE TEST (कॅटेगरीसह) ---
 @app.route('/admin/update_test/<int:test_id>', methods=['POST'])
 def admin_update_test(test_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
     title = request.form.get('test_title', '').strip()
     category = request.form.get('category', 'paid')
     ttype = request.form.get('test_type', 'Paid')
-    fee = float(request.form.get('test_fee', 0))
-    duration = int(request.form.get('duration_minutes', 60))
+    fee = float(request.form.get('test_fee', 0) or 0)
+    duration = int(request.form.get('duration_minutes', 60) or 60)
     status = request.form.get('status', 'Active')
 
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                UPDATE test_papers 
-                SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, status=%s, category=%s 
-                WHERE id=%s
-            """, (title, ttype, fee, duration, status, category, test_id))
-            conn.commit()
+            try:
+                cur.execute("""
+                    UPDATE test_papers 
+                    SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, status=%s, category=%s 
+                    WHERE id=%s
+                """, (title, ttype, fee, duration, status, category, test_id))
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                cur.execute("UPDATE test_papers SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, status=%s WHERE id=%s", (title, ttype, fee, duration, status, test_id))
+                conn.commit()
+
     return redirect('/admin/dashboard?tab=launch')
 
 @app.route('/admin/delete_test/<int:test_id>')
@@ -1987,4 +1987,3 @@ def admin_delete_payment(lead_id):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
