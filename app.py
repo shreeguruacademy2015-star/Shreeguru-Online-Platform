@@ -87,12 +87,19 @@ def init_master_db():
                     test_fee REAL DEFAULT 0,
                     duration_minutes INTEGER DEFAULT 60,
                     status TEXT DEFAULT 'Active',
-                    category TEXT DEFAULT 'free'
+                    category TEXT DEFAULT 'free',
+                    publish_at TIMESTAMP DEFAULT NULL
                 )''')
 
-                # Table aadhi aslyas category column auto add karne
+                # Column safety check
                 try:
                     cur.execute("ALTER TABLE test_papers ADD COLUMN category TEXT DEFAULT 'free';")
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+
+                try:
+                    cur.execute("ALTER TABLE test_papers ADD COLUMN publish_at TIMESTAMP DEFAULT NULL;")
                     conn.commit()
                 except Exception:
                     conn.rollback()
@@ -182,6 +189,9 @@ def init_master_db():
                     ('insta_link', ''),
                     ('yt_link', ''),
                     ('toppers_link', ''),
+                    ('wa_group_link', ''),
+                    ('wa_group_link_2', ''),
+                    ('tab_order', 'all,live,paid,free,rapid,battle,docs'),
                     ('recruitment_pdf', ''),
                     ('eligibility_pdf', ''),
                     ('razorpay_key_id', ''),
@@ -198,8 +208,6 @@ def init_master_db():
                 if cur.fetchone()['count'] == 0:
                     cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status, category) VALUES (1, 'पोलीस भरती विशेष महासराव टेस्ट #१', 'Free', 0, 60, 'Active', 'free')")
                     cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status, category) VALUES (2, '🔴 मिशन खाकी रविवार थेट महासंग्राम #१', 'Free', 0, 60, 'Active', 'live')")
-                    for i in range(3, 7):
-                        cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status, category) VALUES (%s, %s, 'Paid', 99, 60, 'Active', 'paid')", (i, f'महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट पेपर #{i}'))
 
                 conn.commit()
     except Exception as e:
@@ -235,12 +243,17 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .badge-paid { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid #d97706; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .badge-rapid { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid #2563eb; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .btn-start { background: linear-gradient(135deg, #10b981, #059669); color: #022c22; padding: 10px 22px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 13.5px; }
+        .btn-locked { background: #475569; color: #cbd5e1; padding: 10px 18px; border-radius: 8px; font-weight: bold; font-size: 13px; text-decoration: none; cursor: not-allowed; }
         .section-box { display: none; background: #0f172a; border: 1.5px solid #334155; border-radius: 12px; padding: 22px; text-align: center; }
         .rank-table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; font-size: 13.5px; }
         .rank-table th, .rank-table td { padding: 10px 12px; border-bottom: 1px solid #334155; }
         .rank-table th { color: #34d399; }
         .doc-link { display: inline-block; background: #1e293b; color: #38bdf8; border: 1.5px solid #0284c7; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; margin: 6px; }
         .footer { text-align: center; font-size: 12px; color: #64748b; margin-top: 25px; border-top: 1px solid #334155; padding-top: 15px; }
+        
+        /* Loading splash buffer popup */
+        .loading-modal { display: none; position: fixed; inset: 0; background: rgba(11,19,41,0.92); z-index: 9999; justify-content: center; align-items: center; padding: 15px; }
+        .modal-content { background: #162036; border: 2px solid #10b981; border-radius: 16px; padding: 30px 20px; max-width: 480px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.6); }
     </style>
     <script>
         function filterTab(category, btn) {
@@ -271,9 +284,31 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                 if (noTestMsg) noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
             }
         }
+
+        let pendingTestUrl = '';
+        function openLoadingNotice(url) {
+            pendingTestUrl = url;
+            document.getElementById('loadingNoticeModal').style.display = 'flex';
+        }
+        function proceedToTest() {
+            if (pendingTestUrl) window.location.href = pendingTestUrl;
+        }
     </script>
 </head>
 <body>
+<!-- Loading Safety Buffer Modal -->
+<div id="loadingNoticeModal" class="loading-modal">
+    <div class="modal-content">
+        <h3 style="color:#34d399; margin:0 0 10px; font-size:20px;">🛡️ सुरक्षित परीक्षा कक्ष लोड होत आहे...</h3>
+        <p style="color:#cbd5e1; font-size:14.5px; line-height:1.6; margin:0 0 20px;">
+            ⏳ सर्व्हरशी सुरक्षित संपर्क प्रस्थापित होत आहे. काही सेकंद वेळ लागू शकतो, <b>पण घाबरण्याची अजिबात गरज नाही; आपण पूर्णपणे सुरक्षित आहात!</b> खाकीच्या सरावासाठी सज्ज व्हा!
+        </p>
+        <button onclick="proceedToTest()" style="background:linear-gradient(135deg, #10b981, #059669); color:#022c22; border:none; padding:12px 28px; border-radius:8px; font-weight:800; font-size:15px; cursor:pointer; width:100%;">
+            🚀 पुढे चला (कंटिन्यू) ➔
+        </button>
+    </div>
+</div>
+
 <div class="top-bar">
     <div style="font-weight:bold; font-size:13.5px; color:#a7f3d0; display:flex; align-items:center; gap:8px;">
         <span class="badge-live">LIVE</span> 🕒 मिशन खाकी २०२६ सराव कक्ष
@@ -289,14 +324,18 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
+    <!-- ॲडमिनद्वारे बदलता येणारा टॅब क्रम -->
     <div class="tabs-wrapper">
-        <button class="tab-btn active" onclick="filterTab('all', this)">🌐 सर्व संच</button>
-        <button class="tab-btn" onclick="filterTab('live', this)">🔴 मिशन खाकी महासंग्राम</button>
-        <button class="tab-btn" onclick="filterTab('paid', this)">🎯 अतिसंभाव्य १०० गुण संच (₹९९)</button>
-        <button class="tab-btn" onclick="filterTab('free', this)">🟢 मोफत टेस्ट्स</button>
-        <button class="tab-btn" onclick="filterTab('rapid', this)">⚡ २० गुण रॅपिड फायर</button>
-        <button class="tab-btn" onclick="filterTab('battle', this)">⚔️ जिल्हा मुकाबला व रँक</button>
-        <button class="tab-btn" onclick="filterTab('docs', this)">📄 भरती PDF व PYQ</button>
+        {% for tab_key in ordered_tabs %}
+            {% if tab_key == 'all' %}<button class="tab-btn active" onclick="filterTab('all', this)">🌐 सर्व संच</button>
+            {% elif tab_key == 'live' %}<button class="tab-btn" onclick="filterTab('live', this)">🔴 मिशन खाकी महासंग्राम</button>
+            {% elif tab_key == 'paid' %}<button class="tab-btn" onclick="filterTab('paid', this)">🎯 अतिसंभाव्य १०० गुण संच (₹९९)</button>
+            {% elif tab_key == 'free' %}<button class="tab-btn" onclick="filterTab('free', this)">🟢 मोफत टेस्ट्स</button>
+            {% elif tab_key == 'rapid' %}<button class="tab-btn" onclick="filterTab('rapid', this)">⚡ २० गुण रॅपिड फायर</button>
+            {% elif tab_key == 'battle' %}<button class="tab-btn" onclick="filterTab('battle', this)">⚔️ जिल्हा मुकाबला व रँक</button>
+            {% elif tab_key == 'docs' %}<button class="tab-btn" onclick="filterTab('docs', this)">📄 भरती PDF व PYQ</button>
+            {% endif %}
+        {% endfor %}
     </div>
 
     <div id="testsContainer" class="test-grid">
@@ -309,23 +348,40 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                         {{ '🟢 मोफत महासराव' if t.test_type == 'Free' else '⭐ अतिसंभाव्य संच - ₹' ~ t.test_fee }}
                     </span>
                     <span class="badge-rapid">⏱️ {{ t.duration_minutes }} मिनिटे</span>
+                    {% if t.is_locked %}
+                    <span style="font-size:12px; color:#fbbf24;">⏳ दररोज सकाळी १०:०० वाजता अनलॉक होईल</span>
+                    {% endif %}
                 </div>
             </div>
-            <a href="/take_test/{{ t.id }}" class="btn-start">🚀 टेस्ट सोडवा</a>
+            {% if t.is_locked %}
+                <span class="btn-locked">🔒 सकाळी १०:०० ला उघडेल</span>
+            {% else %}
+                <button onclick="openLoadingNotice('/take_test/{{ t.id }}')" class="btn-start" style="border:none; cursor:pointer;">🚀 टेस्ट सोडवा</button>
+            {% endif %}
         </div>
         {% endfor %}
-        <div id="noTestMsg" style="display:none; text-align:center; padding:30px; color:#94a3b8;">
-            ⚠️ या कॅटेगरीमध्ये सध्या कोणतीही टेस्ट उपलब्ध नाही.
+        <div id="noTestMsg" style="display:none; text-align:center; padding:35px 20px; background:#0f172a; border-radius:12px; border:1px dashed #475569; color:#94a3b8; font-size:15px;">
+            🎯 <b>लवकरच या विभागात अतिसंभाव्य व दर्जेदार प्रश्नसंच उपलब्ध होतील!</b><br>
+            <span style="font-size:13px; color:#64748b;">आमचे तज्ज्ञ शिक्षक नवीन दर्जेदार प्रश्नांची रचना करत आहेत. खाकीची तयारी अखंड चालू ठेवा! ⚔️</span>
         </div>
     </div>
 
+    <!-- लाईव्ह जिल्हा मुकाबला (थेट डेटाबेसमधून रिअल गणना) -->
     <div id="battleContainer" class="section-box">
-        <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा मुकाबला (टॉप ५ जिल्हे)</h3>
+        <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा मुकाबला (लाईव्ह लीड्स व सरासरी गुण)</h3>
+        <p style="font-size:13px; color:#94a3b8; margin:0 0 15px;">महाराष्ट्रभरातील विद्यार्थ्यांनी सोडवलेल्या टेस्ट्सवरून थेट तयार झालेली वास्तविक गुणवत्ता क्रमवारी:</p>
         <table class="rank-table">
-            <tr><th>रँक</th><th>जिल्हा</th><th>सरासरी गुण</th></tr>
-            <tr><td>🥇 १</td><td><b>कोल्हापूर</b></td><td style="color:#34d399; font-weight:bold;">८६.५</td></tr>
-            <tr><td>🥈 २</td><td><b>सोलापूर</b></td><td style="color:#34d399; font-weight:bold;">८४.२</td></tr>
-            <tr><td>🥉 ३</td><td><b>पुणे ग्रामीण</b></td><td style="color:#34d399; font-weight:bold;">८२.०</td></tr>
+            <tr><th>रँक</th><th>जिल्हा</th><th>टेस्ट देणारे एकूण विद्यार्थी (लीड्स)</th><th>सरासरी गुण</th></tr>
+            {% for dist in live_district_battles %}
+            <tr>
+                <td><b>#{{ loop.index }}</b></td>
+                <td><b>{{ dist.district }}</b></td>
+                <td><span style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:3px 8px; border-radius:12px; font-weight:bold;">{{ dist.total_students }} विद्यार्थी</span></td>
+                <td style="color:#34d399; font-weight:bold;">{{ dist.avg_score }} गुण</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" style="text-align:center; color:#94a3b8;">विद्यार्थ्यांनी टेस्ट सोडवल्यानंतर जिल्ह्यांची लाईव्ह क्रमवारी येथे दिसेल.</td></tr>
+            {% endfor %}
         </table>
     </div>
 
@@ -472,7 +528,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 
             if (name !== "" && dist !== "" && indianPhoneRegex.test(phone)) {
                 submitBtn.disabled = false;
-                submitBtn.innerText = "🏆 टेस्ट सबमिट करा व राज्यस्तरीय रँक पहा";
+                submitBtn.innerText = "🏆 टेस्ट सबमिट करा व निकाल पहा";
                 submitBtn.style.opacity = "1";
             } else {
                 submitBtn.disabled = true;
@@ -524,8 +580,14 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         </div>
 
         <div class="bottom-submission-card">
-            <h3 style="margin:0 0 6px; color:#34d399; font-size:18px;">🎯 निकाल, मेरिट रँक व सविस्तर स्पष्टीकरणासाठी माहिती भरा:</h3>
-            <p style="font-size:13px; color:#94a3b8; margin:0 0 14px;">⚠️ १०० प्रश्नांची अचूक उत्तरतालिका याच WhatsApp नंबरवर पाठवली जाईल.</p>
+            <h3 style="margin:0 0 6px; color:#34d399; font-size:18px;">🎯 निकाल व स्पष्टीकरणासाठी माहिती भरा:</h3>
+            <p style="font-size:13px; color:#94a3b8; margin:0 0 14px;">
+                {% if test.category == 'rapid' %}
+                    ⚠️ आपण खाली टाकत असलेल्या WhatsApp नंबरवर रोज सकाळी १०:०० वाजता रॅपिड फायर टेस्टची लिंक व उत्तरतालिका पाठवली जाईल.
+                {% else %}
+                    ⚠️ १०० प्रश्नांची अचूक उत्तरतालिका याच WhatsApp नंबरवर पाठवली जाईल.
+                {% endif %}
+            </p>
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
                 <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">पूर्ण नाव *:</label><input type="text" name="student_name" id="s_name" placeholder="उदा. राहुल पाटील" onkeyup="validateAndReady()" required></div>
                 <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">जिल्हा *:</label><input type="text" name="district" id="s_dist" placeholder="उदा. कोल्हापूर" onkeyup="validateAndReady()" required></div>
@@ -550,29 +612,65 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
         .box { max-width: 760px; margin: 15px auto; background: #162036; border-radius: 16px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); border-top: 6px solid #10b981; }
         .cutoff-warning-box { background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 12px; padding: 16px; margin: 15px 0; color: #fca5a5; text-align: center; }
         .cert-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border: 3px double #f59e0b; padding: 22px; border-radius: 12px; margin: 20px 0; text-align: center; }
-        .share-lock-box { background: rgba(245,158,11,0.15); border: 2px dashed #f59e0b; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center; color: #fde68a; }
         .btn-wa { display: inline-block; background: #25D366; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px; margin: 8px 4px; cursor: pointer; border: none; }
+        .btn-group { display: block; background: linear-gradient(135deg, #25D366, #128C7E); color: white; padding: 14px 20px; border-radius: 10px; text-decoration: none; font-weight: 800; font-size: 15px; text-align: center; margin: 20px 0; box-shadow: 0 6px 18px rgba(37,211,102,0.3); border: 1.5px solid #86efac; cursor: pointer; }
         .btn-pay { display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 16px; margin-top: 10px; }
-        .live-tag { background: #334155; color: #38bdf8; padding: 5px 12px; border-radius: 20px; font-size: 12.5px; font-weight: bold; display: inline-block; margin-top: 6px; }
         .promo-box { background: #0f172a; border: 1.5px solid #334155; padding: 15px; border-radius: 10px; margin-top: 20px; text-align: center; }
-        .btn-link { display: inline-block; background: #25D366; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; }
+        .btn-link { display: inline-block; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; cursor: pointer; border: none; }
+        input[type="tel"] { width: 100%; max-width: 280px; padding: 11px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: white; font-size: 14px; text-align: center; margin-bottom: 10px; }
+
+        /* Privacy Rules Modal for WhatsApp Group Entry */
+        .rules-modal { display: none; position: fixed; inset: 0; background: rgba(11,19,41,0.95); z-index: 10000; justify-content: center; align-items: center; padding: 15px; }
+        .rules-content { background: #162036; border: 2px solid #25D366; border-radius: 14px; padding: 25px; max-width: 580px; max-height: 90vh; overflow-y: auto; text-align: left; }
     </style>
     <script>
-        function checkInboundClicks() {
-            fetch('/api/check_referral_status/{{ lead.phone }}')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('liveClickCount').innerText = data.clicks;
-                if (data.unlocked) {
-                    document.getElementById('shareLockSection').style.display = 'none';
-                    document.getElementById('unlockedResultSection').style.display = 'block';
-                }
-            });
+        function openRulesModal() {
+            document.getElementById('waRulesModal').style.display = 'flex';
         }
-        setInterval(checkInboundClicks, 4000);
+        function closeRulesModal() {
+            document.getElementById('waRulesModal').style.display = 'none';
+        }
+        function handleSocialLink(url) {
+            if (url && url.trim() !== '') {
+                window.open(url, '_blank');
+            } else {
+                alert("🌟 संपूर्ण प्रवासाची यशोगाथा लवकरच आपल्या भेटीस येत आहे! खाकीचे स्वप्न नक्की पूर्ण होणार! ⚔️");
+            }
+        }
     </script>
 </head>
 <body>
+
+<!-- व्हॉट्सॲप ग्रुप नियम व प्रायव्हसी मोडल (Rules Modal) -->
+<div id="waRulesModal" class="rules-modal">
+    <div class="rules-content">
+        <h3 style="color:#25D366; margin-top:0; text-align:center;">🚨 अधिकृत सराव ग्रुप नियम व अटी</h3>
+        <p style="font-size:13px; color:#cbd5e1; line-height:1.5;">या ग्रुपचा उद्देश केवळ पोलीस भरती परीक्षेचा सराव, मोफत टेस्ट्स आणि अभ्यासाची माहिती देणे हा आहे. ग्रुपमध्ये सहभागी होण्यापूर्वी खालील नियमांचे पालन करणे बंधनकारक आहे:</p>
+        
+        <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #ef4444; margin-bottom:10px;">
+            <b style="color:#fca5a5; font-size:13px;">१. प्रायव्हसी व महिलांचा सन्मान (Privacy Rules):</b>
+            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;">ग्रुपमध्ये महिला/विद्यार्थिनी सदस्य देखील आहेत. कोणत्याही सदस्याने इतर सदस्याला (विशेषतः महिलांना) परस्पर वैयक्तिक मेसेज किंवा कॉल करणे सक्त मनाई आहे. असा प्रकार आढळल्यास नंबर त्वरित ब्लॉक केला जाईल.</p>
+        </div>
+
+        <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #38bdf8; margin-bottom:10px;">
+            <b style="color:#7dd3fc; font-size:13px;">२. फक्त अभ्यास चर्चा:</b>
+            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;">कोणतेही राजकीय, वैयक्तिक, वादग्रस्त किंवा धार्मिक फॉरवर्ड मेसेज टाकण्यास सक्त बंदी आहे. फक्त पोलीस भरती सराव प्रश्न शेअर करावेत.</p>
+        </div>
+
+        <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #f59e0b; margin-bottom:15px;">
+            <b style="color:#fde047; font-size:13px;">३. कायदेशीर अस्वीकरण (Disclaimer / ॲडमिन जबाबदारी):</b>
+            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;"><b>हा ग्रुप फक्त शैक्षणिक अभ्यासासाठी आहे. ग्रुपमधील सदस्यांच्या कोणत्याही परस्पर वैयक्तिक संभाषणाला किंवा गैरवर्तनाला ग्रुप ॲडमिन जबाबदार असणार नाही.</b> कोणीही परस्पर संपर्क साधल्यास ती त्यांची स्वतःची जबाबदारी राहील.</p>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <a href="{{ wa_active_link }}" target="_blank" onclick="closeRulesModal()" style="flex:2; background:#25D366; color:#064e3b; text-align:center; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; text-decoration:none;">
+                ✅ नियम मान्य आहेत — ग्रुपमध्ये सामील व्हा
+            </a>
+            <button onclick="closeRulesModal()" style="flex:1; background:#475569; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;">रद्द करा</button>
+        </div>
+    </div>
+</div>
+
 <div class="box">
     <h2 style="color:#34d399; margin:0 0 5px; text-align:center;">🎉 टेस्ट यशस्वीरीत्या पूर्ण झाली!</h2>
     <div style="background:#0f172a; border:1px solid #334155; border-radius:12px; padding:18px; margin:15px 0; text-align:center;">
@@ -581,39 +679,51 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
         <p style="font-size:20px; font-weight:bold; color:#f8fafc; margin-top:4px;">प्राप्त गुण: <span style="color:#10b981;">{{ lead.score }}</span> / {{ lead.total_marks }}</p>
     </div>
 
+    <!-- अधिकृत WhatsApp ग्रुप जॉइन बटण (नियम पडताळणीसह) -->
+    {% if wa_active_link %}
+    <button onclick="openRulesModal()" class="btn-group">
+        📲 दररोज सकाळी १०:०० वाजता मोफत रॅपिड टेस्ट मिळवण्यासाठी अधिकृत WhatsApp ग्रुपमध्ये सामील व्हा ➔
+    </button>
+    {% endif %}
+
+    {% if test_category != 'rapid' %}
     <div class="cutoff-warning-box">
         <h4 style="margin:0 0 5px; color:#ef4444; font-size:17px;">⚠️ सावधान! मेरिट लिस्ट धोक्यात आहे!</h4>
         <p style="font-size:14px; margin:0; line-height:1.5;">तुमच्या <b>{{ lead.district }}</b> जिल्ह्याचा संभाव्य कट-ऑफ <b>८२ गुण</b> आहे, आणि तुमचे <b>{{ lead.score }} गुण</b> आले आहेत.</p>
         <a href="/take_test/6" class="btn-pay">⚡ '५० संभाव्य टेस्ट्स संच' फक्त ₹९९ मध्ये आत्ताच अनलॉक करा</a>
     </div>
+    {% endif %}
 
+    <!-- स्वाभिमान डिजिटल चॅलेंज कार्ड (व्हायरल वाक्यासह) -->
     <div class="cert-card">
-        <h3 style="color:#fde047; margin:0 0 6px; font-size:20px;">🎖️ मिशन खाकी २०२६ — स्वाभिमान प्रमाणपत्र</h3>
-        <p style="font-size:13.5px; color:#e2e8f0; margin:10px 0; line-height:1.5;">"मैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा! बघूया कोण मारतंय बाजी!"</p>
+        <h3 style="color:#fde047; margin:0 0 6px; font-size:20px;">🎖️ मिशन खाकी २०२६ — स्वाभिमान चॅलेंज</h3>
+        <p style="font-size:15px; color:#a7f3d0; margin:10px 0; font-weight:bold; line-height:1.5;">
+            "🔥 तुझ्यासोबत तुझा मित्रही भरती झाला पाहिजे! त्यालाही ही लिंक पाठव आणि उद्याची रॅपिड टेस्ट मिळव!"
+        </p>
         <a href="https://wa.me/?text={{ ego_share_encoded }}" target="_blank" class="btn-wa">⚔️ मित्रांना WhatsApp वर चॅलेंज द्या</a>
     </div>
 
-    <div id="shareLockSection" class="share-lock-box">
-        <h3 style="margin:0 0 6px; font-size:18px; color:#fbbf24;">🔒 ५ टेस्ट्स मोफत अनलॉक चॅलेंज!</h3>
-        <p style="font-size:13.5px; margin:0 0 10px; line-height:1.5;">
-            सविस्तर स्पष्टीकरण आणि <b>पुढील ५ टेस्ट्स मोफत अनलॉक करण्यासाठी</b> खालील लिंक तुमच्या ग्रुप्सवर शेअर करा.<br>
-            <b>तुमच्या लिंकवरून किमान ३ मित्रांनी पोर्टल उघडल्यावर टेस्ट्स आपोआप अनलॉक होतील!</b>
-        </p>
-        <div class="live-tag">📡 लाईव्ह पडताळणी: <span id="liveClickCount" style="color:#38bdf8; font-size:15px;">०</span> / ३ मित्रांनी लिंक उघडली</div><br>
-        <a href="https://wa.me/?text={{ ego_share_encoded }}" target="_blank" class="btn-wa">📲 ३ WhatsApp ग्रुप्सवर शेअर करा</a>
+    {% if test_category == 'rapid' %}
+    <div style="background:#0f172a; border:2px solid #10b981; border-radius:12px; padding:22px; text-align:center; margin-top:20px;">
+        <h3 style="color:#34d399; margin-top:0;">📖 सविस्तर स्पष्टीकरण पाहण्यासाठी:</h3>
+        <p style="font-size:13.5px; color:#cbd5e1; margin-bottom:12px;">कृपया तुम्ही फॉर्ममध्ये भरलेला तुमचा <b>मूळ १० अंकी WhatsApp नंबर</b> येथे टाका:</p>
+        <form method="POST" action="/verify_rapid_key/{{ lead.access_token }}">
+            <input type="tel" name="verify_phone" placeholder="१० अंकी WhatsApp नंबर" maxlength="10" required><br>
+            <button type="submit" style="background:#10b981; color:#064e3b; padding:10px 24px; border:none; border-radius:6px; font-weight:800; cursor:pointer;">🔓 स्पष्टीकरण शीट उघडा</button>
+        </form>
     </div>
-
-    <div id="unlockedResultSection" style="display:none; text-align:center; margin:20px 0; background:rgba(16,185,129,0.2); padding:16px; border-radius:10px; border:1.5px solid #10b981;">
-        <h4 style="color:#34d399; margin:0 0 10px;">✅ अभिनंदन! ३ मित्रांनी पोर्टल उघडले आहे. टेस्ट १ ते ५ मोफत अनलॉक झाल्या आहेत!</h4>
-        <a href="{{ result_url }}" target="_blank" style="background:#10b981; color:#064e3b; padding:10px 22px; border-radius:6px; text-decoration:none; font-weight:800; display:inline-block; margin-right:5px;">📖 स्पष्टीकरण शीट पहा</a>
-        <a href="/" style="background:#0284c7; color:white; padding:10px 22px; border-radius:6px; text-decoration:none; font-weight:800; display:inline-block;">🎯 पुढील टेस्ट्स सोडवा</a>
+    {% else %}
+    <div style="text-align:center; margin:20px 0;">
+        <a href="{{ result_url }}" target="_blank" style="background:#10b981; color:#064e3b; padding:12px 26px; border-radius:8px; text-decoration:none; font-weight:800; display:inline-block;">📖 सविस्तर स्पष्टीकरण शीट पहा</a>
     </div>
+    {% endif %}
 
+    <!-- सोशल मीडिया टॅब्स (लिंक नसल्यास प्रेरणादायी मेसेज) -->
     <div class="promo-box">
         <h4 style="margin:0 0 10px; color:#34d399;">🌟 अधिकृत सोशल मीडिया व यशोगाथा लिंक्स:</h4>
-        {% if insta_link %}<a href="{{ insta_link }}" target="_blank" class="btn-link" style="background:#E1306C;">📸 Instagram</a>{% endif %}
-        {% if yt_link %}<a href="{{ yt_link }}" target="_blank" class="btn-link" style="background:#FF0000;">▶ YouTube</a>{% endif %}
-        {% if toppers_link %}<a href="{{ toppers_link }}" target="_blank" class="btn-link" style="background:#0284c7;">🏆 यशवंतांचे फोटो</a>{% endif %}
+        <button onclick="handleSocialLink('{{ insta_link }}')" class="btn-link" style="background:#E1306C;">📸 Instagram</button>
+        <button onclick="handleSocialLink('{{ yt_link }}')" class="btn-link" style="background:#FF0000;">▶ YouTube</button>
+        <button onclick="handleSocialLink('{{ toppers_link }}')" class="btn-link" style="background:#0284c7;">🏆 यशवंतांचे फोटो</button>
     </div>
 </div>
 </body>
@@ -637,20 +747,16 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
     <h2 style="color:#34d399; text-align:center; margin:0 0 5px;">🔒 ५० टेस्ट्स महासंच प्रवेश द्वार</h2>
     <p style="text-align:center; font-size:13px; color:#94a3b8;">{{ test.test_title }} (फी: ₹{{ test.test_fee }})</p>
 
-    <div style="background:#0f172a; border:1px solid #334155; padding:14px; border-radius:8px; margin-bottom:15px;">
-        <p style="margin:0 0 8px; font-size:12.5px; font-weight:bold; color:#60a5fa;">🔄 तुम्ही आधी ३ मित्रांना जोडून अनलॉक केले असल्यास:</p>
-        <form method="POST" action="/verify_share_phone/{{ test.id }}">
-            <input type="tel" name="verify_phone" placeholder="नोंदवलेला 10 अंकी WhatsApp नंबर" maxlength="10" required style="margin-bottom:8px;">
-            <button type="submit" style="background:#2563eb; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; width:100%; font-size:12.5px; cursor:pointer;">🔓 ५ मोफत टेस्ट्स ॲक्सेस तपासा</button>
-        </form>
+    <div style="background:rgba(245,158,11,0.15); border:1px solid #f59e0b; border-radius:8px; padding:12px; margin-bottom:15px; text-align:center;">
+        <p style="color:#fde68a; font-size:12.5px; margin:0; font-weight:600;">
+            ⚡ <b>विशेष सूचना:</b> पेमेंट यशस्वी झाल्यानंतर <b>पहिल्या ३ टेस्ट्स त्वरित अनलॉक होतील</b>. उर्वरित टेस्ट्स तुमच्या सराव सातत्यासाठी <b>दररोज सकाळी १०:०० वाजता आपोआप अनलॉक होत राहतील!</b>
+        </p>
     </div>
 
-    <!-- RAZORPAY 1-CLICK BUTTON -->
     <div style="text-align:center;">
         <button id="rzp-button" class="btn-rzp">⚡ GooglePay / PhonePe द्वारे त्वरित अनलॉक करा (₹९९)</button>
     </div>
 
-    <!-- मॅन्युअल UPI / QR बॅकअप -->
     <div style="background:#0f172a; padding:14px; border-radius:8px; border:1px solid #f59e0b; text-align:center; margin-bottom:15px;">
         <p style="margin:0 0 6px; font-weight:bold; color:#fbbf24; font-size:12px;">किंवा QR स्कॅन करून <b>{{ upi_mobile }}</b> वर पे करा:</p>
         <img src="{{ qr_url }}" alt="QR" style="max-width:130px; max-height:130px; border-radius:6px;">
@@ -857,7 +963,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <a href="/admin/dashboard?tab=leaderboard" class="{{ 'active' if active_tab == 'leaderboard' else '' }}">🏆 Leaderboard</a>
         <a href="/admin/dashboard?tab=feedback" class="{{ 'active' if active_tab == 'feedback' else '' }}">💬 Feedback</a>
         <a href="/admin/dashboard?tab=notices" class="{{ 'active' if active_tab == 'notices' else '' }}">📢 PDF Docs</a>
-        <a href="/admin/dashboard?tab=settings" class="{{ 'active' if active_tab == 'settings' else '' }}">🔐 Settings</a>
+        <a href="/admin/dashboard?tab=settings" class="{{ 'active' if active_tab == 'settings' else '' }}">🔐 Settings (टॅब क्रम व WhatsApp)</a>
     </div>
 
     <!-- 1. LEADS TAB -->
@@ -1048,6 +1154,17 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 नवीन टेस्ट लॉन्च करा व टॅब निवडा</h3>
+
+    <div style="background:#ecfdf5; border:2px solid #10b981; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+            <h4 style="margin:0; color:#065f46;">⚡ १-क्लिक ऑटोमॅटिक शेड्युलिंग (50 Tests + 50 Rapid + Demo)</h4>
+            <small style="color:#047857;">१ डेमो टेस्ट, ५० रॅपिड फायर टेस्ट्स आणि ५० पेड टेस्ट्स दररोज सकाळी १०:०० वाजता आपोआप अनलॉक होतील.</small>
+        </div>
+        <form method="POST" action="/admin/bulk_schedule_all" onsubmit="return confirm('सर्व ५० टेस्ट्स व ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करायच्या का?');">
+            <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold;">🚀 ५० टेस्ट्स + ५० रॅपिड रोज सकाळी १० ला शेड्युल करा</button>
+        </form>
+    </div>
+
     <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:18px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:25px;">
         <label style="font-weight:bold; font-size:12.5px;">टेस्टचे नाव:</label>
         <input type="text" name="test_title" placeholder="उदा. महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट संच #१०" required>
@@ -1081,9 +1198,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn" style="margin-top:8px;">🚀 नवीन टेस्ट सेव्ह करा</button>
     </form>
 
-    <h4>सध्याच्या टेस्ट्स व टॅब व्यवस्थापन:</h4>
+    <h4>सर्व टेस्ट्स यादी व प्रिंट व्यवस्थापन:</h4>
     <table>
-        <tr><th>ID</th><th>नाव</th><th>होम पेज टॅब</th><th>प्रकार</th><th>फी</th><th>वेळ</th><th>स्थिती</th><th>कृती</th></tr>
+        <tr><th>ID</th><th>नाव</th><th>होम पेज टॅब</th><th>प्रकार</th><th>फी</th><th>वेळ</th><th>स्थिती</th><th>कृती (प्रिंट व अपडेट)</th></tr>
         {% for t in tests %}
         <tr>
             <form method="POST" action="/admin/update_test/{{ t.id }}">
@@ -1156,19 +1273,30 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn">सेव्ह करा</button>
     </form>
 
-    <!-- 9. SETTINGS TAB -->
+    <!-- 9. SETTINGS TAB (टॅब क्रम व WhatsApp ओव्हरफ्लो सेटिंग्स) -->
     {% elif active_tab == 'settings' %}
-    <h3>🔐 ॲडमिन पासवर्ड व सोशल लिंक्स</h3>
+    <h3>🔐 ॲडमिन पासवर्ड, टॅब क्रम व WhatsApp व्यवस्थापन</h3>
     <form method="POST" action="/admin/update_password">
         <label>नवा पासवर्ड:</label>
         <div style="position:relative; width:100%; margin-bottom:12px;">
             <input type="password" name="new_password" id="new_password" placeholder="नवा पासवर्ड टाका" style="padding-right:45px;">
             <button type="button" id="passEyeBtn" onclick="togglePassVis()" style="position:absolute; right:10px; top:8px; background:none; border:none; cursor:pointer;">👁️</button>
         </div>
+
+        <label style="font-weight:bold; color:#065f46;">🌐 होम पेज टॅबचा क्रम (कॉमाने वेगळे करा):</label>
+        <input type="text" name="tab_order" value="{{ tab_order }}" placeholder="उदा. all,rapid,paid,free,live,battle,docs">
+        <small style="display:block; color:#64748b; margin-top:-5px; margin-bottom:10px;">(पर्याय: all, live, paid, free, rapid, battle, docs)</small>
+
+        <label style="font-weight:bold; color:#1e40af;">📱 अधिकृत WhatsApp ग्रुप १ लिंक (प्राथमिक):</label>
+        <input type="text" name="wa_group_link" value="{{ wa_group_link }}" placeholder="उदा. https://chat.whatsapp.com/XXXXX1">
+
+        <label style="font-weight:bold; color:#b45309;">📱 अधिकृत WhatsApp ग्रुप २ लिंक (गट मर्यादा संपल्यास बॅकअप):</label>
+        <input type="text" name="wa_group_link_2" value="{{ wa_group_link_2 }}" placeholder="उदा. https://chat.whatsapp.com/XXXXX2">
+
         <label>Instagram लिंक:</label><input type="text" name="insta_link" value="{{ insta_link }}">
         <label>YouTube लिंक:</label><input type="text" name="yt_link" value="{{ yt_link }}">
         <label>यशवंतांचे फोटो लिंक:</label><input type="text" name="toppers_link" value="{{ toppers_link }}">
-        <button type="submit" class="btn">सेव्ह करा</button>
+        <button type="submit" class="btn">💾 बदल सेव्ह करा</button>
     </form>
     {% endif %}
 </div>
@@ -1201,18 +1329,52 @@ def home_tests_list():
                         """, (ref_phone, c_time))
                     conn.commit()
 
+    now_time = datetime.now()
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM test_papers WHERE status='Active' ORDER BY id ASC")
-            tests = cur.fetchall()
+            raw_tests = cur.fetchall()
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='recruitment_pdf'")
             r_row = cur.fetchone()
             recruitment_pdf = r_row['setting_value'] if r_row else ''
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='eligibility_pdf'")
             e_row = cur.fetchone()
             eligibility_pdf = e_row['setting_value'] if e_row else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='tab_order'")
+            to_row = cur.fetchone()
+            tab_order_str = to_row['setting_value'] if to_row else 'all,live,paid,free,rapid,battle,docs'
+
+            # थेट डेटाबेसमधून रिअल जिल्हा मुकाबला गणना
+            cur.execute("""
+                SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
+                FROM mock_test_leads
+                WHERE district IS NOT NULL AND district != ''
+                GROUP BY district
+                ORDER BY avg_score DESC, total_students DESC
+                LIMIT 15
+            """)
+            live_district_battles = cur.fetchall()
+
+    ordered_tabs = [t.strip() for t in tab_order_str.split(',') if t.strip()]
+
+    tests = []
+    for t in raw_tests:
+        t_dict = dict(t)
+        if t_dict.get('publish_at') and t_dict['publish_at'] > now_time:
+            t_dict['is_locked'] = True
+        else:
+            t_dict['is_locked'] = False
+        tests.append(t_dict)
             
-    return render_template_string(HOME_TEMPLATE, tests=tests, recruitment_pdf=recruitment_pdf, eligibility_pdf=eligibility_pdf, is_admin=is_admin)
+    return render_template_string(
+        HOME_TEMPLATE,
+        tests=tests,
+        recruitment_pdf=recruitment_pdf,
+        eligibility_pdf=eligibility_pdf,
+        is_admin=is_admin,
+        ordered_tabs=ordered_tabs,
+        live_district_battles=live_district_battles
+    )
 
 @app.route('/terms-and-conditions')
 def terms_and_conditions():
@@ -1265,6 +1427,10 @@ def take_test(test_id):
 
     if not test or test['status'] != 'Active': return "Test not found or closed", 404
 
+    # शेड्युलिंग लॉक तपासणी
+    if test.get('publish_at') and test['publish_at'] > datetime.now():
+        return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⏳ ही टेस्ट दररोज सकाळी १०:०० वाजता अनलॉक होईल! कृपया वेळेवर भेट द्या.</h3>", 403
+
     if test['test_type'] == 'Free':
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -1305,6 +1471,7 @@ def take_test(test_id):
 
     return render_template_string(ACCESS_CHECK_TEMPLATE, test=test, qr_url=qr_url, upi_mobile=upi_mobile)
 
+# --- RAZORPAY ORDERS & VERIFY ---
 @app.route('/create_razorpay_order/<int:test_id>', methods=['POST'])
 def create_razorpay_order(test_id):
     client, key_id = get_razorpay_client()
@@ -1417,25 +1584,55 @@ def submit_test(test_id):
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
             tp_row = cur.fetchone()
             toppers_link = tp_row['setting_value'] if tp_row else ''
+            
+            # व्हॉट्सॲप ग्रुप बॅकअप व ऑटोमॅटिक स्विचिंग लॉजिक
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='wa_group_link'")
+            wg_row = cur.fetchone()
+            wa_group_link = wg_row['setting_value'] if wg_row else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='wa_group_link_2'")
+            wg2_row = cur.fetchone()
+            wa_group_link_2 = wg2_row['setting_value'] if wg2_row else ''
+
+            cur.execute("SELECT COUNT(*) as cnt FROM mock_test_leads")
+            total_leads_count = cur.fetchone()['cnt']
+            # जर विद्यार्थी संख्या १००० पेक्षा जास्त असेल आणि दुसरा ग्रुप दिलेला असेल तर ग्रुप २ वर पाठवा
+            wa_active_link = wa_group_link_2 if (total_leads_count >= 1000 and wa_group_link_2) else wa_group_link
+
             conn.commit()
 
     main_portal_url = request.host_url.rstrip('/')
     result_url = main_portal_url + url_for('detailed_answers', token=result_token)
     student_tracking_url = f"{main_portal_url}/?ref={phone}"
-    ego_msg = f"🏆 *महाराष्ट्र पोलीस भरती ओपन चॅलेंज* 🏆\\nमैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा! बघूया कोण मारतंय बाजी!\\nमला १०० पैकी {score} गुण मिळाले आणि ऑल महाराष्ट्र रँक #{state_rank} आलाय!\\n👉 मोफत टेस्ट सोडवा:\\n{student_tracking_url}"
+    
+    # थेट मुख्य पानावर नेणारा अचूक चॅलेंज मेसेज
+    ego_msg = f"🏆 *महाराष्ट्र पोलीस भरती ओपन चॅलेंज* 🏆\\nमैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा!\\nमला {total} पैकी {score} गुण मिळाले आणि ऑल महाराष्ट्र रँक #{state_rank} आलाय!\\n🔥 तुझ्यासोबत तुझा मित्रही भरती झाला पाहिजे! त्यालाही ही लिंक पाठव आणि उद्याची रॅपिड टेस्ट मिळव!\\n👉 मोफत टेस्ट सोडवण्यासाठी येथे क्लिक करा:\\n{student_tracking_url}"
     ego_share_encoded = urllib.parse.quote(ego_msg)
 
     return render_template_string(
         RESULT_SUMMARY_TEMPLATE,
-        lead={'student_name': student_name, 'district': district, 'phone': phone, 'test_name': test['test_title'], 'score': score, 'total_marks': total},
+        lead={'student_name': student_name, 'district': district, 'phone': phone, 'test_name': test['test_title'], 'score': score, 'total_marks': total, 'access_token': result_token},
         state_rank=state_rank,
         result_url=result_url,
         main_portal_url=main_portal_url,
         ego_share_encoded=ego_share_encoded,
+        test_category=test.get('category', 'free'),
         insta_link=insta_link,
         yt_link=yt_link,
-        toppers_link=toppers_link
+        toppers_link=toppers_link,
+        wa_active_link=wa_active_link
     )
+
+# रॅपिड टेस्टसाठी ओरिजनल WhatsApp नंबर पडताळणी राऊट
+@app.route('/verify_rapid_key/<token>', methods=['POST'])
+def verify_rapid_key(token):
+    phone = request.form.get('verify_phone', '').strip()
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT phone FROM mock_test_leads WHERE access_token=%s", (token,))
+            lead = cur.fetchone()
+            if lead and lead['phone'] == phone:
+                return redirect(url_for('detailed_answers', token=token))
+    return "<h3 style='color:red; text-align:center; padding:30px;'>⚠️ चुकीचा WhatsApp नंबर! कृपया टेस्ट सबमिट करताना वापरलेला मूळ नंबर टाका.</h3>", 403
 
 @app.route('/detailed_answers/<token>')
 def detailed_answers(token):
@@ -1576,6 +1773,17 @@ def admin_dashboard():
             yt_link = cur.fetchone()['setting_value']
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
             toppers_link = cur.fetchone()['setting_value']
+            
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='wa_group_link'")
+            wg_val = cur.fetchone()
+            wa_group_link = wg_val['setting_value'] if wg_val else ''
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='wa_group_link_2'")
+            wg2_val = cur.fetchone()
+            wa_group_link_2 = wg2_val['setting_value'] if wg2_val else ''
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='tab_order'")
+            t_order_val = cur.fetchone()
+            tab_order = t_order_val['setting_value'] if t_order_val else 'all,live,paid,free,rapid,battle,docs'
 
     top_leads = [(idx, l) for idx, l in enumerate(all_leads_sorted, start=1)]
 
@@ -1600,8 +1808,50 @@ def admin_dashboard():
         razorpay_key_secret=razorpay_key_secret,
         insta_link=insta_link,
         yt_link=yt_link,
-        toppers_link=toppers_link
+        toppers_link=toppers_link,
+        wa_group_link=wa_group_link,
+        wa_group_link_2=wa_group_link_2,
+        tab_order=tab_order
     )
+
+# --- १-क्लिक बल्क शेड्युलिंग राऊट (50 Tests + 50 Rapid + Demo) ---
+@app.route('/admin/bulk_schedule_all', methods=['POST'])
+def admin_bulk_schedule_all():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+
+    today = date.today()
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # १. मोफत डेमो टेस्ट (त्वरित खुली)
+            cur.execute("""
+                INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, publish_at)
+                VALUES ('🟢 पोलीस भरती मोफत डेमो टेस्ट पेपर', 'Free', 0, 60, 'Active', 'free', NULL)
+            """)
+
+            # २. ५० सशुल्क १००-गुणांचे संच (पहिले ३ आज सुरू, उरलेले दररोज सकाळी १०:०० वाजता)
+            for i in range(1, 51):
+                if i <= 3:
+                    publish_time = None
+                else:
+                    target_day = today + timedelta(days=(i - 3))
+                    publish_time = datetime(target_day.year, target_day.month, target_day.day, 10, 0, 0)
+                cur.execute("""
+                    INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, publish_at)
+                    VALUES (%s, 'Paid', 99, 60, 'Active', 'paid', %s)
+                """, (f'🎯 महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट पेपर #{i}', publish_time))
+
+            # ३. ५० रॅपिड फायर टेस्ट्स (दररोज सकाळी १०:०० वाजता एक-एक)
+            for j in range(1, 51):
+                target_day = today + timedelta(days=(j - 1))
+                publish_time = datetime(target_day.year, target_day.month, target_day.day, 10, 0, 0)
+                cur.execute("""
+                    INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, publish_at)
+                    VALUES (%s, 'Free', 0, 15, 'Active', 'rapid', %s)
+                """, (f'⚡ दैनिक रॅपिड फायर टेस्ट #{j} (सकाळी १०:००)', publish_time))
+
+            conn.commit()
+
+    return redirect('/admin/dashboard?tab=launch')
 
 @app.route('/admin/update_razorpay_settings', methods=['POST'])
 def admin_update_razorpay_settings():
@@ -1851,6 +2101,7 @@ def admin_print_test(test_id):
     <body style="font-family:sans-serif; padding:30px; color:#000;">
         <h2 style="text-align:center;">राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</h2>
         <h3 style="text-align:center;">{test['test_title']}</h3>
+        <p style="text-align:center;"><b>वेळ:</b> {test['duration_minutes']} मिनिटे | <b>एकूण प्रश्न:</b> {len(questions)}</p>
         <hr>
         <ol>{ "".join([f"<li style='margin-bottom:15px;'><b>{q['question']}</b><br>A) {q['opt_a']}&nbsp;&nbsp;&nbsp;B) {q['opt_b']}&nbsp;&nbsp;&nbsp;C) {q['opt_c']}&nbsp;&nbsp;&nbsp;D) {q['opt_d']}<br><small style='color:green;'>अचूक उत्तर: {q['correct']} | स्पष्टीकरण: {q['explanation']}</small></li>" for q in questions]) }</ol>
         <script>window.print();</script>
@@ -1953,6 +2204,9 @@ def admin_update_pdf_docs():
 def admin_update_password():
     if not session.get('admin_logged'): return redirect('/admin/login')
     new_pass = request.form.get('new_password')
+    tab_order = request.form.get('tab_order', 'all,live,paid,free,rapid,battle,docs').strip()
+    wa_group = request.form.get('wa_group_link', '').strip()
+    wa_group_2 = request.form.get('wa_group_link_2', '').strip()
     insta = request.form.get('insta_link', '')
     yt = request.form.get('yt_link', '')
     top = request.form.get('toppers_link', '')
@@ -1961,6 +2215,18 @@ def admin_update_password():
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             if new_pass:
                 cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_pass'", (new_pass,))
+            cur.execute("""
+                INSERT INTO academy_settings (setting_key, setting_value) VALUES ('tab_order', %s)
+                ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value
+            """, (tab_order,))
+            cur.execute("""
+                INSERT INTO academy_settings (setting_key, setting_value) VALUES ('wa_group_link', %s)
+                ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value
+            """, (wa_group,))
+            cur.execute("""
+                INSERT INTO academy_settings (setting_key, setting_value) VALUES ('wa_group_link_2', %s)
+                ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value
+            """, (wa_group_2,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='insta_link'", (insta,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='yt_link'", (yt,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='toppers_link'", (top,))
@@ -1987,3 +2253,4 @@ def admin_delete_payment(lead_id):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
