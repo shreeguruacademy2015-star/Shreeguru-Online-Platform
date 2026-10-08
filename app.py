@@ -1836,7 +1836,7 @@ def admin_update_password():
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='yt_link'", (yt,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='toppers_link'", (top,))
             conn.commit()
-    return redirect('/admin/dashboard?tab=settings')
+    return redirect('/admin/dashboard?tab=settings') 
 
 @app.route('/admin/delete_lead/<int:lead_id>')
 def admin_delete_lead(lead_id):
