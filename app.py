@@ -1,4 +1,3 @@
-import csv
 import io
 import json
 import os
@@ -1047,7 +1046,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- 4. QUESTIONS TAB (WITH AI GENERATOR) -->
+    <!-- 4. QUESTIONS TAB -->
     {% elif active_tab == 'questions' %}
     <h3>📝 प्रश्न व्यवस्थापन व AI प्रश्न जनरेटर</h3>
     
@@ -1995,7 +1994,7 @@ def admin_ai_generate_mock():
         f"{subject}: 'उंटावरचा शहाणा' या अलंकारिक शब्दाचा अर्थ काय? | मूर्खपणाचा सल्ला देणारा | शहाणा माणूस | उंटावर बसणारा | व्यापारी | A | मूर्खपणाचा आणि नको असलेला सल्ला देणाऱ्या व्यक्तीस उंटावरचा शहाणा म्हणतात.",
         f"{subject}: एका त्रिकोणाच्या तिन्ही कोनांची बेरीज किती अंश असते? | १८०° | ३६०° | ९०° | २७०° | A | कोणत्याही त्रिकोणाच्या सर्व आंतरकोनांची बेरीज नेहमी १८० अंश असते.",
         f"{subject}: भारतीय राज्यघटनेतील कलम १७ कशाशी संबंधित आहे? | अस्पृश्यता निर्मूलन | शिक्षणाचा हक्क | भाषण स्वातंत्र्य | बालमजुरी बंदी | A | संविधानातील कलम १७ अन्वये अस्पृश्यता पाळणे कायद्याने गुन्हा ठरवण्यात आला आहे.",
-        f"{subject}: विसंगत घटक ओळखा: ८, २७, ६४, १०० | १०० | ६४ | ২৭ | ८ | A | इतर सर्व संख्या घन संख्या आहेत (२³, ३³, ४³), तर १०० ही वर्ग संख्या (१०²) आहे."
+        f"{subject}: विसंगत घटक ओळखा: ८, २७, ६४, १०० | १०० | ६४ | २७ | ८ | A | इतर सर्व संख्या घन संख्या आहेत (२³, ३³, ४³), तर १०० ही वर्ग संख्या (१०²) आहे."
     ]
     return jsonify({"success": True, "questions_text": "\n".join(sample_ai_questions)})
 
@@ -2367,14 +2366,15 @@ def admin_update_password():
     top = request.form.get('toppers_link', '')
 
     with get_db() as conn:
-        with conn.cursor():
+        with conn.cursor() as cur:
             if new_pass:
                 cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_pass'", (new_pass,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('site_status', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (site_status,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('home_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (home_tab_order,))
-            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) jouw VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('wa_groups_multiline', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (wa_groups,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='insta_link'", (insta,))
+            cur.execute("UPDATE academy_settings SET setting_key='yt_link' WHERE 1=0;") # dummy to ensure syntax match or actual update
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='yt_link'", (yt,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='toppers_link'", (top,))
             conn.commit()
@@ -2384,16 +2384,16 @@ def admin_update_password():
 def admin_delete_lead(lead_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor():
+        with conn.cursor() as cur:
             cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id=%s", (lead_id,))
             conn.commit()
     return redirect('/admin/dashboard?tab=leads')
 
 @app.route('/admin/delete_payment/<int:lead_id>')
 def admin_delete_payment(lead_id):
-    if not session.get('admin_logged'): return redirect('/admin/login')
+    if not session.get('admin_logged', False): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor():
+        with conn.cursor() as cur:
             cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id=%s", (lead_id,))
             conn.commit()
     return redirect('/admin/dashboard?tab=payments')
