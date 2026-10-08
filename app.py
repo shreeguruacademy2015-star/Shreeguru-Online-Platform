@@ -15,7 +15,7 @@ import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
-# --- SURAKSHIT RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
+# --- SURAKSHIT RAZORPAY IMPORT ---
 try:
     import razorpay
 except ImportError:
@@ -56,7 +56,7 @@ def get_db():
 
 # क्रिप्टोग्राफिक लिंक सिग्नेचर जनरेटर व व्हेरिफायर (HMAC-SHA256)
 def generate_tamper_signature(data_str):
-    return hmac.new(SECURITY_SALT.encode(), data_str.encode(), hashlib.sha256).hexdigest()[:12]
+    return hmac.new(SECURITY_SALT.encode(), str(data_str).encode(), hashlib.sha256).hexdigest()[:12]
 
 def verify_tamper_signature(data_str, sig):
     expected = generate_tamper_signature(data_str)
@@ -88,7 +88,7 @@ def get_razorpay_client():
     return None, key_id
 
 # =============================================================================
-# 1. TERMS AND CONDITIONS & LEGAL DISCLAIMER (ENGLISH - TOP TEMPLATE)
+# 1. TERMS AND CONDITIONS & LEGAL DISCLAIMER (ENGLISH)
 # =============================================================================
 TERMS_TEMPLATE = '''<!DOCTYPE html>
 <html lang="en">
@@ -539,7 +539,6 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
         .cert-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border: 3px double #f59e0b; padding: 22px; border-radius: 12px; margin: 20px 0; text-align: center; }
         .btn-wa { display: inline-block; background: #25D366; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px; margin: 8px 4px; cursor: pointer; border: none; }
         .btn-group { display: block; background: linear-gradient(135deg, #25D366, #128C7E); color: white; padding: 14px 20px; border-radius: 10px; text-decoration: none; font-weight: 800; font-size: 15px; text-align: center; margin: 20px 0; box-shadow: 0 6px 18px rgba(37,211,102,0.3); border: 1.5px solid #86efac; cursor: pointer; }
-        .btn-pay { display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 16px; margin-top: 10px; }
         .promo-box { background: #0f172a; border: 1.5px solid #334155; padding: 15px; border-radius: 10px; margin-top: 20px; text-align: center; }
         .btn-link { display: inline-block; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; cursor: pointer; border: none; }
         input[type="tel"] { width: 100%; max-width: 280px; padding: 11px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: white; font-size: 14px; text-align: center; margin-bottom: 10px; }
@@ -675,7 +674,6 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
     <h2 style="color:#34d399; text-align:center; margin:0 0 5px;">🔒 अतिसंभाव्य १०० गुण टेस्ट प्रवेश द्वार</h2>
     <p style="text-align:center; font-size:13px; color:#94a3b8;">{{ test.test_title }} (फी: ₹{{ test.test_fee }})</p>
 
-    <!-- मोफत रेफरल अनलॉक फोन तपासणी -->
     <div style="background:#0f172a; border:1px solid #334155; padding:14px; border-radius:8px; margin-bottom:15px;">
         <p style="margin:0 0 8px; font-size:12.5px; font-weight:bold; color:#60a5fa;">🔄 तुम्ही ३ मित्रांना जोडून टेस्ट अनलॉक केली असल्यास:</p>
         <form method="POST" action="/verify_share_phone/{{ test.id }}">
@@ -684,7 +682,6 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
         </form>
     </div>
 
-    <!-- RAZORPAY BUTTON -->
     <div style="text-align:center;">
         <button id="rzp-button" class="btn-rzp">⚡ GooglePay / PhonePe द्वारे पेमेंट करा (₹{{ test.test_fee }})</button>
     </div>
@@ -1537,7 +1534,7 @@ def admin_update_payment_settings():
         final_qr_url = f"/static/uploads/{fname}"
 
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             if final_qr_url:
                 cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='qr_code_url'", (final_qr_url,))
             if new_mobile:
@@ -1711,7 +1708,7 @@ def admin_update_test(test_id):
 def admin_delete_test(test_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("UPDATE test_papers SET is_deleted=1 WHERE id=%s", (test_id,))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
