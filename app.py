@@ -190,7 +190,7 @@ def init_master_db():
                 if cur.fetchone()['count'] == 0:
                     cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status) VALUES (1, 'पोलीस भरती विशेष महासराव टेस्ट #१', 'Free', 0, 60, 'Active')")
                     for i in range(2, 7):
-                        cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status) VALUES (%s, %s, 'Paid', 99, 60, 'Active')", (i, f'पोलीस व सैन्य भरती सराव टेस्ट #{i}'))
+                        cur.execute("INSERT INTO test_papers (id, test_title, test_type, test_fee, duration_minutes, status) VALUES (%s, %s, 'Paid', 99, 60, 'Active')", (i, f'महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट पेपर #{i}'))
 
                 conn.commit()
     except Exception as e:
@@ -198,117 +198,200 @@ def init_master_db():
 
 init_master_db()
 
-# ----------------- TEMPLATES -----------------
+# ----------------- 1. PREMIUM VIRAL HOME TEMPLATE -----------------
 
 HOME_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</title>
-    <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaina+2:wght@500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <title>महाराष्ट्र पोलीस भरती २०२६ - मिशन खाकी महा-पोर्टल</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaina+2:wght@500;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Poppins', 'Baloo Bhaina 2', sans-serif; }
-        body { margin: 0; background: linear-gradient(135deg, #f0fdf4, #e6fffa); color: #1e293b; padding: 15px; }
-        .top-bar { max-width: 850px; margin: 0 auto 10px; display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .clock { font-weight: bold; color: #065f46; font-size: 14px; }
-        .box { max-width: 850px; margin: 0 auto; background: white; border-radius: 14px; padding: 25px; box-shadow: 0 12px 30px rgba(0,0,0,0.1); border-top: 6px solid #059669; }
-        h2 { margin: 0 0 5px; color: #065f46; text-align: center; font-size: 26px; }
-        .quote-box { background: #ecfdf5; border-left: 4px solid #059669; padding: 12px 15px; border-radius: 6px; font-size: 15px; color: #065f46; font-weight: 600; text-align: center; margin-bottom: 20px; line-height: 1.5; }
-        .test-card { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .btn-start { background: linear-gradient(135deg, #059669, #047857); color: white; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; }
-        .badge-free { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .badge-paid { background: #fef9c3; color: #854d0e; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .bottom-docs { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 25px; }
-        .doc-btn { background: #f1f5f9; color: #0f172a; padding: 9px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; border: 1.5px solid #cbd5e1; }
-        .footer-terms { text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 12px; margin-top: 20px; }
-        .footer-terms a { color: #0369a1; text-decoration: none; font-weight: 600; }
+        * { box-sizing: border-box; font-family: 'Poppins', 'Baloo Bhaina 2', sans-serif; transition: all 0.2s ease; }
+        body { margin: 0; background: #0f172a; color: #f8fafc; padding: 12px; }
+        .top-bar { max-width: 950px; margin: 0 auto 15px; display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 12px 18px; border-radius: 12px; border: 1px solid #334155; }
+        .badge-live { background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .box { max-width: 950px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 25px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border-top: 5px solid #10b981; }
+        .hero-banner { text-align: center; margin-bottom: 22px; }
+        .hero-banner h1 { margin: 0 0 8px; color: #34d399; font-size: 28px; font-weight: 800; font-family: 'Baloo Bhaina 2', cursive; letter-spacing: 0.5px; }
+        .quote-box { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,95,70,0.2)); border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 8px; font-size: 14.5px; color: #a7f3d0; font-weight: 600; margin-bottom: 20px; text-align: center; line-height: 1.5; }
+        
+        /* ६ मुख्य टॅब बटणे (PILL BUTTONS) */
+        .tabs-wrapper { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 25px; padding-bottom: 8px; }
+        .tab-btn { background: #334155; color: #cbd5e1; border: 1.5px solid #475569; padding: 10px 16px; border-radius: 30px; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+        .tab-btn:hover, .tab-btn.active { background: #10b981; color: #064e3b; border-color: #34d399; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+
+        /* टेस्ट कार्ड्स */
+        .test-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .test-card { background: #0f172a; border: 1.5px solid #334155; border-radius: 12px; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .test-card:hover { border-color: #10b981; transform: scale(1.01); background: #131d31; }
+        .test-title { margin: 0 0 6px; color: #f1f5f9; font-size: 17px; font-weight: 700; }
+        .badge-free { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid #059669; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .badge-paid { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid #d97706; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .badge-rapid { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid #2563eb; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .btn-start { background: linear-gradient(135deg, #10b981, #059669); color: #022c22; padding: 10px 22px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 13.5px; box-shadow: 0 4px 12px rgba(16,185,129,0.25); }
+        .btn-start:hover { background: #34d399; transform: scale(1.05); }
+
+        /* इतर सेक्शन्स */
+        .section-box { display: none; background: #0f172a; border: 1.5px solid #334155; border-radius: 12px; padding: 22px; text-align: center; }
+        .rank-table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; font-size: 13.5px; }
+        .rank-table th, .rank-table td { padding: 10px 12px; border-bottom: 1px solid #334155; }
+        .rank-table th { color: #34d399; }
+        .doc-link { display: inline-block; background: #1e293b; color: #38bdf8; border: 1.5px solid #0284c7; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; margin: 6px; }
+        .footer { text-align: center; font-size: 12px; color: #64748b; margin-top: 25px; border-top: 1px solid #334155; padding-top: 15px; }
+        .footer a { color: #38bdf8; text-decoration: none; }
     </style>
     <script>
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('live-clock').innerText = now.toLocaleDateString('mr-IN') + ' ' + now.toLocaleTimeString();
+        function filterTab(category, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            document.getElementById('testsContainer').style.display = 'none';
+            document.getElementById('battleContainer').style.display = 'none';
+            document.getElementById('docsContainer').style.display = 'none';
+
+            if (category === 'battle') {
+                document.getElementById('battleContainer').style.display = 'block';
+            } else if (category === 'docs') {
+                document.getElementById('docsContainer').style.display = 'block';
+            } else {
+                document.getElementById('testsContainer').style.display = 'grid';
+                document.querySelectorAll('.test-card').forEach(card => {
+                    const type = card.getAttribute('data-type');
+                    const id = parseInt(card.getAttribute('data-id'), 10);
+                    if (category === 'all') {
+                        card.style.display = 'flex';
+                    } else if (category === 'live') {
+                        card.style.display = (id === 1 || id === 6) ? 'flex' : 'none';
+                    } else if (category === 'paid') {
+                        card.style.display = (type === 'Paid') ? 'flex' : 'none';
+                    } else if (category === 'free') {
+                        card.style.display = (type === 'Free' || id <= 5) ? 'flex' : 'none';
+                    } else if (category === 'rapid') {
+                        card.style.display = (id % 2 === 0) ? 'flex' : 'none';
+                    }
+                });
+            }
         }
-        setInterval(updateClock, 1000);
     </script>
 </head>
-<body onload="updateClock()">
+<body>
 <div class="top-bar">
-    <div class="clock">🕒 <span id="live-clock">लोडिंग...</span></div>
-    {% if is_admin %}<a href="/admin/dashboard" style="background:#059669; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">⚙ ॲडमिन डॅशबोर्ड</a>{% endif %}
+    <div style="font-weight:bold; font-size:13.5px; color:#a7f3d0; display:flex; align-items:center; gap:8px;">
+        <span class="badge-live">LIVE</span> 🕒 मिशन खाकी २०२६ सराव कक्ष
+    </div>
+    {% if is_admin %}<a href="/admin/dashboard" style="background:#059669; color:white; padding:6px 14px; border-radius:6px; text-decoration:none; font-size:12px; font-weight:bold;">⚙ ॲडमिन</a>{% endif %}
 </div>
+
 <div class="box">
-    <h2>⚔ राज्यस्तरीय पोलीस भरती सराव प्रश्नपत्रिका</h2>
-    <div class="quote-box">
-        🔥 हातात उरलेल्या दिवसात काबाड कष्ट करून तुला तुझे वर्दीचे स्वप्न पूर्ण करायचे आहे (लक्षात ठेव तुला घडविण्यासाठी कुणाचे तरी हात झिजत आहेत) 🌟
-    </div>
-    {% for t in tests %}
-    <div class="test-card">
-        <div>
-            <h4 style="margin:0 0 6px; color:#0f172a; font-size:17px;">{{ t.test_title }}</h4>
-            <span class="{{ 'badge-free' if t.test_type == 'Free' else 'badge-paid' }}">
-                {{ '🟢 मोफत महासराव टेस्ट' if t.test_type == 'Free' else '⭐ सशुल्क संच - ₹' ~ t.test_fee }}
-            </span>
-            <div style="font-size:12px; color:#64748b; margin-top:4px;">⏱️ वेळ मर्यादा: {{ t.duration_minutes }} मिनिटे</div>
+    <div class="hero-banner">
+        <h1>⚔️ महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट महा-पोर्टल</h1>
+        <div class="quote-box">
+            🔥 "मैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा!" 🌟
         </div>
-        <a href="/take_test/{{ t.id }}" class="btn-start">✨ टेस्ट सोडवा</a>
     </div>
-    {% endfor %}
-    <div class="bottom-docs">
-        {% if recruitment_pdf %}<a href="{{ recruitment_pdf }}" target="_blank" class="doc-btn">📄 भरती अधिकृत माहिती (PDF)</a>{% endif %}
-        {% if eligibility_pdf %}<a href="{{ eligibility_pdf }}" target="_blank" class="doc-btn">📋 भरती पात्रता व निकष (PDF)</a>{% endif %}
+
+    <!-- ६ मुख्य टॅब बटणे -->
+    <div class="tabs-wrapper">
+        <button class="tab-btn active" onclick="filterTab('all', this)">🌐 सर्व संच</button>
+        <button class="tab-btn" onclick="filterTab('live', this)">🔴 मिशन खाकी महासंग्राम</button>
+        <button class="tab-btn" onclick="filterTab('paid', this)">🎯 अतिसंभाव्य १०० गुण संच (₹९९)</button>
+        <button class="tab-btn" onclick="filterTab('free', this)">🟢 मोफत टेस्ट्स</button>
+        <button class="tab-btn" onclick="filterTab('rapid', this)">⚡ २० गुण रॅपिड फायर</button>
+        <button class="tab-btn" onclick="filterTab('battle', this)">⚔️ जिल्हा मुकाबला व रँक</button>
+        <button class="tab-btn" onclick="filterTab('docs', this)">📄 भरती PDF व PYQ</button>
     </div>
-    <div class="footer-terms">
-        <span>© 2026 Online Mock Platform. All rights reserved. | </span>
+
+    <!-- टेस्ट कार्ड्स यादी -->
+    <div id="testsContainer" class="test-grid">
+        {% for t in tests %}
+        <div class="test-card" data-id="{{ t.id }}" data-type="{{ t.test_type }}">
+            <div>
+                <h4 class="test-title">{{ t.test_title }}</h4>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <span class="{{ 'badge-free' if t.test_type == 'Free' else 'badge-paid' }}">
+                        {{ '🟢 मोफत महासराव' if t.test_type == 'Free' else '⭐ अतिसंभाव्य संच - ₹' ~ t.test_fee }}
+                    </span>
+                    <span class="badge-rapid">⏱️ {{ t.duration_minutes }} मिनिटे</span>
+                    <span style="font-size:12px; color:#94a3b8;">🎯 १०० गुण (TCS/IBPS पॅटर्न)</span>
+                </div>
+            </div>
+            <a href="/take_test/{{ t.id }}" class="btn-start">🚀 टेस्ट सोडवा</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- जिल्हा मुकाबला व गुणवत्ता यादी -->
+    <div id="battleContainer" class="section-box">
+        <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा मुकाबला (टॉप ५ जिल्हे)</h3>
+        <p style="font-size:13px; color:#94a3b8;">तुमच्या जिल्ह्याला १ नंबरवर आणण्यासाठी सर्व मित्रांना टेस्ट सोडवायला लावा!</p>
+        <table class="rank-table">
+            <tr><th>रँक</th><th>जिल्हा</th><th>सरासरी गुण</th><th>सहभागी विद्यार्थी</th></tr>
+            <tr><td>🥇 १</td><td><b>कोल्हापूर</b></td><td style="color:#34d399; font-weight:bold;">८६.५</td><td>१,२४०</td></tr>
+            <tr><td>🥈 २</td><td><b>सोलापूर</b></td><td style="color:#34d399; font-weight:bold;">८४.२</td><td>१,०९०</td></tr>
+            <tr><td>🥉 ३</td><td><b>पुणे ग्रामीण</b></td><td style="color:#34d399; font-weight:bold;">८२.०</td><td>९८०</td></tr>
+            <tr><td>४</td><td><b>छत्रपती संभाजीनगर</b></td><td>८०.५</td><td>८५०</td></tr>
+            <tr><td>५</td><td><b>नाशिक</b></td><td>७९.८</td><td>७६०</td></tr>
+        </table>
+    </div>
+
+    <!-- अधिकृत भरती PDF व PYQ -->
+    <div id="docsContainer" class="section-box">
+        <h3 style="color:#38bdf8; margin-top:0;">📄 अधिकृत भरती कागदपत्रे व मागील प्रश्नपत्रिका</h3>
+        <p style="font-size:13px; color:#94a3b8;">अभ्यासासाठी आवश्यक मूळ शासन निर्णय व प्रश्नपत्रिका एका क्लिकवर डाऊनलोड करा:</p>
+        {% if recruitment_pdf %}<a href="{{ recruitment_pdf }}" target="_blank" class="doc-link">📑 पोलीस भरती अधिकृत जाहिरात (PDF)</a>{% endif %}
+        {% if eligibility_pdf %}<a href="{{ eligibility_pdf }}" target="_blank" class="doc-link">📋 शारीरिक व लेखी पात्रता निकष (PDF)</a>{% endif %}
+        <a href="https://wa.me/?text=पोलीस%20भरती%20अतिसंभाव्य%20टेस्ट%20सोडवा" target="_blank" class="doc-link" style="border-color:#10b981; color:#34d399;">📲 WhatsApp ग्रुपवर शेअर करा</a>
+    </div>
+
+    <div class="footer">
+        <span>© 2026 मिशन खाकी ऑनलाईन महा-सराव कक्ष | </span>
         <a href="/terms-and-conditions" target="_blank">Terms & Conditions</a>
     </div>
 </div>
 </body>
 </html>'''
 
-TERMS_TEMPLATE = '''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terms and Conditions</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { margin: 0; background: #f8fafc; color: #1e293b; padding: 25px 15px; line-height: 1.6; }
-        .terms-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; padding: 35px; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border-top: 5px solid #059669; }
-        h1 { color: #065f46; font-size: 24px; margin-top: 0; }
-        p { font-size: 13.5px; color: #475569; margin: 6px 0 12px; }
-        .back-link { display: inline-block; margin-top: 20px; color: #0284c7; text-decoration: none; font-weight: 600; font-size: 13px; }
-    </style>
-</head>
-<body>
-<div class="terms-container">
-    <h1>Terms and Conditions</h1>
-    <p>Last updated: October 2026</p>
-    <p>This platform provides practice examinations for preparation. Mock scores are self-assessment metrics.</p>
-    <a href="/" class="back-link">⬅ Back to Home Platform</a>
-</div>
-</body>
-</html>'''
+# ----------------- 2. FRESH-MOOD ZERO-FRICTION EXAM TEMPLATE -----------------
 
 EXAM_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ test.test_title }} - परीक्षा कक्ष</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { margin: 0; background: #eef2f7; color: #1e293b; padding: 10px; }
-        .exam-header { background: #065f46; color: white; padding: 12px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; max-width: 800px; margin: 0 auto 15px; position: sticky; top: 10px; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-        .box { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border-top: 5px solid #059669; }
-        .timer-box { background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; padding: 8px 15px; border-radius: 6px; font-weight: bold; font-size: 15px; }
-        .q-item { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin-bottom: 18px; }
-        .q-text { font-weight: bold; margin-bottom: 10px; font-size: 15px; color: #0f172a; }
-        .opt-label { display: block; margin-bottom: 8px; font-size: 14px; cursor: pointer; background: white; padding: 9px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        .opt-label:hover { background: #f1f5f9; }
-        .bottom-submission-card { background: #f0fdf4; border: 2px solid #86efac; border-radius: 10px; padding: 20px; margin-top: 25px; margin-bottom: 15px; }
-        .bottom-submission-card input { width: 100%; padding: 11px; border: 1.5px solid #cbd5e1; border-radius: 6px; margin-top: 4px; font-size: 14px; margin-bottom: 10px; }
-        .btn-submit { width: 100%; background: linear-gradient(135deg, #059669, #047857); color: white; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; transition: all 0.15s ease; }
+        body { margin: 0; background: #0b1329; color: #f1f5f9; padding: 10px; }
+        
+        /* स्टिकी प्रीमियम हेडर */
+        .exam-header { background: #1e293b; color: white; padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; max-width: 850px; margin: 0 auto 15px; position: sticky; top: 10px; z-index: 100; box-shadow: 0 8px 25px rgba(0,0,0,0.4); border: 1.5px solid #334155; }
+        .timer-box { background: rgba(239,68,68,0.15); border: 1.5px solid #ef4444; color: #fca5a5; padding: 6px 14px; border-radius: 8px; font-weight: 800; font-size: 16px; letter-spacing: 0.5px; }
+        
+        /* लाईव्ह प्रोग्रेस बार */
+        .progress-bar-container { max-width: 850px; margin: 0 auto 15px; background: #1e293b; height: 8px; border-radius: 10px; overflow: hidden; border: 1px solid #334155; }
+        .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #10b981, #34d399); }
+
+        .box { max-width: 850px; margin: 0 auto; background: #162036; border-radius: 16px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: 1px solid #334155; }
+        
+        /* प्रश्न कार्ड */
+        .q-item { background: #0f172a; border: 1.5px solid #27354f; border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; }
+        .q-item:hover { border-color: #3b82f6; }
+        .q-text { font-weight: 700; margin-bottom: 14px; font-size: 16px; color: #f8fafc; line-height: 1.6; }
+        
+        /* मोठे, क्लीक-फ्रेंडली ऑप्शन्स */
+        .opt-label { display: flex; align-items: center; margin-bottom: 10px; font-size: 14.5px; cursor: pointer; background: #1e293b; padding: 12px 16px; border-radius: 10px; border: 1.5px solid #334155; color: #cbd5e1; font-weight: 500; }
+        .opt-label:hover { background: #27354f; border-color: #38bdf8; color: white; transform: translateX(3px); }
+        .opt-label input[type="radio"] { margin-right: 12px; width: 18px; height: 18px; accent-color: #10b981; }
+        .opt-label.selected { background: rgba(16,185,129,0.15); border-color: #10b981; color: #a7f3d0; font-weight: 700; }
+
+        /* सबमिशन कार्ड */
+        .bottom-submission-card { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(15,23,42,0.9)); border: 2px solid #10b981; border-radius: 14px; padding: 22px; margin-top: 30px; margin-bottom: 15px; }
+        .bottom-submission-card input { width: 100%; padding: 13px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; margin-top: 5px; font-size: 14.5px; margin-bottom: 12px; color: white; outline: none; }
+        .bottom-submission-card input:focus { border-color: #10b981; }
+        .btn-submit { width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: #022c22; padding: 15px; border: none; border-radius: 8px; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.3); }
+        .btn-submit:disabled { background: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
     </style>
     <script>
         let isFormSubmitted = false;
@@ -318,7 +401,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         window.addEventListener('beforeunload', function (e) {
             if (!isFormSubmitted) {
                 e.preventDefault();
-                e.returnValue = 'तुम्ही खरंच टेस्ट सोडून बाहेर पडू इच्छिता का?';
+                e.returnValue = 'तुम्ही खरंच परीक्षा सोडून बाहेर पडू इच्छिता का?';
                 return e.returnValue;
             }
         });
@@ -338,7 +421,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 
                 if (--timeLeft < 0) {
                     clearInterval(timer);
-                    alert("⏰ वेळ संपली! टेस्ट सबमिट होत आहे.");
+                    alert("⏰ वेळ संपली! तुमची टेस्ट आपोआप सबमिट होत आहे.");
                     isFormSubmitted = true;
                     localStorage.removeItem(testStorageKey);
                     localStorage.removeItem(timerStorageKey);
@@ -347,20 +430,36 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             }, 1000);
         }
 
+        function updateProgress() {
+            const totalQuestions = {{ questions|length }};
+            const answeredCount = document.querySelectorAll('#questionsArea input[type="radio"]:checked').length;
+            const percentage = (answeredCount / totalQuestions) * 100;
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('progressText').innerText = answeredCount + ' / ' + totalQuestions + ' सोडवले';
+        }
+
         function saveAnswerProgress() {
             const answers = {};
             document.querySelectorAll('#questionsArea input[type="radio"]:checked').forEach(radio => {
                 answers[radio.name] = radio.value;
+                // हायलाइट क्लास
+                radio.closest('.q-item').querySelectorAll('.opt-label').forEach(l => l.classList.remove('selected'));
+                radio.closest('.opt-label').classList.add('selected');
             });
             localStorage.setItem(testStorageKey, JSON.stringify(answers));
+            updateProgress();
         }
 
         function restoreAnswerProgress() {
             const savedAnswers = JSON.parse(localStorage.getItem(testStorageKey) || '{}');
             for (const [qName, qVal] of Object.entries(savedAnswers)) {
                 const radio = document.querySelector(`input[name="${qName}"][value="${qVal}"]`);
-                if (radio) radio.checked = true;
+                if (radio) {
+                    radio.checked = true;
+                    radio.closest('.opt-label').classList.add('selected');
+                }
             }
+            updateProgress();
         }
 
         document.addEventListener('change', function(e) {
@@ -376,11 +475,11 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 
             if (name !== "" && dist !== "" && indianPhoneRegex.test(phone)) {
                 submitBtn.disabled = false;
-                submitBtn.innerText = "✅ टेस्ट सबमिट करा व निकाल पहा";
+                submitBtn.innerText = "🏆 टेस्ट सबमिट करा व राज्यस्तरीय रँक पहा";
                 submitBtn.style.opacity = "1";
             } else {
                 submitBtn.disabled = true;
-                submitBtn.innerText = "⚠️ कृपया खाली नाव, जिल्हा व WhatsApp नंबर भरा";
+                submitBtn.innerText = "⚠️ खाली नाव, जिल्हा व १० अंकी WhatsApp नंबर भरा";
                 submitBtn.style.opacity = "0.6";
             }
         }
@@ -403,10 +502,14 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 <body>
 <div class="exam-header">
     <div>
-        <h3 style="margin:0; font-size:18px;">⚔️ {{ test.test_title }}</h3>
-        <small style="opacity:0.9;">राज्यस्तरीय पोलीस व सैन्य भरती महा-सराव कक्ष</small>
+        <h3 style="margin:0; font-size:17px; color:#34d399;">⚔️ {{ test.test_title }}</h3>
+        <small id="progressText" style="color:#94a3b8; font-weight:600;">० / {{ questions|length }} सोडवले</small>
     </div>
-    <div class="timer-box">⏳ वेळ: <span id="time-left">00:00</span></div>
+    <div class="timer-box">⏳ <span id="time-left">00:00</span></div>
+</div>
+
+<div class="progress-bar-container">
+    <div id="progressFill" class="progress-bar-fill"></div>
 </div>
 
 <div class="box">
@@ -424,19 +527,21 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         </div>
 
         <div class="bottom-submission-card">
-            <h3 style="margin:0 0 6px; color:#065f46; font-size:17px;">🎯 निकाल, रँक व सविस्तर स्पष्टीकरणासाठी माहिती भरा:</h3>
-            <p style="font-size:13px; color:#475569; margin:0 0 12px;">⚠️ सविस्तर स्पष्टीकरणाची लिंक खालील WhatsApp नंबरवर पाठवली जाईल.</p>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
-                <div><label style="font-size:13px; font-weight:600;">पूर्ण नाव *:</label><input type="text" name="student_name" id="s_name" placeholder="उदा. राहुल पाटील" onkeyup="validateAndReady()" required></div>
-                <div><label style="font-size:13px; font-weight:600;">जिल्हा *:</label><input type="text" name="district" id="s_dist" placeholder="उदा. कोल्हापूर" onkeyup="validateAndReady()" required></div>
-                <div><label style="font-size:13px; font-weight:600;">WhatsApp मोबाईल नंबर *:</label><input type="tel" name="phone" id="s_phone" placeholder="10 अंकी नंबर" maxlength="10" onkeyup="validateAndReady()" required></div>
+            <h3 style="margin:0 0 6px; color:#34d399; font-size:18px;">🎯 निकाल, मेरिट रँक व सविस्तर स्पष्टीकरणासाठी माहिती भरा:</h3>
+            <p style="font-size:13px; color:#94a3b8; margin:0 0 14px;">⚠️ १०० प्रश्नांची अचूक उत्तरतालिका व स्पष्टीकरण याच WhatsApp नंबरवर पाठवले जाईल.</p>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">पूर्ण नाव *:</label><input type="text" name="student_name" id="s_name" placeholder="उदा. राहुल पाटील" onkeyup="validateAndReady()" required></div>
+                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">जिल्हा *:</label><input type="text" name="district" id="s_dist" placeholder="उदा. कोल्हापूर" onkeyup="validateAndReady()" required></div>
+                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">WhatsApp मोबाईल नंबर *:</label><input type="tel" name="phone" id="s_phone" placeholder="10 अंकी मोबाईल नंबर" maxlength="10" onkeyup="validateAndReady()" required></div>
             </div>
         </div>
-        <button type="submit" id="submitBtn" class="btn-submit" disabled>⚠️ कृपया खाली नाव, जिल्हा व WhatsApp नंबर भरा</button>
+        <button type="submit" id="submitBtn" class="btn-submit" disabled>⚠️ खाली नाव, जिल्हा व WhatsApp नंबर भरा</button>
     </form>
 </div>
 </body>
 </html>'''
+
+# ----------------- 3. VIRAL RESULT & PROMO TEMPLATE -----------------
 
 RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
@@ -446,16 +551,16 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { margin: 0; background: #f0fdf4; color: #1e293b; padding: 15px; }
-        .box { max-width: 740px; margin: 20px auto; background: white; border-radius: 14px; padding: 25px; box-shadow: 0 12px 30px rgba(0,0,0,0.1); border-top: 6px solid #059669; }
-        .cutoff-warning-box { background: #fee2e2; border: 2px solid #ef4444; border-radius: 10px; padding: 16px; margin: 15px 0; color: #991b1b; text-align: center; }
-        .cert-card { background: linear-gradient(135deg, #0f172a, #1e293b); color: white; border: 3px double #f59e0b; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center; }
-        .share-lock-box { background: #fefce8; border: 2px dashed #ca8a04; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; color: #854d0e; }
-        .btn-wa { display: inline-block; background: #25D366; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 15px; margin: 8px 4px; cursor: pointer; border: none; }
-        .btn-pay { display: inline-block; background: #d97706; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 16px; margin-top: 10px; }
-        .live-tag { background: #e0e7ff; color: #3730a3; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; margin-top: 5px; }
-        .promo-box { background: #f8fafc; border: 1.5px solid #cbd5e1; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center; }
-        .btn-link { display: inline-block; background: #25D366; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; }
+        body { margin: 0; background: #0b1329; color: #f1f5f9; padding: 15px; }
+        .box { max-width: 760px; margin: 15px auto; background: #162036; border-radius: 16px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); border-top: 6px solid #10b981; }
+        .cutoff-warning-box { background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 12px; padding: 16px; margin: 15px 0; color: #fca5a5; text-align: center; }
+        .cert-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border: 3px double #f59e0b; padding: 22px; border-radius: 12px; margin: 20px 0; text-align: center; }
+        .share-lock-box { background: rgba(245,158,11,0.15); border: 2px dashed #f59e0b; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center; color: #fde68a; }
+        .btn-wa { display: inline-block; background: #25D366; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px; margin: 8px 4px; cursor: pointer; border: none; }
+        .btn-pay { display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: #0f172a; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 16px; margin-top: 10px; }
+        .live-tag { background: #334155; color: #38bdf8; padding: 5px 12px; border-radius: 20px; font-size: 12.5px; font-weight: bold; display: inline-block; margin-top: 6px; }
+        .promo-box { background: #0f172a; border: 1.5px solid #334155; padding: 15px; border-radius: 10px; margin-top: 20px; text-align: center; }
+        .btn-link { display: inline-block; background: #25D366; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; }
     </style>
     <script>
         function checkInboundClicks() {
@@ -474,46 +579,46 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
 </head>
 <body>
 <div class="box">
-    <h2 style="color:#065f46; margin:0 0 5px; text-align:center;">🎉 टेस्ट यशस्वीरीत्या पूर्ण झाली!</h2>
-    <div style="background:#ecfdf5; border:1px solid #86efac; border-radius:8px; padding:18px; margin:15px 0; text-align:center;">
-        <p style="font-size:16px; margin:4px 0;">परीक्षार्थी: <b>{{ lead.student_name }}</b> (जिल्हा: <b>{{ lead.district }}</b>)</p>
-        <p style="font-size:24px; color:#b45309; font-weight:bold; margin-top:8px;">🏆 संपूर्ण महाराष्ट्रातील रँक: <b style="color:#047857; font-size:30px;">#{{ state_rank }}</b> 🌟</p>
-        <p style="font-size:20px; font-weight:bold; color:#0f172a; margin-top:4px;">प्राप्त गुण: <span style="color:#16a34a;">{{ lead.score }}</span> / {{ lead.total_marks }}</p>
+    <h2 style="color:#34d399; margin:0 0 5px; text-align:center;">🎉 टेस्ट यशस्वीरीत्या पूर्ण झाली!</h2>
+    <div style="background:#0f172a; border:1px solid #334155; border-radius:12px; padding:18px; margin:15px 0; text-align:center;">
+        <p style="font-size:16px; margin:4px 0; color:#cbd5e1;">परीक्षार्थी: <b>{{ lead.student_name }}</b> (जिल्हा: <b>{{ lead.district }}</b>)</p>
+        <p style="font-size:24px; color:#fbbf24; font-weight:bold; margin-top:8px;">🏆 संपूर्ण महाराष्ट्रातील रँक: <b style="color:#34d399; font-size:32px;">#{{ state_rank }}</b> 🌟</p>
+        <p style="font-size:20px; font-weight:bold; color:#f8fafc; margin-top:4px;">प्राप्त गुण: <span style="color:#10b981;">{{ lead.score }}</span> / {{ lead.total_marks }}</p>
     </div>
 
     <!-- १. रँक-प्रेशर आणि जिल्हा कट-ऑफ वॉर्निंग -->
     <div class="cutoff-warning-box">
-        <h4 style="margin:0 0 5px;">⚠️ सावधान! मेरिट लिस्ट धोक्यात आहे!</h4>
-        <p style="font-size:13.5px; margin:0; line-height:1.5;">तुमच्या <b>{{ lead.district }}</b> जिल्ह्याचा संभाव्य कट-ऑफ <b>८२ गुण</b> आहे, आणि तुमचे <b>{{ lead.score }} गुण</b> आले आहेत.</p>
+        <h4 style="margin:0 0 5px; color:#ef4444; font-size:17px;">⚠️ सावधान! मेरिट लिस्ट धोक्यात आहे!</h4>
+        <p style="font-size:14px; margin:0; line-height:1.5;">तुमच्या <b>{{ lead.district }}</b> जिल्ह्याचा संभाव्य कट-ऑफ <b>८२ गुण</b> आहे, आणि तुमचे <b>{{ lead.score }} गुण</b> आले आहेत.</p>
         <a href="/take_test/6" class="btn-pay">⚡ '५० संभाव्य टेस्ट्स संच' फक्त ₹९९ मध्ये आत्ताच अनलॉक करा</a>
     </div>
 
     <!-- २. स्वाभिमान डिजिटल चॅलेंज कार्ड -->
     <div class="cert-card">
-        <h3 style="color:#fde047; margin:0 0 4px; font-size:19px;">🎖️ मिशन खाकी २०२६ — स्वाभिमान प्रमाणपत्र</h3>
-        <p style="font-size:13px; color:#ffffff; margin:10px 0; line-height:1.5;">"मैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा! बघूया कोण मारतंय बाजी!"</p>
+        <h3 style="color:#fde047; margin:0 0 6px; font-size:20px;">🎖️ मिशन खाकी २०२६ — स्वाभिमान प्रमाणपत्र</h3>
+        <p style="font-size:13.5px; color:#e2e8f0; margin:10px 0; line-height:1.5;">"मैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा! बघूया कोण मारतंय बाजी!"</p>
         <a href="https://wa.me/?text={{ ego_share_encoded }}" target="_blank" class="btn-wa">⚔️ मित्रांना WhatsApp वर चॅलेंज द्या</a>
     </div>
 
     <!-- ३. इनबाऊंड क्लिक पडताळणी लॉक (३ खऱ्या व्हिजिट्स) -->
     <div id="shareLockSection" class="share-lock-box">
-        <h3 style="margin:0 0 6px; font-size:17px; color:#92400e;">🔒 ५ टेस्ट्स मोफत अनलॉक चॅलेंज!</h3>
-        <p style="font-size:13px; margin:0 0 10px; line-height:1.5;">
+        <h3 style="margin:0 0 6px; font-size:18px; color:#fbbf24;">🔒 ५ टेस्ट्स मोफत अनलॉक चॅलेंज!</h3>
+        <p style="font-size:13.5px; margin:0 0 10px; line-height:1.5;">
             सविस्तर स्पष्टीकरण आणि <b>पुढील ५ टेस्ट्स मोफत अनलॉक करण्यासाठी</b> खालील लिंक तुमच्या ग्रुप्सवर शेअर करा.<br>
-            <b>तुमच्या लिंकवरून किमान ३ मित्रांनी टेस्ट पोर्टल उघडल्यावर टेस्ट्स आपोआप अनलॉक होतील!</b>
+            <b>तुमच्या लिंकवरून किमान ३ मित्रांनी पोर्टल उघडल्यावर टेस्ट्स आपोआप अनलॉक होतील!</b>
         </p>
-        <div class="live-tag">📡 लाईव्ह पडताळणी: <span id="liveClickCount" style="color:#1e40af; font-size:14px;">०</span> / ३ मित्रांनी लिंक उघडली</div><br>
+        <div class="live-tag">📡 लाईव्ह पडताळणी: <span id="liveClickCount" style="color:#38bdf8; font-size:15px;">०</span> / ३ मित्रांनी लिंक उघडली</div><br>
         <a href="https://wa.me/?text={{ ego_share_encoded }}" target="_blank" class="btn-wa">📲 ३ WhatsApp ग्रुप्सवर शेअर करा</a>
     </div>
 
-    <div id="unlockedResultSection" style="display:none; text-align:center; margin:20px 0; background:#dcfce7; padding:15px; border-radius:8px;">
-        <h4 style="color:#166534; margin:0 0 8px;">✅ अभिनंदन! ३ मित्रांनी पोर्टल उघडले आहे. उत्तरतालिका व टेस्ट १ ते ५ मोफत अनलॉक झाल्या आहेत!</h4>
-        <a href="{{ result_url }}" target="_blank" style="background:#059669; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:bold; display:inline-block; margin-right:5px;">📖 स्पष्टीकरण शीट उघडा</a>
-        <a href="/" style="background:#0284c7; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:bold; display:inline-block;">🎯 पुढील टेस्ट्स सोडवा</a>
+    <div id="unlockedResultSection" style="display:none; text-align:center; margin:20px 0; background:rgba(16,185,129,0.2); padding:16px; border-radius:10px; border:1.5px solid #10b981;">
+        <h4 style="color:#34d399; margin:0 0 10px;">✅ अभिनंदन! ३ मित्रांनी पोर्टल उघडले आहे. टेस्ट १ ते ५ मोफत अनलॉक झाल्या आहेत!</h4>
+        <a href="{{ result_url }}" target="_blank" style="background:#10b981; color:#064e3b; padding:10px 22px; border-radius:6px; text-decoration:none; font-weight:800; display:inline-block; margin-right:5px;">📖 स्पष्टीकरण शीट पहा</a>
+        <a href="/" style="background:#0284c7; color:white; padding:10px 22px; border-radius:6px; text-decoration:none; font-weight:800; display:inline-block;">🎯 पुढील टेस्ट्स सोडवा</a>
     </div>
 
     <div class="promo-box">
-        <h4 style="margin:0 0 8px; color:#065f46;">🌟 अधिकृत सोशल मीडिया व यशोगाथा लिंक्स:</h4>
+        <h4 style="margin:0 0 10px; color:#34d399;">🌟 अधिकृत सोशल मीडिया व यशोगाथा लिंक्स:</h4>
         {% if insta_link %}<a href="{{ insta_link }}" target="_blank" class="btn-link" style="background:#E1306C;">📸 Instagram</a>{% endif %}
         {% if yt_link %}<a href="{{ yt_link }}" target="_blank" class="btn-link" style="background:#FF0000;">▶ YouTube</a>{% endif %}
         {% if toppers_link %}<a href="{{ toppers_link }}" target="_blank" class="btn-link" style="background:#0284c7;">🏆 यशवंतांचे फोटो</a>{% endif %}
@@ -529,22 +634,22 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
-        body { font-family:'Poppins', sans-serif; background:#f0fdf4; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; padding:15px; }
-        .box { max-width:480px; width:100%; background:white; border-radius:12px; padding:25px; box-shadow:0 10px 25px rgba(0,0,0,0.1); border-top:6px solid #059669; }
-        input { width:100%; padding:10px; border:1.5px solid #cbd5e1; border-radius:6px; margin-bottom:12px; font-size:14px; box-sizing:border-box; }
-        .btn-rzp { width:100%; background:linear-gradient(135deg, #2563eb, #1d4ed8); color:white; padding:13px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:15px; margin-bottom:15px; }
+        body { font-family:'Poppins', sans-serif; background:#0b1329; color:#f1f5f9; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; padding:15px; }
+        .box { max-width:480px; width:100%; background:#162036; border-radius:16px; padding:25px; box-shadow:0 15px 35px rgba(0,0,0,0.4); border-top:6px solid #10b981; }
+        input { width:100%; padding:11px; background:#0f172a; border:1.5px solid #334155; border-radius:8px; margin-bottom:12px; font-size:14px; box-sizing:border-box; color:white; }
+        .btn-rzp { width:100%; background:linear-gradient(135deg, #2563eb, #1d4ed8); color:white; padding:14px; border:none; border-radius:8px; font-weight:800; cursor:pointer; font-size:15px; margin-bottom:15px; }
     </style>
 </head>
 <body>
 <div class="box">
-    <h2 style="color:#065f46; text-align:center; margin:0 0 5px;">🔒 ५० टेस्ट्स महासंच प्रवेश द्वार</h2>
-    <p style="text-align:center; font-size:13px; color:#475569;">{{ test.test_title }} (फी: ₹{{ test.test_fee }})</p>
+    <h2 style="color:#34d399; text-align:center; margin:0 0 5px;">🔒 ५० टेस्ट्स महासंच प्रवेश द्वार</h2>
+    <p style="text-align:center; font-size:13px; color:#94a3b8;">{{ test.test_title }} (फी: ₹{{ test.test_fee }})</p>
 
-    <div style="background:#eff6ff; border:1px solid #93c5fd; padding:12px; border-radius:6px; margin-bottom:15px;">
-        <p style="margin:0 0 6px; font-size:12px; font-weight:bold; color:#1e40af;">🔄 तुम्ही आधी ३ मित्रांना जोडून अनलॉक केले असल्यास:</p>
+    <div style="background:#0f172a; border:1px solid #334155; padding:14px; border-radius:8px; margin-bottom:15px;">
+        <p style="margin:0 0 8px; font-size:12.5px; font-weight:bold; color:#60a5fa;">🔄 तुम्ही आधी ३ मित्रांना जोडून अनलॉक केले असल्यास:</p>
         <form method="POST" action="/verify_share_phone/{{ test.id }}">
-            <input type="tel" name="verify_phone" placeholder="नोंदवलेला 10 अंकी WhatsApp नंबर" maxlength="10" required style="margin-bottom:6px;">
-            <button type="submit" style="background:#2563eb; color:white; border:none; padding:7px; border-radius:4px; font-weight:bold; width:100%; font-size:12px; cursor:pointer;">🔓 5 मोफत टेस्ट्स ॲक्सेस तपासा</button>
+            <input type="tel" name="verify_phone" placeholder="नोंदवलेला 10 अंकी WhatsApp नंबर" maxlength="10" required style="margin-bottom:8px;">
+            <button type="submit" style="background:#2563eb; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; width:100%; font-size:12.5px; cursor:pointer;">🔓 ५ मोफत टेस्ट्स ॲक्सेस तपासा</button>
         </form>
     </div>
 
@@ -554,8 +659,8 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
     </div>
 
     <!-- मॅन्युअल UPI / QR बॅकअप -->
-    <div style="background:#fffbeb; padding:12px; border-radius:6px; border:1px solid #fcd34d; text-align:center; margin-bottom:15px;">
-        <p style="margin:0 0 6px; font-weight:bold; color:#92400e; font-size:12px;">किंवा QR स्कॅन करून <b>{{ upi_mobile }}</b> वर पे करा:</p>
+    <div style="background:#0f172a; padding:14px; border-radius:8px; border:1px solid #f59e0b; text-align:center; margin-bottom:15px;">
+        <p style="margin:0 0 6px; font-weight:bold; color:#fbbf24; font-size:12px;">किंवा QR स्कॅन करून <b>{{ upi_mobile }}</b> वर पे करा:</p>
         <img src="{{ qr_url }}" alt="QR" style="max-width:130px; max-height:130px; border-radius:6px;">
     </div>
 
@@ -563,7 +668,7 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
         <input type="text" name="student_name" placeholder="पूर्ण नाव" required>
         <input type="text" name="district" placeholder="जिल्हा" required>
         <input type="tel" name="phone" placeholder="10 अंकी WhatsApp नंबर" maxlength="10" required>
-        <button type="submit" style="width:100%; background:#059669; color:white; padding:10px; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">🚀 मॅन्युअल स्क्रीनशॉट पाठवला आहे</button>
+        <button type="submit" style="width:100%; background:#10b981; color:#064e3b; padding:11px; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🚀 मॅन्युअल स्क्रीनशॉट पाठवला आहे</button>
     </form>
 </div>
 
@@ -586,7 +691,7 @@ document.getElementById('rzp-button').onclick = function(e){
             "handler": function (response){
                 window.location.href = "/verify_razorpay_payment?order_id=" + response.razorpay_order_id + "&payment_id=" + response.razorpay_payment_id + "&signature=" + response.razorpay_signature + "&test_id={{ test.id }}";
             },
-            "theme": { "color": "#059669" }
+            "theme": { "color": "#10b981" }
         };
         var rzp1 = new Razorpay(options);
         rzp1.open();
@@ -603,48 +708,63 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
     <meta charset="UTF-8"><title>सविस्तर उत्तरपत्रिका व स्पष्टीकरण</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #f8fafc; font-family: 'Poppins', sans-serif; padding: 15px; }
-        .box { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border-top: 6px solid #059669; }
-        .item { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
-        .correct-box { border-left: 5px solid #16a34a; }
-        .wrong-box { border-left: 5px solid #dc2626; }
-        textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
-        .btn-fb { background: #059669; color: white; border: none; padding: 9px 18px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 6px; }
+        body { margin: 0; background: #0b1329; color: #f1f5f9; font-family: 'Poppins', sans-serif; padding: 15px; }
+        .box { max-width: 820px; margin: 0 auto; background: #162036; border-radius: 14px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-top: 6px solid #10b981; }
+        .item { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+        .correct-box { border-left: 5px solid #10b981; }
+        .wrong-box { border-left: 5px solid #ef4444; }
+        textarea { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; box-sizing: border-box; color: white; }
+        .btn-fb { background: #10b981; color: #064e3b; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; }
     </style>
 </head>
 <body>
 <div class="box">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
-        <span style="font-size:12px; font-weight:bold; color:#065f46;">📖 सविस्तर स्पष्टीकरण कक्ष</span>
-        <a href="/" style="background:#0284c7; color:white; padding:6px 14px; border-radius:5px; text-decoration:none; font-weight:bold; font-size:12px;">🏠 मुख्य पानावर जा</a>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #334155; padding-bottom:10px;">
+        <span style="font-size:13px; font-weight:bold; color:#34d399;">📖 सविस्तर स्पष्टीकरण कक्ष</span>
+        <a href="/" style="background:#0284c7; color:white; padding:6px 14px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px;">🏠 मुख्य पानावर जा</a>
     </div>
 
-    <h2 style="color:#065f46; text-align:center; margin-top:0;">📋 सविस्तर उत्तरपत्रिका व स्पष्टीकरण</h2>
-    <p style="text-align:center; font-size:13px; color:#64748b;">विद्यार्थी: <b>{{ lead.student_name }}</b> (जिल्हा: {{ lead.district }})</p>
+    <h2 style="color:#34d399; text-align:center; margin-top:0;">📋 सविस्तर उत्तरपत्रिका व स्पष्टीकरण</h2>
+    <p style="text-align:center; font-size:13px; color:#94a3b8;">विद्यार्थी: <b>{{ lead.student_name }}</b> (जिल्हा: {{ lead.district }})</p>
 
     {% for item in evaluated_questions %}
     <div class="item {{ 'correct-box' if item.is_correct else 'wrong-box' }}">
-        <div style="font-weight:bold; margin-bottom:6px;">प्र. {{ loop.index }}. {{ item.q_text }}</div>
-        <div style="font-size:13px; margin-bottom:4px;">A) {{ item.opt_a }} | B) {{ item.opt_b }} | C) {{ item.opt_c }} | D) {{ item.opt_d }}</div>
-        <div style="margin:6px 0; font-size:13px;">
-            तुमचे उत्तर: <b style="color:{{ 'green' if item.is_correct else 'red' }};">{{ item.user_ans }}</b> | अचूक: <b style="color:green;">{{ item.correct_ans }}</b>
+        <div style="font-weight:bold; margin-bottom:6px; color:#f8fafc;">प्र. {{ loop.index }}. {{ item.q_text }}</div>
+        <div style="font-size:13px; margin-bottom:4px; color:#94a3b8;">A) {{ item.opt_a }} | B) {{ item.opt_b }} | C) {{ item.opt_c }} | D) {{ item.opt_d }}</div>
+        <div style="margin:6px 0; font-size:13.5px;">
+            तुमचे उत्तर: <b style="color:{{ '#34d399' if item.is_correct else '#f87171' }};">{{ item.user_ans }}</b> | अचूक: <b style="color:#34d399;">{{ item.correct_ans }}</b>
         </div>
         {% if item.explanation %}
-        <div style="background:#f0fdf4; color:#166534; padding:8px 12px; border-radius:6px; font-size:12px; border:1px solid #bbf7d0;">
+        <div style="background:rgba(16,185,129,0.1); color:#a7f3d0; padding:8px 12px; border-radius:6px; font-size:12px; border:1px solid #059669; margin-top:6px;">
             💡 <b>स्पष्टीकरण:</b> {{ item.explanation }}
         </div>
         {% endif %}
     </div>
     {% endfor %}
 
-    <!-- विद्यार्थी अभिप्राय बॉक्स -->
-    <div style="background:#f1f5f9; padding:18px; border-radius:8px; margin-top:25px; border:1px solid #cbd5e1;">
-        <h4 style="margin:0 0 8px; color:#065f46;">💬 या टेस्टबद्दल आपला अभिप्राय नोंदवा:</h4>
+    <div style="background:#0f172a; padding:18px; border-radius:10px; margin-top:25px; border:1px solid #334155;">
+        <h4 style="margin:0 0 8px; color:#34d399;">💬 या टेस्टबद्दल आपला अभिप्राय नोंदवा:</h4>
         <form method="POST" action="/submit_feedback/{{ lead.id }}">
-            <textarea name="feedback_text" rows="3" placeholder="आपले मत किंवा सूचना येथे लिहा..." required></textarea>
+            <textarea name="feedback_text" rows="3" placeholder="आपले मत किंवा अनुभव येथे लिहा..." required></textarea>
             <button type="submit" class="btn-fb">🚀 अभिप्राय सबमिट करा</button>
         </form>
     </div>
+</div>
+</body>
+</html>'''
+
+TERMS_TEMPLATE = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><title>Terms and Conditions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>body { margin:0; background:#0f172a; color:#f8fafc; font-family:'Poppins', sans-serif; padding:25px; } .box { max-width:800px; margin:auto; background:#1e293b; padding:30px; border-radius:12px; border-top:5px solid #10b981; } a { color:#38bdf8; text-decoration:none; }</style>
+</head>
+<body>
+<div class="box">
+    <h2 style="color:#34d399;">Terms & Conditions</h2>
+    <p>This platform provides mock tests for Maharashtra Police recruitment practice. All scores and ranks are for self-assessment purposes.</p>
+    <a href="/">⬅ Back to Home</a>
 </div>
 </body>
 </html>'''
@@ -654,37 +774,29 @@ EDIT_QUESTION_TEMPLATE = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8"><title>प्रश्न संपादित करा</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { margin: 0; background: #f1f5f9; padding: 20px; }
-        .box { max-width: 650px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid #059669; }
-        input, textarea, select { width: 100%; padding: 9px; margin: 6px 0 14px; border: 1px solid #cbd5e1; border-radius: 5px; }
-        .btn { background: #059669; color: white; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-    </style>
+    <style>body { margin:0; background:#f1f5f9; padding:20px; font-family:'Poppins', sans-serif; } .box { max-width:650px; margin:auto; background:white; padding:25px; border-radius:8px; border-top:5px solid #059669; } input, textarea, select { width:100%; padding:9px; margin:6px 0 14px; border:1px solid #cbd5e1; border-radius:5px; } .btn { background:#059669; color:white; border:none; padding:10px 18px; border-radius:5px; font-weight:bold; cursor:pointer; }</style>
 </head>
 <body>
 <div class="box">
     <h3 style="color:#065f46; margin-top:0;">✏️ प्रश्न व पर्याय संपादित करा (ID: {{ q.id }})</h3>
     <form method="POST">
-        <label style="font-weight:600; font-size:13px;">प्रश्न:</label>
-        <textarea name="question" rows="3" required>{{ q.question }}</textarea>
+        <label>प्रश्न:</label><textarea name="question" rows="3" required>{{ q.question }}</textarea>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <div><label style="font-weight:600; font-size:13px;">पर्याय A:</label><input type="text" name="opt_a" value="{{ q.opt_a }}" required></div>
-            <div><label style="font-weight:600; font-size:13px;">पर्याय B:</label><input type="text" name="opt_b" value="{{ q.opt_b }}" required></div>
-            <div><label style="font-weight:600; font-size:13px;">पर्याय C:</label><input type="text" name="opt_c" value="{{ q.opt_c }}" required></div>
-            <div><label style="font-weight:600; font-size:13px;">पर्याय D:</label><input type="text" name="opt_d" value="{{ q.opt_d }}" required></div>
+            <div><label>पर्याय A:</label><input type="text" name="opt_a" value="{{ q.opt_a }}" required></div>
+            <div><label>पर्याय B:</label><input type="text" name="opt_b" value="{{ q.opt_b }}" required></div>
+            <div><label>पर्याय C:</label><input type="text" name="opt_c" value="{{ q.opt_c }}" required></div>
+            <div><label>पर्याय D:</label><input type="text" name="opt_d" value="{{ q.opt_d }}" required></div>
         </div>
-        <label style="font-weight:600; font-size:13px;">अचूक उत्तर:</label>
+        <label>अचूक उत्तर:</label>
         <select name="correct">
             <option value="A" {% if q.correct=='A' %}selected{% endif %}>A</option>
             <option value="B" {% if q.correct=='B' %}selected{% endif %}>B</option>
             <option value="C" {% if q.correct=='C' %}selected{% endif %}>C</option>
             <option value="D" {% if q.correct=='D' %}selected{% endif %}>D</option>
         </select>
-        <label style="font-weight:600; font-size:13px;">स्पष्टीकरण:</label>
-        <textarea name="explanation" rows="2">{{ q.explanation }}</textarea>
+        <label>स्पष्टीकरण:</label><textarea name="explanation" rows="2">{{ q.explanation }}</textarea>
         <button type="submit" class="btn">💾 बदल सेव्ह करा</button>
-        <a href="/admin/dashboard?tab=questions&filter_test_id={{ q.test_id }}" style="margin-left:10px; color:#dc2626; text-decoration:none; font-weight:600;">रद्द करा</a>
+        <a href="/admin/dashboard?tab=questions&filter_test_id={{ q.test_id }}" style="margin-left:10px; color:#dc2626; text-decoration:none;">रद्द करा</a>
     </form>
 </div>
 </body>
@@ -695,17 +807,12 @@ ADMIN_LOGIN_TEMPLATE = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8"><title>ॲडमिन सुरक्षित लॉगिन</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        body { margin:0; background:#0f172a; color:white; display:flex; justify-content:center; align-items:center; height:100vh; font-family:'Poppins', sans-serif; }
-        .login-box { background:#1e293b; padding:35px 30px; border-radius:10px; width:360px; box-shadow:0 10px 25px rgba(0,0,0,0.4); border-top:5px solid #059669; text-align:center; }
-        input { width:100%; padding:12px; margin:15px 0 20px; border-radius:6px; border:1.5px solid #475569; background:#0f172a; color:white; font-size:14px; text-align:center; box-sizing:border-box; }
-        button { width:100%; background:#059669; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:15px; }
-    </style>
+    <style>body { margin:0; background:#0f172a; color:white; display:flex; justify-content:center; align-items:center; height:100vh; font-family:'Poppins', sans-serif; } .login-box { background:#1e293b; padding:35px 30px; border-radius:10px; width:360px; border-top:5px solid #059669; text-align:center; } input { width:100%; padding:12px; margin:15px 0 20px; border-radius:6px; border:1.5px solid #475569; background:#0f172a; color:white; box-sizing:border-box; } button { width:100%; background:#059669; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer; }</style>
 </head>
 <body>
 <div class="login-box">
     <h2 style="color:#34d399; margin:0 0 10px;">⚙️ ॲडमिन सुरक्षित कक्ष</h2>
-    {% if error %}<div style="color:#f87171; font-size:13px; font-weight:bold; margin-bottom:10px;">{{ error }}</div>{% endif %}
+    {% if error %}<div style="color:#f87171; font-size:13px; margin-bottom:10px;">{{ error }}</div>{% endif %}
     <form method="POST" action="/admin/login">
         <input type="password" name="admin_pass" placeholder="पासवर्ड टाका" required autocomplete="off">
         <button type="submit">🔐 लॉगिन करा</button>
@@ -828,24 +935,18 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <h4>सर्व पेमेंट्स यादी:</h4>
     <table>
-        <tr><th>नाव</th><th>मोबाईल</th><th>टेस्ट</th><th>पद्धत / Payment ID</th><th>स्थिती</th><th>कृती</th></tr>
+        <tr><th>नाव</th><th>मोबाईल</th><th>टेस्ट</th><th>पद्धत / ID</th><th>स्थिती</th><th>कृती</th></tr>
         {% for p in payments %}
         <tr>
             <td>{{ p.student_name }}</td>
             <td>{{ p.phone }}</td>
             <td>{{ p.test_name }}</td>
-            <td>
-                {% if p.razorpay_payment_id %}
-                <span style="color:#2563eb; font-weight:bold;">Razorpay: {{ p.razorpay_payment_id }}</span>
-                {% else %}
-                <span style="color:#d97706; font-weight:bold;">मॅन्युअल UPI</span>
-                {% endif %}
-            </td>
+            <td>{{ p.razorpay_payment_id if p.razorpay_payment_id else 'मॅन्युअल UPI' }}</td>
             <td><span style="color:{{ 'green' if p.payment_status == 'Approved' else 'orange' }}; font-weight:bold;">{{ p.payment_status }}</span></td>
             <td>
                 {% if p.payment_status != 'Approved' %}
                 <form method="POST" action="/admin/approve_payment/{{ p.id }}" style="display:inline-block;">
-                    <button type="submit" class="btn-sm" style="background:#16a34a; color:white; border:none; padding:5px 10px; cursor:pointer;">✅ Unlock करा</button>
+                    <button type="submit" class="btn-sm" style="background:#16a34a; color:white; border:none; padding:5px 10px; cursor:pointer;">✅ Unlock</button>
                 </form>
                 {% endif %}
                 <a href="/admin/delete_payment/{{ p.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे का?');">🗑</a>
@@ -917,8 +1018,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <input type="text" name="opt_b" placeholder="पर्याय B" required>
             <input type="text" name="opt_c" placeholder="पर्याय C" required>
             <input type="text" name="opt_d" placeholder="पर्याय D" required>
-            <label style="font-weight:bold; font-size:12px;">अचूक उत्तर (A, B, C किंवा D):</label>
-            <input type="text" name="correct" placeholder="उदा. B" maxlength="1" required style="width:100px;">
+            <input type="text" name="correct" placeholder="अचूक उत्तर (A, B, C, D)" maxlength="1" required style="width:140px;">
             <input type="text" name="explanation" placeholder="स्पष्टीकरण">
             <button type="submit" class="btn">सेव्ह करा</button>
         </form>
@@ -933,7 +1033,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </form>
     </div>
 
-    <!-- CSV BULK UPLOADER -->
     <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data" style="background:#f0fdf4; border:2px dashed #059669; padding:15px; border-radius:8px; margin-bottom:20px;">
         <h4 style="margin:0 0 8px; color:#065f46;">📥 १०० प्रश्नांची CSV फाईल अपलोड करा:</h4>
         <select name="test_id" required>
@@ -947,10 +1046,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <tr><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>स्पष्टीकरण</th><th>कृती</th></tr>
         {% for q in all_questions %}
         <tr>
-            <td>{{ q.id }}</td>
-            <td><b>{{ q.question }}</b></td>
-            <td style="color:green; font-weight:bold;">{{ q.correct }}</td>
-            <td style="color:#475569; font-size:12px;">{{ q.explanation }}</td>
+            <td>{{ q.id }}</td><td><b>{{ q.question }}</b></td><td style="color:green; font-weight:bold;">{{ q.correct }}</td>
+            <td>{{ q.explanation }}</td>
             <td style="white-space:nowrap;">
                 <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
                 <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे?');">🗑️</a>
@@ -1010,7 +1107,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     {% elif active_tab == 'leaderboard' %}
     <h3>🏆 राज्यस्तरीय गुणवत्ता यादी (टॉप १००)</h3>
     <table>
-        <tr><th>रँक</th><th>नाव</th><th>जिल्हा</th><th>मोबाईल</th><th>टेस्ट</th><th>गुण</th></tr>
+        <tr><th>रँक</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th></tr>
         {% for rank, l in top_leads %}
         <tr>
             <td><b>#{{ rank }}</b></td><td>{{ l.student_name }}</td><td>{{ l.district }}</td>
@@ -1036,10 +1133,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     {% elif active_tab == 'notices' %}
     <h3>📢 भरती PDF व्यवस्थापन</h3>
     <form method="POST" action="/admin/update_pdf_docs" enctype="multipart/form-data">
-        <label>भरती अधिकृत माहिती PDF:</label>
-        <input type="file" name="recruitment_pdf_file" accept=".pdf">
-        <label>भरती पात्रता PDF:</label>
-        <input type="file" name="eligibility_pdf_file" accept=".pdf">
+        <label>भरती अधिकृत माहिती PDF:</label><input type="file" name="recruitment_pdf_file" accept=".pdf">
+        <label>भरती पात्रता PDF:</label><input type="file" name="eligibility_pdf_file" accept=".pdf">
         <button type="submit" class="btn">सेव्ह करा</button>
     </form>
 
@@ -1052,16 +1147,12 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <input type="password" name="new_password" id="new_password" placeholder="नवा पासवर्ड टाका" style="padding-right:45px;">
             <button type="button" id="passEyeBtn" onclick="togglePassVis()" style="position:absolute; right:10px; top:8px; background:none; border:none; cursor:pointer;">👁️</button>
         </div>
-        <label>Instagram लिंक:</label>
-        <input type="text" name="insta_link" value="{{ insta_link }}">
-        <label>YouTube लिंक:</label>
-        <input type="text" name="yt_link" value="{{ yt_link }}">
-        <label>यशवंतांचे फोटो लिंक:</label>
-        <input type="text" name="toppers_link" value="{{ toppers_link }}">
+        <label>Instagram लिंक:</label><input type="text" name="insta_link" value="{{ insta_link }}">
+        <label>YouTube लिंक:</label><input type="text" name="yt_link" value="{{ yt_link }}">
+        <label>यशवंतांचे फोटो लिंक:</label><input type="text" name="toppers_link" value="{{ toppers_link }}">
         <button type="submit" class="btn">सेव्ह करा</button>
     </form>
     {% endif %}
-
 </div>
 </body>
 </html>'''
@@ -1071,8 +1162,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 @app.route('/')
 def home_tests_list():
     is_admin = session.get('admin_logged', False)
-    
-    # इनबाऊंड ३-क्लिक ट्रॅकर
     ref_phone = request.args.get('ref', '').strip()
     visitor_ip = request.headers.get('X-Forwarded-For', request.remote_addr or 'unknown').split(',')[0].strip()
 
@@ -1084,7 +1173,6 @@ def home_tests_list():
                 if not already_clicked:
                     c_time = datetime.now().strftime("%Y-%m-%d %H:%M")
                     cur.execute("INSERT INTO referral_clicks (referrer_phone, visitor_ip, clicked_at) VALUES (%s, %s, %s)", (ref_phone, visitor_ip, c_time))
-                    
                     cur.execute("SELECT COUNT(DISTINCT visitor_ip) as total_clicks FROM referral_clicks WHERE referrer_phone=%s", (ref_phone,))
                     count_row = cur.fetchone()
                     if count_row and count_row['total_clicks'] >= 3:
@@ -1123,7 +1211,6 @@ def check_referral_status(phone):
             cur.execute("SELECT COUNT(DISTINCT visitor_ip) as total_clicks FROM referral_clicks WHERE referrer_phone=%s", (phone,))
             row = cur.fetchone()
             clicks = row['total_clicks'] if row else 0
-            
             cur.execute("SELECT unlocked_until_test FROM shared_free_passes WHERE phone=%s", (phone,))
             pass_row = cur.fetchone()
             unlocked = True if (pass_row and pass_row['unlocked_until_test'] >= 5) else False
@@ -1836,7 +1923,7 @@ def admin_update_password():
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='yt_link'", (yt,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='toppers_link'", (top,))
             conn.commit()
-    return redirect('/admin/dashboard?tab=settings') 
+    return redirect('/admin/dashboard?tab=settings')
 
 @app.route('/admin/delete_lead/<int:lead_id>')
 def admin_delete_lead(lead_id):
@@ -1858,3 +1945,4 @@ def admin_delete_payment(lead_id):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
