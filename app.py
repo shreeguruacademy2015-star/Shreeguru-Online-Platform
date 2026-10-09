@@ -217,11 +217,14 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             document.getElementById('testsContainer').style.display = 'none';
             document.getElementById('battleContainer').style.display = 'none';
             document.getElementById('docsContainer').style.display = 'none';
+            document.getElementById('helpContainer').style.display = 'none';
 
             if (category === 'battle') {
                 document.getElementById('battleContainer').style.display = 'block';
             } else if (category === 'docs') {
                 document.getElementById('docsContainer').style.display = 'block';
+            } else if (category === 'help') {
+                document.getElementById('helpContainer').style.display = 'block';
             } else {
                 document.getElementById('testsContainer').style.display = 'grid';
                 let visibleCount = 0;
@@ -286,6 +289,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             {% elif tab_key == 'rapid' %}<button class="tab-btn" onclick="filterTab('rapid', this)">⚡ २० गुण रॅपिड फायर</button>
             {% elif tab_key == 'battle' %}<button class="tab-btn" onclick="filterTab('battle', this)">⚔️ जिल्हा मुकाबला व रँक</button>
             {% elif tab_key == 'docs' %}<button class="tab-btn" onclick="filterTab('docs', this)">📄 भरती PDF व PYQ</button>
+            {% elif tab_key == 'help' %}<button class="tab-btn" onclick="filterTab('help', this)">📞 हेल्प डेस्क</button>
             {% endif %}
         {% endfor %}
     </div>
@@ -340,6 +344,15 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         <h3 style="color:#38bdf8; margin-top:0;">📄 अधिकृत भरती कागदपत्रे व मागील प्रश्नपत्रिका</h3>
         {% if recruitment_pdf %}<a href="{{ recruitment_pdf }}" target="_blank" class="doc-link">📑 पोलीस भरती अधिकृत जाहिरात (PDF)</a>{% endif %}
         {% if eligibility_pdf %}<a href="{{ eligibility_pdf }}" target="_blank" class="doc-link">📋 शारीरिक व लेखी पात्रता निकष (PDF)</a>{% endif %}
+    </div>
+
+    <div id="helpContainer" class="section-box">
+        <h3 style="color:#34d399; margin-top:0;">📞 मदत व मार्गदर्शन हेल्प डेस्क (Help Desk)</h3>
+        <p style="font-size:14px; color:#cbd5e1; margin-bottom:15px;">टेस्ट किंवा पेमेंट संदर्भात काही अडचण असल्यास खालील क्रमांकावर संपर्क साधा:</p>
+        <div style="background:#1e293b; padding:18px; border-radius:10px; border:1px solid #334155; display:inline-block; text-align:left; max-width:400px; width:100%;">
+            <p style="margin:6px 0; color:#f8fafc;">📱 <b>हेल्पलाईन नंबर:</b> <a href="https://wa.me/91{{ help_phone }}" target="_blank" style="color:#34d399; font-weight:bold;">{{ help_phone }}</a></p>
+            <p style="margin:6px 0; color:#f8fafc;">📍 <b>पत्ता / ऑफिस पत्ता:</b> {{ help_address }}</p>
+        </div>
     </div>
 
     <div class="footer">
@@ -572,17 +585,17 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
         
         <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #ef4444; margin-bottom:10px;">
             <b style="color:#fca5a5; font-size:13px;">१. प्रायव्हसी व महिलांचा सन्मान (Privacy Rules):</b>
-            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;">ग्रुपमध्ये महिला/विद्यार्थिनी सदस्य देखील आहेत. कोणत्याही सदस्याने इतर सदस्याला (विशेषतः महिलांना) परस्पर वैयक्तिक मेसेज किंवा कॉल करणे सक्त मनाई आहे. असा प्रकार आढळल्यास नंबर त्वरित ब्लॉक केला जाईल.</p>
+            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;">ग्रुपमध्ये महिला/विद्यार्थिनी सदस्य देखील आहेत. कोणत्याही सदस्याने इतर सदस्याला (विशेषतः महिलांना) परस्पर वैयक्तिक मेसेज (DM) किंवा कॉल करणे सक्त मनाई आहे. असा प्रकार आढळल्यास संबंधित व्यक्तीचा नंबर विनाशीर्षक त्वरित ब्लॉक केला जाईल.</p>
         </div>
 
         <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #38bdf8; margin-bottom:10px;">
-            <b style="color:#7dd3fc; font-size:13px;">२. फक्त अभ्यास चर्चा:</b>
-            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;">कोणतेही राजकीय, वैयक्तिक, वादग्रस्त किंवा धार्मिक फॉरवर्ड मेसेज टाकण्यास सक्त बंदी आहे. फक्त पोलीस भरती सराव प्रश्न शेअर करावेत.</p>
+            <b style="color:#7dd3fc; font-size:13px;">२. फक्त अभ्यास चर्चा व सुरक्षितता:</b>
+            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;">कोणतेही राजकीय, वैयक्तिक, वादग्रस्त किंवा धार्मिक फॉरवर्ड मेसेज टाकण्यास सक्त बंदी आहे. कोणीही आपली वैयक्तिक माहिती (जसे की वैयक्तिक मोबाईल नंबर इ.) सार्वजनिक चॅटमध्ये शेअर करू नये.</p>
         </div>
 
         <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #f59e0b; margin-bottom:15px;">
             <b style="color:#fde047; font-size:13px;">३. कायदेशीर अस्वीकरण (Disclaimer / ॲडमिन जबाबदारी):</b>
-            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;"><b>हा ग्रुप फक्त शैक्षणिक अभ्यासासाठी आहे. ग्रुपमधील सदस्यांच्या कोणत्याही परस्पर वैयक्तिक संभाषणाला किंवा गैरवर्तनाला ग्रुप ॲडमिन जबाबदार असणार नाही.</b> कोणीही परस्पर संपर्क साधल्यास ती त्यांची स्वतःची जबाबदारी राहील.</p>
+            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;"><b>हा ग्रुप फक्त शैक्षणिक अभ्यासासाठी आहे. ग्रुपमधील सदस्यांच्या कोणत्याही परस्पर वैयक्तिक संभाषणाला किंवा गैरवर्तनाला ग्रुप ॲडमिन जबाबदार असणार नाही.</b> कोणीही नियम मोडल्यास सायबर सेल किंवा ग्रुप ॲडमिनकडे त्याची कठोर तक्रार केली जाईल.</p>
         </div>
 
         <div style="display:flex; gap:10px;">
@@ -815,7 +828,7 @@ EDIT_QUESTION_TEMPLATE = '''<!DOCTYPE html>
         </select>
         <label style="font-weight:600; font-size:13px;">स्पष्टीकरण:</label>
         <textarea name="explanation" rows="2">{{ q.explanation }}</textarea>
-        <button type="submit" class="btn">💾 बदल सेव्ह करा</>
+        <button type="submit" class="btn">💾 बदल सेव्ह करा</button>
         <a href="/admin/dashboard?tab=questions&filter_test_id={{ q.test_id }}" style="margin-left:10px; color:#dc2626; text-decoration:none; font-weight:600;">रद्द करा</a>
     </form>
 </div>
@@ -921,6 +934,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             {% elif tab == 'leaderboard' %}<a href="/admin/dashboard?tab=leaderboard" class="{{ 'active' if active_tab == 'leaderboard' else '' }}">🏆 Leaderboard</a>
             {% elif tab == 'feedback' %}<a href="/admin/dashboard?tab=feedback" class="{{ 'active' if active_tab == 'feedback' else '' }}">💬 Feedback</a>
             {% elif tab == 'notices' %}<a href="/admin/dashboard?tab=notices" class="{{ 'active' if active_tab == 'notices' else '' }}">📢 PDF Docs</a>
+            {% elif tab == 'trash' %}<a href="/admin/dashboard?tab=trash" class="{{ 'active' if active_tab == 'trash' else '' }}">🗑️ Recycle Bin (रिसायकल बिन)</a>
             {% elif tab == 'settings' %}<a href="/admin/dashboard?tab=settings" class="{{ 'active' if active_tab == 'settings' else '' }}">🔐 Settings (मेंटेनन्स मोड)</a>
             {% endif %}
         {% endfor %}
@@ -1252,9 +1266,44 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn">सेव्ह करा</button>
     </form>
 
-    <!-- 9. SETTINGS TAB (MAINTENANCE TOGGLE & POWER BUTTON) -->
+    <!-- 9. TRASH / RECYCLE BIN TAB -->
+    {% elif active_tab == 'trash' %}
+    <h3>🗑️ रिसायकल बिन (डिलीट केलेले डेटा व्यवस्थापन)</h3>
+    <p style="font-size:13px; color:#64748b;">येथे डिलीट केलेले प्रश्न आणि लीड्स आहेत. तुम्ही त्यांना कधीही पूर्ववत (Restore) करू शकता.</p>
+    
+    <h4 style="color:#065f46; margin-top:20px;">डिलीट केलेले प्रश्न:</h4>
+    <table>
+        <tr><th>ID</th><th>प्रश्न</th><th>कृती</th></tr>
+        {% for q in deleted_questions_list %}
+        <tr>
+            <td>{{ q.id }}</td>
+            <td><b>{{ q.question }}</b></td>
+            <td><a href="/admin/restore_item/question/{{ q.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
+        {% endfor %}
+    </table>
+
+    <h4 style="color:#065f46; margin-top:25px;">डिलीट केलेल्या विद्यार्थी लीड्स:</h4>
+    <table>
+        <tr><th>ID</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>कृती</th></tr>
+        {% for l in deleted_leads_list %}
+        <tr>
+            <td>{{ l.id }}</td>
+            <td><b>{{ l.student_name }}</b></td>
+            <td>{{ l.district }}</td>
+            <td>{{ l.phone }}</td>
+            <td><a href="/admin/restore_item/lead/{{ l.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
+        {% endfor %}
+    </table>
+
+    <!-- 10. SETTINGS TAB (MAINTENANCE TOGGLE & HELP DESK & POWER BUTTON) -->
     {% elif active_tab == 'settings' %}
-    <h3>🔐 ॲडमिन पासवर्ड, मेंटेनन्स मोड व टॅब व्यवस्थापन</h3>
+    <h3>🔐 ॲडमिन पासवर्ड, हेल्प डेस्क, मेंटेनन्स मोड व टॅब व्यवस्थापन</h3>
     <form method="POST" action="/admin/update_password">
         
         <div style="background:#fef3c7; border:1.5px solid #f59e0b; padding:15px; border-radius:8px; margin-bottom:20px;">
@@ -1264,6 +1313,14 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 <option value="maintenance" {% if site_status == 'maintenance' %}selected{% endif %}>🔴 वेबसाईट मेंटेनन्स मोडवर टाका (Under Maintenance)</option>
             </select>
             <small style="color:#78350f;">(मेंटेनन्स मोड चालू केल्यास विद्यार्थ्यांना 'काम सुरू आहे' असा संदेश दिसेल, पण ॲडमिन पॅनेल चालू राहील.)</small>
+        </div>
+
+        <div style="background:#eff6ff; border:1.5px solid #3b82f6; padding:15px; border-radius:8px; margin-bottom:20px;">
+            <h4 style="margin:0 0 10px; color:#1e40af;">📞 हेल्प डेस्क सेटिंग्ज (हेल्प डेस्क टॅब माहिती):</h4>
+            <label style="font-weight:bold; font-size:12px;">हेल्पलाईन फोन नंबर:</label>
+            <input type="text" name="help_phone" value="{{ help_phone }}" placeholder="उदा. 9921111960">
+            <label style="font-weight:bold; font-size:12px;">ऑफिस पत्ता / पत्ता:</label>
+            <input type="text" name="help_address" value="{{ help_address }}" placeholder="उदा. श्रीगुरु करिअर अकॅडमी, आडूर, कोल्हापूर">
         </div>
 
         <label>नवा पासवर्ड:</label>
@@ -1276,7 +1333,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:6px;">
                 <label style="font-weight:bold; color:#065f46;">🌐 होम पेज टॅबचा क्रम:</label>
                 <input type="text" name="home_tab_order" value="{{ home_tab_order }}">
-                <small style="color:#64748b;">(पर्याय: all, live, paid, free, rapid, battle, docs)</small>
+                <small style="color:#64748b;">(पर्याय: all, live, paid, free, rapid, battle, docs, help)</small>
             </div>
             <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:6px;">
                 <label style="font-weight:bold; color:#1e40af;">⚙️ ॲडमिन डॅशबोर्ड टॅबचा क्रम:</label>
@@ -1422,12 +1479,14 @@ def init_master_db():
                     ('upi_mobile', '9921111960'),
                     ('admin_pass', 'admin2026'),
                     ('admin_phone', '9921111960'),
+                    ('help_phone', '9921111960'),
+                    ('help_address', 'श्रीगुरु करिअर अकॅडमी, कोल्हापूर - कळे मेन रोड, आडूर, करवीर, कोल्हापूर'),
                     ('insta_link', ''),
                     ('yt_link', ''),
                     ('toppers_link', ''),
                     ('wa_groups_multiline', 'https://chat.whatsapp.com/sampleGroup1'),
-                    ('home_tab_order', 'all,live,paid,free,rapid,battle,docs'),
-                    ('admin_tab_order', 'leads,payments,special,questions,launch,leaderboard,feedback,notices,settings'),
+                    ('home_tab_order', 'all,live,paid,free,rapid,battle,docs,help'),
+                    ('admin_tab_order', 'leads,payments,special,questions,launch,leaderboard,feedback,notices,trash,settings'),
                     ('recruitment_pdf', ''),
                     ('eligibility_pdf', ''),
                     ('razorpay_key_id', ''),
@@ -1491,7 +1550,15 @@ def home_tests_list():
             eligibility_pdf = e_row['setting_value'] if e_row else ''
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='home_tab_order'")
             hto_row = cur.fetchone()
-            home_tab_order = hto_row['setting_value'] if hto_row else 'all,live,paid,free,rapid,battle,docs'
+            home_tab_order = hto_row['setting_value'] if hto_row else 'all,live,paid,free,rapid,battle,docs,help'
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='help_phone'")
+            hp_row = cur.fetchone()
+            help_phone = hp_row['setting_value'] if hp_row else '9921111960'
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='help_address'")
+            ha_row = cur.fetchone()
+            help_address = ha_row['setting_value'] if ha_row else 'श्रीगुरु करिअर अकॅडमी, आडूर'
 
             cur.execute("""
                 SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
@@ -1527,7 +1594,9 @@ def home_tests_list():
         recruitment_pdf=recruitment_pdf,
         eligibility_pdf=eligibility_pdf,
         ordered_tabs=ordered_tabs,
-        live_district_battles=live_district_battles
+        live_district_battles=live_district_battles,
+        help_phone=help_phone,
+        help_address=help_address
     )
 
 @app.route('/terms-and-conditions')
@@ -1923,6 +1992,14 @@ def admin_dashboard():
             r_ksec = cur.fetchone()
             razorpay_key_secret = r_ksec['setting_value'] if r_ksec else ''
 
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='help_phone'")
+            hp_val = cur.fetchone()
+            help_phone = hp_val['setting_value'] if hp_val else '9921111960'
+
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='help_address'")
+            ha_val = cur.fetchone()
+            help_address = ha_val['setting_value'] if ha_val else 'श्रीगुरु करिअर अकॅडमी, आडूर'
+
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='insta_link'")
             insta_link = cur.fetchone()['setting_value']
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='yt_link'")
@@ -1936,15 +2013,21 @@ def admin_dashboard():
 
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='home_tab_order'")
             hto_val = cur.fetchone()
-            home_tab_order = hto_val['setting_value'] if hto_val else 'all,live,paid,free,rapid,battle,docs'
+            home_tab_order = hto_val['setting_value'] if hto_val else 'all,live,paid,free,rapid,battle,docs,help'
 
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='admin_tab_order'")
             ato_val = cur.fetchone()
-            admin_tab_order = ato_val['setting_value'] if ato_val else 'leads,payments,special,questions,launch,leaderboard,feedback,notices,settings'
+            admin_tab_order = ato_val['setting_value'] if ato_val else 'leads,payments,special,questions,launch,leaderboard,feedback,notices,trash,settings'
 
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='site_status'")
             ss_val = cur.fetchone()
             site_status = ss_val['setting_value'] if ss_val else 'active'
+
+            cur.execute("SELECT * FROM questions WHERE is_deleted=1 ORDER BY id DESC")
+            deleted_questions_list = cur.fetchall()
+
+            cur.execute("SELECT * FROM mock_test_leads WHERE is_deleted=1 ORDER BY id DESC")
+            deleted_leads_list = cur.fetchall()
 
             cur.execute("SELECT id, question as title, 'question' as type FROM questions WHERE is_deleted=1 ORDER BY id DESC LIMIT 5")
             deleted_q = cur.fetchall()
@@ -1974,6 +2057,8 @@ def admin_dashboard():
         upi_mobile=upi_mobile,
         razorpay_key_id=razorpay_key_id,
         razorpay_key_secret=razorpay_key_secret,
+        help_phone=help_phone,
+        help_address=help_address,
         insta_link=insta_link,
         yt_link=yt_link,
         toppers_link=toppers_link,
@@ -1982,7 +2067,9 @@ def admin_dashboard():
         admin_tab_order=admin_tab_order,
         ordered_admin_tabs=ordered_admin_tabs,
         site_status=site_status,
-        undo_items=undo_items
+        undo_items=undo_items,
+        deleted_questions_list=deleted_questions_list,
+        deleted_leads_list=deleted_leads_list
     )
 
 @app.route('/admin/ai_generate_mock', methods=['POST'])
@@ -2010,6 +2097,18 @@ def admin_undo_delete(item_type, item_id):
                 cur.execute("UPDATE mock_test_leads SET is_deleted=0 WHERE id=%s", (item_id,))
             conn.commit()
     return redirect('/admin/dashboard')
+
+@app.route('/admin/restore_item/<item_type>/<int:item_id>')
+def admin_restore_item(item_type, item_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            if item_type == 'question':
+                cur.execute("UPDATE questions SET is_deleted=0 WHERE id=%s", (item_id,))
+            elif item_type == 'lead':
+                cur.execute("UPDATE mock_test_leads SET is_deleted=0 WHERE id=%s", (item_id,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=trash')
 
 @app.route('/admin/bulk_delete_feedback', methods=['POST'])
 def admin_bulk_delete_feedback():
@@ -2238,7 +2337,7 @@ def admin_update_test(test_id):
 def admin_delete_test(test_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor():
+        with conn.cursor() as cur:
             cur.execute("UPDATE test_papers SET is_deleted=1 WHERE id=%s", (test_id,))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
@@ -2359,9 +2458,11 @@ def admin_update_password():
     if not session.get('admin_logged'): return redirect('/admin/login')
     new_pass = request.form.get('new_password')
     site_status = request.form.get('site_status', 'active')
-    home_tab_order = request.form.get('home_tab_order', 'all,live,paid,free,rapid,battle,docs').strip()
-    admin_tab_order = request.form.get('admin_tab_order', 'leads,payments,special,questions,launch,leaderboard,feedback,notices,settings').strip()
+    home_tab_order = request.form.get('home_tab_order', 'all,live,paid,free,rapid,battle,docs,help').strip()
+    admin_tab_order = request.form.get('admin_tab_order', 'leads,payments,special,questions,launch,leaderboard,feedback,notices,trash,settings').strip()
     wa_groups = request.form.get('wa_groups_multiline', '').strip()
+    help_phone = request.form.get('help_phone', '').strip()
+    help_address = request.form.get('help_address', '').strip()
     insta = request.form.get('insta_link', '')
     yt = request.form.get('yt_link', '')
     top = request.form.get('toppers_link', '')
@@ -2370,6 +2471,10 @@ def admin_update_password():
         with conn.cursor() as cur:
             if new_pass:
                 cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_pass'", (new_pass,))
+            if help_phone:
+                cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('help_phone', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (help_phone,))
+            if help_address:
+                cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('help_address', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (help_address,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('site_status', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (site_status,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('home_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (home_tab_order,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,))
