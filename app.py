@@ -273,6 +273,10 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </div>
 
 <div class="box">
+    <!-- Floating bottom-corner Home button (Feature 6) -->
+    <a href="/" style="position:fixed; bottom:20px; right:20px; background:#10b981; color:#022c22; padding:10px 18px; border-radius:30px; text-decoration:none; font-weight:800; font-size:13px; box-shadow:0 4px 15px rgba(0,0,0,0.4); z-index:9999; border:2px solid #34d399;">
+        🏠 मुख्य पानावर जा
+    </a>
     <div class="hero-banner">
         <h1>⚔️ महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल</h1>
         <div class="quote-box">
@@ -477,10 +481,20 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('examForm').addEventListener('submit', function() {
+            document.getElementById('examForm').addEventListener('submit', function(e) {
                 isFormSubmitted = true;
                 localStorage.removeItem(testStorageKey);
                 localStorage.removeItem(timerStorageKey);
+                
+                // Show submission loading overlay
+                let overlay = document.getElementById('submittingOverlay');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.id = 'submittingOverlay';
+                    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(11,19,41,0.96); z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; padding:20px;';
+                    overlay.innerHTML = '<div style="font-size:45px; margin-bottom:15px;">⏳</div><h3 style="color:#34d399; margin:0 0 10px; font-size:22px;">तुमची टेस्ट सबमिट होत आहे...</h3><p style="color:#cbd5e1; font-size:14.5px; margin:0;">कृपया प्रतीक्षा करा, उत्तरपत्रिका तपासली जात आहे. कृपया पुन्हा बटण दाबू नका!</p>';
+                    document.body.appendChild(overlay);
+                }
             });
         });
 
@@ -1187,9 +1201,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn" style="margin-top:8px;">🚀 नवीन टेस्ट सेव्ह करा</button>
     </form>
 
-    <h4>सर्व टेस्ट्स यादी:</h4>
+    <h4>सर्व टेस्ट्स यादी व ॲक्टिव्ह/क्लोज्ड नियंत्रण (Feature 7):</h4>
     <table>
-        <tr><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>प्रकार</th><th>क्रम</th><th>फी</th><th>वेळ</th><th>कृती</th></tr>
+        <tr><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>प्रकार</th><th>स्थिती (Status)</th><th>क्रम</th><th>फी</th><th>वेळ</th><th>कृती</th></tr>
         {% for t in tests %}
         <tr>
             <form method="POST" action="/admin/update_test/{{ t.id }}">
@@ -1209,9 +1223,15 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                         <option value="Paid" {% if t.test_type=='Paid' %}selected{% endif %}>Paid</option>
                     </select>
                 </td>
-                <td><input type="number" name="sequence_order" value="{{ t.sequence_order or 1 }}" style="width:60px; margin-bottom:0;"></td>
-                <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:70px; margin-bottom:0;"></td>
-                <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:70px; margin-bottom:0;"></td>
+                <td>
+                    <select name="status" style="margin-bottom:0; font-weight:bold; color:{{ '#16a34a' if t.status=='Active' else '#dc2626' }};">
+                        <option value="Active" {% if t.status=='Active' %}selected{% endif %}>🟢 Active (चालू)</option>
+                        <option value="Closed" {% if t.status=='Closed' %}selected{% endif %}>🔴 Closed (बंद)</option>
+                    </select>
+                </td>
+                <td><input type="number" name="sequence_order" value="{{ t.sequence_order or 1 }}" style="width:50px; margin-bottom:0;"></td>
+                <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:60px; margin-bottom:0;"></td>
+                <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:60px; margin-bottom:0;"></td>
                 <td style="white-space:nowrap;">
                     <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; cursor:pointer;">💾 अपडेट</button>
                     <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white;">🖨️ प्रिंट</a>
@@ -1304,6 +1324,18 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 10. SETTINGS TAB (MAINTENANCE TOGGLE & HELP DESK & POWER BUTTON) -->
     {% elif active_tab == 'settings' %}
     <h3>🔐 ॲडमिन पासवर्ड, हेल्प डेस्क, मेंटेनन्स मोड व टॅब व्यवस्थापन</h3>
+
+    <!-- Feature 2: Dynamic QR Code with Download Option -->
+    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px; text-align:center;">
+        <h4 style="margin:0 0 8px; color:#065f46;">📱 डायनॅमिक टेस्ट व होम पेज QR कोड (Feature 2)</h4>
+        <p style="font-size:13px; color:#047857; margin:0 0 12px;">विद्यार्थ्यांनी हा QR कोड स्कॅन केल्यावर थेट मुख्य होम पेजवर / टेस्टवर जातील. वेबसाईटची लिंक बदलल्यास QR ऑटोमॅटिक अपडेट होईल.</p>
+        <div style="background:white; display:inline-block; padding:10px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:10px;">
+            <img id="adminPortalQR" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ request.host_url }}" alt="Portal QR" style="display:block; max-width:200px; height:auto;">
+        </div><br>
+        <a id="downloadQrBtn" href="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={{ request.host_url }}" download="Police_Bharti_Portal_QR.png" class="btn" style="background:#059669; color:white; text-decoration:none; display:inline-block; padding:10px 20px;">
+            📥 QR कोड इमेज डाऊनलोड करा (HD)
+        </a>
+    </div>
     <form method="POST" action="/admin/update_password">
         
         <div style="background:#fef3c7; border:1.5px solid #f59e0b; padding:15px; border-radius:8px; margin-bottom:20px;">
@@ -1832,7 +1864,7 @@ def submit_test(test_id):
     sig = generate_tamper_signature(phone)
     student_tracking_url = f"{main_portal_url}/?ref={phone}&sig={sig}"
     
-    ego_msg = f"🏆 *महाराष्ट्र पोलीस भरती ओपन चॅलेंज* 🏆\\nमैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा!\\nमला {total} पैकी {score} गुण मिळाले आणि ऑल महाराष्ट्र रँक #{state_rank} आलाय!\\n🔥 तुझ्यासोबत तुझा मित्रही भरती झाला पाहिजे! त्यालाही ही लिंक पाठव आणि उद्याची रॅपिड टेस्ट मिळव!\\n👉 मोफत टेस्ट सोडवण्यासाठी येथे क्लिक करा:\\n{student_tracking_url}"
+    ego_msg = f"महाराष्ट्र पोलीस भरती लेखी परीक्षा ओपन चॅलेंज मैदानावर खाकीची जिद्द दाखवली आता लेखी परीक्षेत तुमची तयारी किती आहे सिद्ध करा जिल्ह्यात आणि राज्यात तुझे लेखी तयारी किती आहे ती पाहायचे असेल तर खालील लिंक वर क्लिक करून मोफत पोलीस भरती सराव लेखी चाचणी दे\\n{main_portal_url}\\nतुझ्यासोबत तुझा मित्रही भरती झाला पाहिजे त्यालाही हा मेसेज पाठव आणि रोजचे रॅपिड फायर टेस्ट मोफत मिळव"
     ego_share_encoded = urllib.parse.quote(ego_msg)
 
     return render_template_string(
@@ -2322,14 +2354,15 @@ def admin_update_test(test_id):
     seq = int(request.form.get('sequence_order', 1) or 1)
     fee = float(request.form.get('test_fee', 0) or 0)
     duration = int(request.form.get('duration_minutes', 60) or 60)
+    status = request.form.get('status', 'Active').strip()
 
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 UPDATE test_papers 
-                SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, category=%s, sequence_order=%s 
+                SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, category=%s, sequence_order=%s, status=%s 
                 WHERE id=%s
-            """, (title, ttype, fee, duration, category, seq, test_id))
+            """, (title, ttype, fee, duration, category, seq, status, test_id))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
 
