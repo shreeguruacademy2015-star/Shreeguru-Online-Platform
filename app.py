@@ -1811,7 +1811,7 @@ def submit_test(test_id):
             
             if referred_by and test.get('category') == 'free':
                 cur.execute("""
-                    SELECT COUNT(DISTINCT phone) as valid_friends
+                    SELECT COUNT(DISTINCT phone) as valid_friends 
                     FROM mock_test_leads
                     WHERE referred_by_phone=%s AND test_id=%s AND is_deleted=0
                 """, (referred_by, test_id))
