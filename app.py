@@ -2224,6 +2224,9 @@ def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     
+    if genai is None:
+        return jsonify({"success": False, "error": "Google GenAI library लोड झालेली नाही!"}), 500
+
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
     subject_counts = data.get('subject_counts', {})
@@ -2240,10 +2243,9 @@ def admin_ai_generate_advanced():
                 continue
             
             prompt = (
-                f"महाराष्ट्र {department} परीक्षेसाठी '{subj}' या विषयावर अचूक आणि नवीन {count} बहुपर्यायी प्रश्न तयार कर. "
-                f"उत्तर खालीलप्रमाणे विशिष्ट पाईप (|) सेपरेटेड फॉरमॅटमध्ये एका ओळीत एक प्रश्न असावा:\n"
-                f"प्रश्न येथे लिहा | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक उत्तर (फक्त A, B, C किंवा D पैकी एक) | सविस्तर स्पष्टीकरण\n"
-                f"कोणतेही अतिरिक्त शब्द किंवा इंट्रोडक्शन न देता थेट प्रश्नांची यादी दे."
+                f"Maharashtra {department} parikshethathi '{subj}' ya vishayavar achuk ani navin {count} bahuparyayi prashn tayar kar. "
+                f"Uttar khaliilpramane vishisht pipe (|) separated format madhe eka oliat ek prashn asava:\n"
+                f"Prashn yethe liha | paryay A | paryay B | paryay C | paryay D | achuk uttar (fakt A, B, C kinva D paiki ek) | savistar spashtikaran"
             )
 
             response = client.models.generate_content(
@@ -2263,7 +2265,7 @@ def admin_ai_generate_advanced():
                     corr = parts[5].upper()
                     if corr not in ['A', 'B', 'C', 'D']:
                         corr = 'A'
-                    exp = parts[6] if len(parts) > 6 else 'स्पष्टीकरण उपलब्ध नाही.'
+                    exp = parts[6] if len(parts) > 6 else 'Spashtikaran uplabdh nahi.'
                     
                     generated_list.append((test_id, q, oa, ob, oc, od, corr, exp))
 
