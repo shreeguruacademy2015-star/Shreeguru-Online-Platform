@@ -2219,7 +2219,6 @@ def admin_dashboard():
         deleted_leads_list=deleted_leads_list
     )
 
-from google import genai
 import os
 
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
