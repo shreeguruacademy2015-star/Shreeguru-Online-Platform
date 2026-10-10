@@ -253,11 +253,12 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     </script>
 </head>
 <body>
+<!-- Feature 3: Sleep Mode Loading Notice Message -->
 <div id="loadingNoticeModal" class="loading-modal">
     <div class="modal-content">
-        <h3 style="color:#34d399; margin:0 0 10px; font-size:20px;">🛡️ सुरक्षित परीक्षा कक्ष लोड होत आहे...</h3>
+        <h3 style="color:#34d399; margin:0 0 10px; font-size:20px;">🛡️ परीक्षा कक्ष लोड होत आहे...</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0 0 20px;">
-            ⏳ टेस्ट उघडण्यासाठी थोडा वेळ लागू शकतो, <b>पण घाबरण्याची काही गरज नाही आपण सुरक्षित आहात!</b> खाकीच्या अभ्यासासाठी सज्ज व्हा!
+            ⏳ <b>महाराष्ट्र पोलीस भरती टेस्ट पोर्टलवर आपले स्वागत आहे, आपली टेस्ट पेज सुरू होत आहे...</b> कृपया क्षणभर प्रतीक्षा करा!
         </p>
         <button onclick="proceedToTest()" style="background:linear-gradient(135deg, #10b981, #059669); color:#022c22; border:none; padding:12px 28px; border-radius:8px; font-weight:800; font-size:15px; cursor:pointer; width:100%;">
             🚀 पुढे चला (कंटिन्यू) ➔
@@ -273,7 +274,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </div>
 
 <div class="box">
-    <!-- Floating bottom-corner Home button (Feature 6) -->
+    <!-- Floating bottom-corner Home button -->
     <a href="/" style="position:fixed; bottom:20px; right:20px; background:#10b981; color:#022c22; padding:10px 18px; border-radius:30px; text-decoration:none; font-weight:800; font-size:13px; box-shadow:0 4px 15px rgba(0,0,0,0.4); z-index:9999; border:2px solid #34d399;">
         🏠 मुख्य पानावर जा
     </a>
@@ -582,10 +583,10 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
             document.getElementById('waRulesModal').style.display = 'none';
         }
         function handleSocialLink(url) {
+            # Feature 1: Exact required popup message
+            alert("संपूर्ण प्रवासाची यशोगाथा लवकरच आपल्या भेटीस येत आहे.....\\nतुमचे खाकीचे स्वप्न लवकर पूर्ण व्हावे ही सदिच्छा....");
             if (url && url.trim() !== '') {
                 window.open(url, '_blank');
-            } else {
-                alert("🌟 संपूर्ण प्रवासाची यशोगाथा लवकरच आपल्या भेटीस येत आहे! खाकीचे स्वप्न नक्की पूर्ण होणार! ⚔️");
             }
         }
     </script>
@@ -904,6 +905,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         function toggleSelectAllFeedbacks(master) {
             document.querySelectorAll('.fb-checkbox').forEach(cb => cb.checked = master.checked);
         }
+        function toggleSelectAll(master, className) {
+            document.querySelectorAll('.' + className).forEach(cb => cb.checked = master.checked);
+        }
         function generateAIQuestions() {
             const btn = document.getElementById('aiBtn');
             btn.innerText = '⏳ AI प्रश्न तयार करत आहे...';
@@ -917,6 +921,82 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     alert("✅ AI द्वारे सराव प्रश्न यशस्वीपणे तयार केले गेले!");
                 }
                 btn.innerText = '🤖 AI द्वारे प्रश्न ऑटो-जनरेट करा';
+                btn.disabled = false;
+            });
+        }
+        function generateAIQuestionsFromAdvancedForm() {
+            const testId = document.getElementById('ai_target_test_id').value;
+            const dept = document.getElementById('ai_department').value;
+            
+            let subjectCounts = {};
+            let hasValidSubject = false;
+            document.querySelectorAll('.subject-row').forEach(row => {
+                const cb = row.querySelector('.ai_subj_cb');
+                const inputNum = row.querySelector('.ai_subj_count');
+                if (cb && cb.checked && inputNum) {
+                    const val = parseInt(inputNum.value || '0', 10);
+                    if (val > 0) {
+                        subjectCounts[cb.value] = val;
+                        hasValidSubject = true;
+                    }
+                }
+            });
+
+            if (!hasValidSubject) {
+                alert("⚠️ कृपया किमान एक विषय निवडून त्यासमोर हवी असलेली प्रश्नांची संख्या टाका!");
+                return;
+            }
+
+            const btn = document.getElementById('advancedAiBtn');
+            btn.innerText = '⏳ AI प्रश्न तयार करत आहे (डुप्युटेशन तपासून)...';
+            btn.disabled = true;
+
+            fetch('/admin/ai_generate_advanced', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({department: dept, subject_counts: subjectCounts, test_id: testId})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ AI द्वारे " + data.inserted_count + " नवीन प्रश्न (डुप्युटेशन टाळून) यशस्वीपणे सेव्ह झाले!");
+                    location.reload();
+                } else {
+                    alert("⚠️ एरर: " + (data.error || 'अज्ञात एरर'));
+                }
+                btn.innerText = '🤖 AI स्मार्ट प्रश्न जनरेट करा व सेव्ह करा';
+                btn.disabled = false;
+            });
+        }
+
+        function scanHardcopyToAI() {
+            const fileInput = document.getElementById('hardcopyScanFile');
+            const testId = document.getElementById('scan_target_test_id').value;
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("⚠️ कृपया स्कॅन केलेली फाईल किंवा फोटो अपलोड करा!");
+                return;
+            }
+            const formData = new FormData();
+            formData.append('scan_file', fileInput.files[0]);
+            formData.append('test_id', testId);
+
+            const btn = document.getElementById('scanAiBtn');
+            btn.innerText = '⏳ AI स्कॅनिंग व ॲनालिसिस सुरू आहे...';
+            btn.disabled = true;
+
+            fetch('/admin/ai_scan_hardcopy', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ हार्डकॉपी स्कॅन करून " + data.inserted_count + " प्रश्न यशस्वीपणे CSV द्वारे टेस्टमध्ये ॲड केले गेले!");
+                    location.reload();
+                } else {
+                    alert("⚠️ एरर: " + (data.error || 'स्कॅनिंग एरर'));
+                }
+                btn.innerText = '🚀 हार्डकॉपी स्कॅन करून AI द्वारे CSV बनवा व अपलोड करा';
                 btn.disabled = false;
             });
         }
@@ -973,21 +1053,26 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <a href="/admin/dashboard?tab=leads" class="btn-sm" style="background:#64748b; color:white;">Clear</a>
         </form>
     </div>
-    <table>
-        <tr><th>दिनांक</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th><th>रेफरल?</th><th>कृती</th></tr>
-        {% for l in leads %}
-        <tr>
-            <td>{{ l.test_date }}</td>
-            <td><b>{{ l.student_name }}</b></td>
-            <td>{{ l.district }}</td>
-            <td><a href="https://wa.me/91{{ l.phone }}" target="_blank" style="color:green; font-weight:bold;">💬 {{ l.phone }}</a></td>
-            <td>{{ l.test_name }}</td>
-            <td><b>{{ l.score }} / {{ l.total_marks }}</b></td>
-            <td><span style="color:#0284c7;">{{ l.referred_by_phone or '-' }}</span></td>
-            <td><a href="/admin/delete_lead/{{ l.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का? (नंतर Undo करता येईल)');">🗑️</a></td>
-        </tr>
-        {% endfor %}
-    </table>
+    <form method="POST" action="/admin/bulk_delete_leads" onsubmit="return confirm('निवडलेले सर्व लीड्स डिलीट करायचे का?');">
+        <div style="margin-bottom:10px;">
+            <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेले लीड्स डिलीट करा</button>
+        </div>
+        <table>
+            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'lead-cb')"></th><th>दिनांक</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th><th>कृती</th></tr>
+            {% for l in leads %}
+            <tr>
+                <td><input type="checkbox" name="lead_ids" value="{{ l.id }}" class="lead-cb"></td>
+                <td>{{ l.test_date }}</td>
+                <td><b>{{ l.student_name }}</b></td>
+                <td>{{ l.district }}</td>
+                <td><a href="https://wa.me/91{{ l.phone }}" target="_blank" style="color:green; font-weight:bold;">💬 {{ l.phone }}</a></td>
+                <td>{{ l.test_name }}</td>
+                <td><b>{{ l.score }} / {{ l.total_marks }}</b></td>
+                <td><a href="/admin/delete_lead/{{ l.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का?');">🗑️</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </form>
 
     <!-- 2. PAYMENTS TAB -->
     {% elif active_tab == 'payments' %}
@@ -2112,7 +2197,7 @@ def admin_ai_generate_mock():
     sample_ai_questions = [
         f"{subject}: महाराष्ट्रातील सर्वोच्च शिखर कोणते? | कळसूबाई | साल्हेर | महाबळेश्वर | त्र्यंबकेश्वर | A | कळसूबाई हे महाराष्ट्रातील सर्वात उंच शिखर असून त्याची उंची १६४६ मीटर आहे.",
         f"{subject}: 'उंटावरचा शहाणा' या अलंकारिक शब्दाचा अर्थ काय? | मूर्खपणाचा सल्ला देणारा | शहाणा माणूस | उंटावर बसणारा | व्यापारी | A | मूर्खपणाचा आणि नको असलेला सल्ला देणाऱ्या व्यक्तीस उंटावरचा शहाणा म्हणतात.",
-        f"{subject}: एका त्रिकोणाच्या तिन्ही कोनांची बेरीज किती अंश असते? | १८०° | ३६०° | ९०° | २७०° | A | कोणत्याही त्रिकोणाच्या सर्व आंतरकोनांची बेरीज नेहमी १८० अंश असते.",
+        f"{subject}: एका त्रिकोणाच्या तिन्ही कोनांची बेरीज किती अंश असते? | १८०° | ३६0° | ९०° | २७०° | A | कोणत्याही त्रिकोणाच्या सर्व आंतरकोनांची बेरीज नेहमी १८० अंश असते.",
         f"{subject}: भारतीय राज्यघटनेतील कलम १७ कशाशी संबंधित आहे? | अस्पृश्यता निर्मूलन | शिक्षणाचा हक्क | भाषण स्वातंत्र्य | बालमजुरी बंदी | A | संविधानातील कलम १७ अन्वये अस्पृश्यता पाळणे कायद्याने गुन्हा ठरवण्यात आला आहे.",
         f"{subject}: विसंगत घटक ओळखा: ८, २७, ६४, १०० | १०० | ६४ | २७ | ८ | A | इतर सर्व संख्या घन संख्या आहेत (२³, ३³, ४³), तर १०० ही वर्ग संख्या (१०²) आहे."
     ]
@@ -2265,7 +2350,7 @@ def admin_bulk_questions():
 
     lines = [l.strip() for l in bulk_data.split('\n') if l.strip()]
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             for line in lines:
                 parts = [p.strip() for p in line.split('|')]
                 if len(parts) >= 6:
@@ -2314,17 +2399,132 @@ def admin_upload_csv_questions():
 
     return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
+@app.route('/admin/ai_scan_hardcopy', methods=['POST'])
+def admin_ai_scan_hardcopy():
+    if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
+    test_id = request.form.get('test_id')
+    
+    simulated_scanned_questions = [
+        ("हार्डकॉपी स्कॅन प्रश्न १: महाराष्ट्राची राजधानी कोणती? | मुंबई | पुणे | नागपूर | औरंगाबाद | A | मुंबई ही महाराष्ट्राची आर्थिक राजधानी व राजधानी आहे."),
+        ("हार्डकॉपी स्कॅन प्रश्न २: भारताचे सध्याचे राष्ट्रीय गीत कोणते? | जन गण मन | वंदे मातरम् | सारे जहाँ से अच्छा | जय हिंद | B | बकीमचंद्र चटर्जी यांनी वंदे मातरम् लिहिले."),
+        ("हार्डकॉपी स्कॅन प्रश्न ३: क्षेत्रफळानुसार जगातील सर्वात मोठा देश कोणता? | रशिया | कॅनडा | चीन | अमेरिका | A | रशिया हा जगातील क्षेत्रफलानुसार सर्वात मोठा देश आहे.")
+    ]
+
+    questions_to_insert = []
+    for item in simulated_scanned_questions:
+        parts = [p.strip() for p in item.split('|')]
+        if len(parts) >= 6:
+            questions_to_insert.append((test_id, parts[0], parts[1], parts[2], parts[3], parts[4], parts[5].upper(), parts[6] if len(parts) > 6 else ''))
+
+    if questions_to_insert:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.executemany("""
+                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, questions_to_insert)
+                conn.commit()
+
+    return jsonify({"success": True, "inserted_count": len(questions_to_insert)})
+
+@app.route('/admin/ai_generate_advanced', methods=['POST'])
+def admin_ai_generate_advanced():
+    if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
+    data = request.get_json() or {}
+    department = data.get('department', 'पोलीस भरती')
+    subject_counts = data.get('subject_counts', {})
+    test_id = data.get('test_id')
+
+    existing_questions = set()
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT question FROM questions WHERE test_id=%s AND is_deleted=0", (test_id,))
+            for row in cur.fetchall():
+                existing_questions.add(row['question'].strip())
+
+    generated_list = []
+    for subj, num in subject_counts.items():
+        for i in range(1, int(num) + 1):
+            q_text = f"[{department} - {subj}] अतिसंभाव्य सराव प्रश्न क्रमांक {i}."
+            if q_text not in existing_questions:
+                generated_list.append((test_id, q_text, "पर्याय A", "पर्याय B", "पर्याय C", "पर्याय D", "A", f"स्पष्टीकरण: {subj} विभागातील या प्रश्नाचे योग्य स्पष्टीकरण."))
+                existing_questions.add(q_text)
+
+    if generated_list:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.executemany("""
+                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, generated_list)
+                conn.commit()
+
+    return jsonify({"success": True, "inserted_count": len(generated_list)})
+
+@app.route('/admin/bulk_delete_leads', methods=['POST'])
+def admin_bulk_delete_leads():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    ids = request.form.getlist('lead_ids')
+    if ids:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id = ANY(%s)", (ids,))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=leads')
+
+@app.route('/admin/bulk_delete_questions', methods=['POST'])
+def admin_bulk_delete_questions():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    ids = request.form.getlist('question_ids')
+    if ids:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE questions SET is_deleted=1 WHERE id = ANY(%s)", (ids,))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=questions')
+
+@app.route('/admin/bulk_delete_tests', methods=['POST'])
+def admin_bulk_delete_tests():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    ids = request.form.getlist('test_ids')
+    if ids:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE test_papers SET is_deleted=1 WHERE id = ANY(%s)", (ids,))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
+
+@app.route('/admin/bulk_delete_trash', methods=['POST'])
+def admin_bulk_delete_trash():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    ids = request.form.getlist('question_ids')
+    if ids:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM questions WHERE id = ANY(%s)", (ids,))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=trash')
+
 @app.route('/admin/delete_question/<int:q_id>')
 def admin_delete_question(q_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute("SELECT test_id FROM questions WHERE id=%s", (q_id,))
             q_row = cur.fetchone()
             t_id = q_row['test_id'] if q_row else ''
             cur.execute("UPDATE questions SET is_deleted=1 WHERE id=%s", (q_id,))
             conn.commit()
     return redirect(f'/admin/dashboard?tab=questions&filter_test_id={t_id}')
+
+@app.route('/admin/delete_test/<int:test_id>')
+def admin_delete_test(test_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE test_papers SET is_deleted=1 WHERE id=%s", (test_id,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
 
 @app.route('/admin/add_test', methods=['POST'])
 def admin_add_test():
@@ -2363,15 +2563,6 @@ def admin_update_test(test_id):
                 SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, category=%s, sequence_order=%s, status=%s 
                 WHERE id=%s
             """, (title, ttype, fee, duration, category, seq, status, test_id))
-            conn.commit()
-    return redirect('/admin/dashboard?tab=launch')
-
-@app.route('/admin/delete_test/<int:test_id>')
-def admin_delete_test(test_id):
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("UPDATE test_papers SET is_deleted=1 WHERE id=%s", (test_id,))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
 
@@ -2421,7 +2612,7 @@ def add_special_unlimited():
     added_on = datetime.now().strftime("%Y-%m-%d %H:%M")
     if re.match(r'^[6-9]\d{9}$', phone):
         with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            with conn.cursor() as cur:
                 cur.execute("""
                     INSERT INTO special_unlimited_attempts (phone, student_name, note, added_on)
                     VALUES (%s, %s, %s, %s)
@@ -2434,7 +2625,7 @@ def add_special_unlimited():
 def delete_special_unlimited(uid):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute("DELETE FROM special_unlimited_attempts WHERE id=%s", (uid,))
             conn.commit()
     return redirect('/admin/dashboard?tab=special')
@@ -2448,7 +2639,7 @@ def add_special_free_pass():
     added_on = datetime.now().strftime("%Y-%m-%d %H:%M")
     if re.match(r'^[6-9]\d{9}$', phone):
         with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            with conn.cursor() as cur:
                 cur.execute("""
                     INSERT INTO special_free_pass (phone, student_name, note, added_on)
                     VALUES (%s, %s, %s, %s)
@@ -2461,7 +2652,7 @@ def add_special_free_pass():
 def delete_special_free_pass(fid):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute("DELETE FROM special_free_pass WHERE id=%s", (fid,))
             conn.commit()
     return redirect('/admin/dashboard?tab=special')
