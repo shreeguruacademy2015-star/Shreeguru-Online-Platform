@@ -2231,7 +2231,7 @@ def admin_ai_generate_advanced():
     subject_counts = data.get('subject_counts', {}) # जसे की {"मराठी व्याकरण": 5}
     test_id = data.get('test_id')
 
-    api_key = os.environ.get("GEMINI_API_KEY", "")
+    api_key = "AQ.Ab8RN6LDVf9ZOn4wiAmlbFVONp6aCiq8XU7gTJyR0rgr73crgA"
     if not api_key:
         return jsonify({"success": False, "error": "Gemini API Key सेट केलेली नाही!"}), 400
 
