@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
+from google import genai
 
 # --- SURAKSHIT RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
 try:
@@ -2213,10 +2214,74 @@ def admin_dashboard():
         deleted_leads_list=deleted_leads_list
     )
 
-@app.route('/admin/ai_generate_mock', methods=['POST'])
-def admin_ai_generate_mock():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    subject = request.form.get('subject', 'महाराष्ट्र पोलीस भरती सराव')
+from google import genai
+import os
+
+@app.route('/admin/ai_generate_advanced', methods=['POST'])
+def admin_ai_generate_advanced():
+    if not session.get('admin_logged'): 
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    data = request.get_json() or {}
+    department = data.get('department', 'पोलीस भरती')
+    subject_counts = data.get('subject_counts', {}) # जसे की {"मराठी व्याकरण": 5}
+    test_id = data.get('test_id')
+
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        return jsonify({"success": False, "error": "Gemini API Key सेट केलेली नाही!"}), 400
+
+    generated_list = []
+    try:
+        client = genai.Client(api_key=api_key)
+
+        for subj, num in subject_counts.items():
+            count = int(num)
+            if count <= 0:
+                continue
+            
+            # जेमिनी एआयला प्रत्येक विषयासाठी रिअल प्रश्न मागण्यासाठी प्राम्प्ट
+            prompt = (
+                f"महाराष्ट्र {department} परीक्षेसाठी '{subj}' या विषयावर अचूक आणि नवीन {count} बहुपर्यायी प्रश्न तयार कर. "
+                f"उत्तर खालीलप्रमाणे विशिष्ट पाईप (|) सेपरेटेड फॉरमॅटमध्ये एका ओळीत एक प्रश्न असावा:\n"
+                f"प्रश्न येथे लिहा | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक उत्तर (फक्त A, B, C किंवा D पैकी एक) | सविस्तर स्पष्टीकरण\n"
+                f"कोणतेही अतिरिक्त शब्द किंवा इंट्रोडक्शन न देता थेट प्रश्नांची यादी दे."
+            )
+
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            )
+            
+            lines = response.text.strip().split('\n')
+            for line in lines:
+                parts = [p.strip() for p in line.split('|')]
+                if len(parts) >= 6:
+                    q = parts[0]
+                    oa = parts[1]
+                    ob = parts[2]
+                    oc = parts[3]
+                    od = parts[4]
+                    corr = parts[5].upper()
+                    if corr not in ['A', 'B', 'C', 'D']:
+                        corr = 'A'
+                    exp = parts[6] if len(parts) > 6 else 'स्पष्टीकरण उपलब्ध नाही.'
+                    
+                    generated_list.append((test_id, q, oa, ob, oc, od, corr, exp))
+
+        if generated_list:
+            with get_db() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.executemany("""
+                        INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """, generated_list)
+                    conn.commit()
+
+        return jsonify({"success": True, "inserted_count": len(generated_list)})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
     
     sample_ai_questions = [
         f"{subject}: महाराष्ट्रातील सर्वोच्च शिखर कोणते? | कळसूबाई | साल्हेर | महाबळेश्वर | त्र्यंबकेश्वर | A | कळसूबाई हे महाराष्ट्रातील सर्वात उंच शिखर असून त्याची उंची १६४६ मीटर आहे.",
