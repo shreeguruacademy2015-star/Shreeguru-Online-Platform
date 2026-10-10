@@ -16,7 +16,10 @@ from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
 # --- सुरक्षित जेमिनी एआय इम्पोर्ट (रेन्डर क्रॅश-प्रूफ) ---
-from google import genai
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 
 # --- SURAKSHIT RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
 try:
@@ -909,22 +912,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         function toggleSelectAll(master, className) {
             document.querySelectorAll('.' + className).forEach(cb => cb.checked = master.checked);
         }
-        function generateAIQuestions() {
-            const btn = document.getElementById('aiBtn');
-            btn.innerText = '⏳ AI प्रश्न तयार करत आहे...';
-            btn.disabled = true;
-            fetch('/admin/ai_generate_mock', {method: 'POST'})
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const box = document.getElementById('bulkTextarea');
-                    box.value = (box.value ? box.value + "\\n" : "") + data.questions_text;
-                    alert("✅ AI द्वारे सराव प्रश्न यशस्वीपणे तयार केले गेले!");
-                }
-                btn.innerText = '🤖 AI द्वारे प्रश्न ऑटो-जनरेट करा';
-                btn.disabled = false;
-            });
-        }
         function generateAIQuestionsFromAdvancedForm() {
             const testId = document.getElementById('ai_target_test_id').value;
             const dept = document.getElementById('ai_department').value;
@@ -1253,7 +1240,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
-    <!-- Feature 3: Replaced One-Click with Manual Rapid Fire Scheduling -->
     <div style="background:#ecfdf5; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px;">
         <h4 style="margin:0 0 8px; color:#065f46;">⚡ मॅन्युअल रॅपिड फायर टेस्ट शेड्युलिंग (Manual Rapid Fire Scheduling)</h4>
         <p style="font-size:12.5px; color:#047857; margin:0 0 12px;">येथून तुम्ही हव्या त्या तारखेला व वेळी नवीन रॅपिड फायर टेस्ट मॅन्युअली सुरू (शेड्युल) करू शकता.</p>
@@ -1317,7 +1303,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn" style="margin-top:8px;">🚀 नवीन टेस्ट सेव्ह करा</button>
     </form>
 
-    <h4>सर्व टेस्ट्स यादी व ॲक्टिव्ह/क्लोज्ड नियंत्रण (Feature 7):</h4>
+    <h4>सर्व टेस्ट्स यादी व ॲक्टिव्ह/क्लोज्ड नियंत्रण:</h4>
     <table>
         <tr><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>प्रकार</th><th>स्थिती (Status)</th><th>क्रम</th><th>फी</th><th>वेळ</th><th>कृती</th></tr>
         {% for t in tests %}
@@ -1372,7 +1358,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% endfor %}
     </table>
 
-    <!-- 7. FEEDBACK TAB (WITH BULK SELECT & DELETE) -->
+    <!-- 7. FEEDBACK TAB -->
     {% elif active_tab == 'feedback' %}
     <h3>💬 विद्यार्थ्यांचे अभिप्राय</h3>
     <form method="POST" action="/admin/bulk_delete_feedback" onsubmit="return confirm('निवडलेले सर्व अभिप्राय कायमचे डिलीट करायचे का?');">
@@ -1404,7 +1390,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 9. TRASH / RECYCLE BIN TAB -->
     {% elif active_tab == 'trash' %}
-    <h3>🗑️ रिसायकल बिन (सिलेक्ट व बल्क डिलीट सुविधा)</h3>
+    <h3>🗑️ रिसायकल बिन</h3>
     <form method="POST" action="/admin/bulk_delete_trash" onsubmit="return confirm('निवडलेले सर्व प्रश्न कायमचे डिलीट करायचे का?');">
         <div style="margin-bottom:10px;">
             <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न कायमचे डिलीट करा</button>
@@ -1424,14 +1410,12 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </table>
     </form>
 
-    <!-- 10. SETTINGS TAB (MAINTENANCE TOGGLE & HELP DESK & POWER BUTTON) -->
+    <!-- 10. SETTINGS TAB -->
     {% elif active_tab == 'settings' %}
     <h3>🔐 ॲडमिन पासवर्ड, हेल्प डेस्क, मेंटेनन्स मोड व टॅब व्यवस्थापन</h3>
 
-    <!-- Feature 2: Dynamic QR Code with Download Option -->
     <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px; text-align:center;">
-        <h4 style="margin:0 0 8px; color:#065f46;">📱 डायनॅमिक टेस्ट व होम पेज QR कोड (Feature 2)</h4>
-        <p style="font-size:13px; color:#047857; margin:0 0 12px;">विद्यार्थ्यांनी हा QR कोड स्कॅन केल्यावर थेट मुख्य होम पेजवर / टेस्टवर जातील. वेबसाईटची लिंक बदलल्यास QR ऑटोमॅटिक अपडेट होईल.</p>
+        <h4 style="margin:0 0 8px; color:#065f46;">📱 डायनॅमिक टेस्ट व होम पेज QR कोड</h4>
         <div style="background:white; display:inline-block; padding:10px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:10px;">
             <img id="adminPortalQR" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ request.host_url }}" alt="Portal QR" style="display:block; max-width:200px; height:auto;">
         </div><br>
@@ -1447,11 +1431,10 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 <option value="active" {% if site_status == 'active' %}selected{% endif %}>🟢 वेबसाईट पूर्णपणे चालू ठेवा (Active)</option>
                 <option value="maintenance" {% if site_status == 'maintenance' %}selected{% endif %}>🔴 वेबसाईट मेंटेनन्स मोडवर टाका (Under Maintenance)</option>
             </select>
-            <small style="color:#78350f;">(मेंटेनन्स मोड चालू केल्यास विद्यार्थ्यांना 'काम सुरू आहे' असा संदेश दिसेल, पण ॲडमिन पॅनेल चालू राहील.)</small>
         </div>
 
         <div style="background:#eff6ff; border:1.5px solid #3b82f6; padding:15px; border-radius:8px; margin-bottom:20px;">
-            <h4 style="margin:0 0 10px; color:#1e40af;">📞 हेल्प डेस्क सेटिंग्ज (हेल्प डेस्क टॅब माहिती):</h4>
+            <h4 style="margin:0 0 10px; color:#1e40af;">📞 हेल्प डेस्क सेटिंग्ज:</h4>
             <label style="font-weight:bold; font-size:12px;">हेल्पलाईन फोन नंबर:</label>
             <input type="text" name="help_phone" value="{{ help_phone }}" placeholder="उदा. 9921111960">
             <label style="font-weight:bold; font-size:12px;">ऑफिस पत्ता / पत्ता:</label>
@@ -1468,7 +1451,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:6px;">
                 <label style="font-weight:bold; color:#065f46;">🌐 होम पेज टॅबचा क्रम:</label>
                 <input type="text" name="home_tab_order" value="{{ home_tab_order }}">
-                <small style="color:#64748b;">(पर्याय: all, live, paid, free, rapid, battle, docs, help)</small>
             </div>
             <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:6px;">
                 <label style="font-weight:bold; color:#1e40af;">⚙️ ॲडमिन डॅशबोर्ड टॅबचा क्रम:</label>
@@ -1935,23 +1917,18 @@ def submit_test(test_id):
             f_row = cur.fetchone()
             completed_friends_count = f_row['my_friends'] if f_row else 0
 
-            # State Rank Calculation
             cur.execute("SELECT COUNT(*) as higher FROM mock_test_leads WHERE test_id=%s AND score > %s AND is_deleted=0", (test_id, score))
             state_rank = cur.fetchone()['higher'] + 1
             
-            # District Rank Calculation (जिल्हा रँक)
             cur.execute("SELECT COUNT(*) as higher_dist FROM mock_test_leads WHERE test_id=%s AND district ILIKE %s AND score > %s AND is_deleted=0", (test_id, district, score))
             district_rank = cur.fetchone()['higher_dist'] + 1
             
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='insta_link'")
-            i_row = cur.fetchone()
-            insta_link = i_row['setting_value'] if i_row else ''
+            insta_link = cur.fetchone()['setting_value'] if cur.fetchone() else ''
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='yt_link'")
-            y_row = cur.fetchone()
-            yt_link = y_row['setting_value'] if y_row else ''
+            yt_link = cur.fetchone()['setting_value'] if cur.fetchone() else ''
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
-            tp_row = cur.fetchone()
-            toppers_link = tp_row['setting_value'] if tp_row else ''
+            toppers_link = cur.fetchone()['setting_value'] if cur.fetchone() else ''
             
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='wa_groups_multiline'")
             wg_row = cur.fetchone()
@@ -1970,7 +1947,6 @@ def submit_test(test_id):
     result_url = main_portal_url + url_for('detailed_answers', token=result_token)
     
     sig = generate_tamper_signature(phone)
-    student_tracking_url = f"{main_portal_url}/?ref={phone}&sig={sig}"
     
     ego_msg = f"महाराष्ट्र पोलीस भरती लेखी परीक्षा ओपन चॅलेंज मैदानावर खाकीची जिद्द दाखवली आता लेखी परीक्षेत तुमची तयारी किती आहे सिद्ध करा जिल्ह्यात आणि राज्यात तुझे लेखी तयारी किती आहे ती पाहायचे असेल तर खालील लिंक वर क्लिक करून मोफत पोलीस भरती सराव लेखी चाचणी दे {main_portal_url} तुझ्यासोबत तुझा मित्रही भरती झाला पाहिजे त्यालाही हा मेसेज पाठव आणि रोजचे रॅपिड फायर टेस्ट मोफत मिळव"
     ego_share_encoded = urllib.parse.quote(ego_msg)
@@ -2216,43 +2192,37 @@ def admin_dashboard():
         deleted_leads_list=deleted_leads_list
     )
 
-import os
-
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     
+    if genai is None:
+        return jsonify({"success": False, "error": "Google GenAI library लोड झालेली नाही!"}), 500
+
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
-    subject_counts = data.get('subject_counts', {}) # जसे की {"मराठी व्याकरण": 5}
+    subject_counts = data.get('subject_counts', {})
     test_id = data.get('test_id')
 
     api_key = "AQ.Ab8RN6LDVf9ZOn4wiAmlbFVONp6aCiq8XU7gTJyR0rgr73crgA"
-    if not api_key:
-        return jsonify({"success": False, "error": "Gemini API Key सेट केलेली नाही!"}), 400
-
-    generated_list = []
     try:
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        generated_list = []
 
         for subj, num in subject_counts.items():
             count = int(num)
             if count <= 0:
                 continue
             
-            # जेमिनी एआयला प्रत्येक विषयासाठी रिअल प्रश्न मागण्यासाठी प्राम्प्ट
             prompt = (
-                f"महाराष्ट्र {department} परीक्षेसाठी '{subj}' या विषयावर अचूक आणि नवीन {count} बहुपर्यायी प्रश्न तयार कर. "
-                f"उत्तर खालीलप्रमाणे विशिष्ट पाईप (|) सेपरेटेड फॉरमॅटमध्ये एका ओळीत एक प्रश्न असावा:\n"
-                f"प्रश्न येथे लिहा | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक उत्तर (फक्त A, B, C किंवा D पैकी एक) | सविस्तर स्पष्टीकरण\n"
-                f"कोणतेही अतिरिक्त शब्द किंवा इंट्रोडक्शन न देता थेट प्रश्नांची यादी दे."
+                f"Maharashtra {department} parikshethathi '{subj}' ya vishayavar achuk ani navin {count} bahuparyayi prashn tayar kar. "
+                f"Uttar khaliilpramane vishisht pipe (|) separated format madhe eka oliat ek prashn asava:\n"
+                f"Prashn yethe liha | paryay A | paryay B | paryay C | paryay D | achuk uttar (fakt A, B, C kinva D paiki ek) | savistar spashtikaran"
             )
 
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
-            )
+            response = model.generate_content(prompt)
             
             lines = response.text.strip().split('\n')
             for line in lines:
@@ -2266,7 +2236,7 @@ def admin_ai_generate_advanced():
                     corr = parts[5].upper()
                     if corr not in ['A', 'B', 'C', 'D']:
                         corr = 'A'
-                    exp = parts[6] if len(parts) > 6 else 'स्पष्टीकरण उपलब्ध नाही.'
+                    exp = parts[6] if len(parts) > 6 else 'Spashtikaran uplabdh nahi.'
                     
                     generated_list.append((test_id, q, oa, ob, oc, od, corr, exp))
 
@@ -2283,15 +2253,6 @@ def admin_ai_generate_advanced():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-    
-    sample_ai_questions = [
-        f"{subject}: महाराष्ट्रातील सर्वोच्च शिखर कोणते? | कळसूबाई | साल्हेर | महाबळेश्वर | त्र्यंबकेश्वर | A | कळसूबाई हे महाराष्ट्रातील सर्वात उंच शिखर असून त्याची उंची १६४६ मीटर आहे.",
-        f"{subject}: 'उंटावरचा शहाणा' या अलंकारिक शब्दाचा अर्थ काय? | मूर्खपणाचा सल्ला देणारा | शहाणा माणूस | उंटावर बसणारा | व्यापारी | A | मूर्खपणाचा आणि नको असलेला सल्ला देणाऱ्या व्यक्तीस उंटावरचा शहाणा म्हणतात.",
-        f"{subject}: एका त्रिकोणाच्या तिन्ही कोनांची बेरीज किती अंश असते? | १८०° | ३६०° | ९०° | २७०° | A | कोणत्याही त्रिकोणाच्या सर्व आंतरकोनांची बेरीज नेहमी १८० अंश असते.",
-        f"{subject}: भारतीय राज्यघटनेतील कलम १७ कशाशी संबंधित आहे? | अस्पृश्यता निर्मूलन | शिक्षणाचा हक्क | भाषण स्वातंत्र्य | बालमजुरी बंदी | A | संविधानातील कलम १७ अन्वये अस्पृश्यता पाळणे कायद्याने गुन्हा ठरवण्यात आला आहे.",
-        f"{subject}: विसंगत घटक ओळखा: ८, २७, ६४, १०० | १०० | ६४ | २७ | ८ | A | इतर सर्व संख्या घन संख्या आहेत (२³, ३³, ४³), तर १०० ही वर्ग संख्या (१०²) आहे."
-    ]
-    return jsonify({"success": True, "questions_text": "\n".join(sample_ai_questions)})
 
 @app.route('/admin/undo_delete/<item_type>/<int:item_id>')
 def admin_undo_delete(item_type, item_id):
@@ -2330,7 +2291,6 @@ def admin_bulk_delete_feedback():
                     conn.commit()
     return redirect('/admin/dashboard?tab=feedback')
 
-# --- Manual Rapid Fire Scheduling Route ---
 @app.route('/admin/manual_schedule_rapid', methods=['POST'])
 def admin_manual_schedule_rapid():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -2353,22 +2313,6 @@ def admin_manual_schedule_rapid():
                     VALUES (%s, 'Free', 0, %s, 'Active', 'rapid', %s, %s)
                 ''', (title, duration, publish_dt, next_seq))
                 conn.commit()
-    return redirect('/admin/dashboard?tab=launch')
-
-@app.route('/admin/bulk_schedule_all', methods=['POST'])
-def admin_bulk_schedule_all():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    today = date.today()
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            for j in range(1, 51):
-                target_day = today + timedelta(days=(j - 1))
-                publish_time = datetime(target_day.year, target_day.month, target_day.day, 10, 0, 0)
-                cur.execute("""
-                    INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, publish_at, sequence_order)
-                    VALUES (%s, 'Free', 0, 15, 'Active', 'rapid', %s, %s)
-                """, (f'⚡ दैनिक रॅपिड फायर टेस्ट #{j} (सकाळी १०:००)', publish_time, j))
-            conn.commit()
     return redirect('/admin/dashboard?tab=launch')
 
 @app.route('/admin/update_razorpay_settings', methods=['POST'])
@@ -2406,27 +2350,6 @@ def admin_update_payment_settings():
             conn.commit()
     return redirect('/admin/dashboard?tab=payments')
 
-@app.route('/admin/add_question', methods=['POST'])
-def admin_add_question():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    test_id = request.form.get('test_id')
-    question = request.form.get('question', '').strip()
-    oa = request.form.get('opt_a', '').strip()
-    ob = request.form.get('opt_b', '').strip()
-    oc = request.form.get('opt_c', '').strip()
-    od = request.form.get('opt_d', '').strip()
-    correct = request.form.get('correct', 'A').strip().upper()
-    explanation = request.form.get('explanation', '').strip()
-
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (test_id, question, oa, ob, oc, od, correct, explanation))
-            conn.commit()
-    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
-
 @app.route('/admin/edit_question/<int:q_id>', methods=['GET', 'POST'])
 def admin_edit_question(q_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -2458,30 +2381,6 @@ def admin_edit_question(q_id):
 
     if not question: return "प्रश्न सापडला नाही!", 404
     return render_template_string(EDIT_QUESTION_TEMPLATE, q=question)
-
-@app.route('/admin/bulk_questions', methods=['POST'])
-def admin_bulk_questions():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    test_id = request.form.get('test_id')
-    bulk_data = request.form.get('bulk_questions_text', '').strip()
-
-    lines = [l.strip() for l in bulk_data.split('\n') if l.strip()]
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            for line in lines:
-                parts = [p.strip() for p in line.split('|')]
-                if len(parts) >= 6:
-                    q = parts[0]
-                    oa, ob, oc, od = parts[1], parts[2], parts[3], parts[4]
-                    corr = parts[5].upper()
-                    exp = parts[6] if len(parts) > 6 else ''
-                    cur.execute("""
-                        INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    """, (test_id, q, oa, ob, oc, od, corr, exp))
-            conn.commit()
-
-    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
 @app.route('/admin/upload_csv_questions', methods=['POST'])
 def admin_upload_csv_questions():
@@ -2552,38 +2451,6 @@ def admin_ai_scan_hardcopy():
 
     return jsonify({"success": True, "inserted_count": len(questions_to_insert)})
 
-    if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
-    data = request.get_json() or {}
-    department = data.get('department', 'पोलीस भरती')
-    subject_counts = data.get('subject_counts', {})
-    test_id = data.get('test_id')
-
-    existing_questions = set()
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT question FROM questions WHERE test_id=%s AND is_deleted=0", (test_id,))
-            for row in cur.fetchall():
-                existing_questions.add(row['question'].strip())
-
-    generated_list = []
-    for subj, num in subject_counts.items():
-        for i in range(1, int(num) + 1):
-            q_text = f"[{department} - {subj}] अतिसंभाव्य सराव प्रश्न क्रमांक {i}."
-            if q_text not in existing_questions:
-                generated_list.append((test_id, q_text, "पर्याय A", "पर्याय B", "पर्याय C", "पर्याय D", "A", f"स्पष्टीकरण: {subj} विभागातील या प्रश्नाचे योग्य स्पष्टीकरण."))
-                existing_questions.add(q_text)
-
-    if generated_list:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.executemany("""
-                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, generated_list)
-                conn.commit()
-
-    return jsonify({"success": True, "inserted_count": len(generated_list)})
-
 @app.route('/admin/bulk_delete_leads', methods=['POST'])
 def admin_bulk_delete_leads():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -2609,17 +2476,6 @@ def admin_bulk_delete_questions():
                     cur.execute("UPDATE questions SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
                     conn.commit()
     return redirect('/admin/dashboard?tab=questions')
-
-@app.route('/admin/bulk_delete_tests', methods=['POST'])
-def admin_bulk_delete_tests():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    ids = request.form.getlist('test_ids')
-    if ids:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("UPDATE test_papers SET is_deleted=1 WHERE id = ANY(%s)", (ids,))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=launch')
 
 @app.route('/admin/bulk_delete_trash', methods=['POST'])
 def admin_bulk_delete_trash():
