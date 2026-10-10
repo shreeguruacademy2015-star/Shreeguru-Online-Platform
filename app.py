@@ -15,8 +15,11 @@ import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
-# --- सुरक्षित जेमिनी एआय इम्पोर्ट (रेन्डर क्रॅश-प्रूफ) ---
-import google.generativeai as genai
+# --- सुरक्षित जेमिनी एआय इम्पोर्ट (रेnder क्रॅश-प्रूफ) ---
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 # --- SURAKSHIT RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
 try:
     import razorpay
@@ -2218,7 +2221,8 @@ def admin_dashboard():
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
         return jsonify({"success": False, "error": "Unauthorized"}), 401
-
+if genai is None:
+        return jsonify({"success": False, "error": "Google GenAI library लोड झालेली नाही!"}), 500
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
     subject_counts = data.get('subject_counts', {})
