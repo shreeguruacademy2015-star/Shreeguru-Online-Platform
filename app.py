@@ -487,7 +487,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
                 localStorage.removeItem(testStorageKey);
                 localStorage.removeItem(timerStorageKey);
                 
-                # Show submission loading overlay
+                // Show submission loading overlay
                 let overlay = document.getElementById('submittingOverlay');
                 if (!overlay) {
                     overlay = document.createElement('div');
@@ -583,8 +583,8 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
             document.getElementById('waRulesModal').style.display = 'none';
         }
         function handleSocialLink(url) {
-            # Feature 2: Updated popup message as requested
-            alert("संपूर्ण प्रवासाची यशोगाथा लवकरच आपल्या भेटीस येत आहे....\\nतुमचे वर्दीचे स्वप्न लवकरात लवकर पूर्ण व्हावे या सदिच्छा.....");
+            # Feature 1: Exact required popup message
+            alert("संपूर्ण प्रवासाची यशोगाथा लवकरच आपल्या भेटीस येत आहे.....\\nतुमचे खाकीचे स्वप्न लवकर पूर्ण व्हावे ही सदिच्छा....");
             if (url && url.trim() !== '') {
                 window.open(url, '_blank');
             }
@@ -1164,72 +1164,78 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     {% elif active_tab == 'questions' %}
     <h3>📝 प्रश्न व्यवस्थापन व AI प्रश्न जनरेटर</h3>
     
-    <div style="background:#f0fdf4; border:2px dashed #10b981; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-            <h4 style="margin:0; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर</h4>
-            <small style="color:#047857;">पोलीस भरतीसाठी संभाव्य प्रश्न एका क्लिकवर आपोआप Pipe (|) फॉरमॅटमध्ये तयार करा.</small>
+    <!-- Feature 6: Advanced AI Smart Mock Question Generator Form -->
+    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 10px; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर (विभाग व विषयनिहाय संख्या)</h4>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div>
+                <label style="font-weight:bold; font-size:12px;">टेस्ट निवडा:</label>
+                <select id="ai_target_test_id">
+                    {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12px;">विभाग निवडा:</label>
+                <select id="ai_department">
+                    <option value="पोलीस भरती">पोलीस भरती</option>
+                    <option value="आर्मी भरती">आर्मी भरती</option>
+                    <option value="महाराष्ट्र लोकसेवा आयोग (MPSC)">महाराष्ट्र लोकसेवा आयोग (MPSC)</option>
+                    <option value="सरळ सेवा भरती">सरळ सेवा भरती</option>
+                </select>
+            </div>
         </div>
-        <button id="aiBtn" type="button" class="btn" onclick="generateAIQuestions()" style="background:#10b981; color:#022c22; font-weight:800;">
-            🤖 AI द्वारे प्रश्न ऑटो-जनरेट करा
+        <div style="margin-bottom:12px;">
+            <label style="font-weight:bold; font-size:12px; display:block; margin-bottom:4px;">विषय निवडा व त्यासमोर हवी असलेली प्रश्नांची संख्या टाका:</label>
+            <div style="background:white; padding:12px; border-radius:6px; border:1px solid #cbd5e1; display:flex; flex-direction:column; gap:8px;">
+                {% set subjects_list = ['मराठी व्याकरण', 'गणित', 'बुद्धिमत्ता', 'राज्यशास्त्र व नागरिक शास्त्र', 'भूगोल', 'विज्ञान', 'इतिहास', 'समाज सुधारक', 'सामान्य विज्ञान', 'अर्थशास्त्र', 'चालू घडामोडी', 'संगणक', 'माहिती अधिकार कायदा 2005', 'इंग्रजी व्याकरण'] %}
+                {% for subj in subjects_list %}
+                <div class="subject-row" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:4px;">
+                    <label style="font-size:13px; font-weight:600;"><input type="checkbox" class="ai_subj_cb" value="{{ subj }}"> {{ subj }}</label>
+                    <input type="number" class="ai_subj_count" value="0" min="0" max="100" style="width:90px; margin-bottom:0; text-align:center;" placeholder="संख्या">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <button id="advancedAiBtn" type="button" class="btn" onclick="generateAIQuestionsFromAdvancedForm()" style="background:#10b981; color:#022c22; font-weight:800; width:100%;">
+            🤖 AI स्मार्ट प्रश्न जनरेट करा व सेव्ह करा (डुप्युटेशन टाळून)
         </button>
     </div>
 
-    <div style="background:#ecfdf5; padding:15px; border-radius:6px; margin-bottom:20px; border:1px solid #a7f3d0;">
-        <form method="GET" action="/admin/dashboard" style="display:flex; gap:10px; align-items:center;">
-            <input type="hidden" name="tab" value="questions">
-            <label style="font-weight:bold; font-size:13px; color:#065f46;">टेस्ट निवडा:</label>
-            <select name="filter_test_id" onchange="this.form.submit()" style="max-width:320px; margin-bottom:0;">
-                <option value="">-- सर्व टेस्ट्सचे प्रश्न --</option>
-                {% for t in tests %}
-                <option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
-                {% endfor %}
+    <!-- Feature 4: Hardcopy Scan AI Parser -->
+    <div style="background:#eff6ff; border:2px dashed #3b82f6; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 8px; color:#1e40af;">📄 प्रश्नपत्रिका हार्डकॉपी स्कॅनर व AI ऑटोमॅटिक CSV जनरेटर</h4>
+        <p style="font-size:12.5px; color:#1d4ed8; margin:0 0 10px;">प्रिंटर किंवा स्कॉनेरमध्ये हार्डकॉपी ठेवल्यानंतर स्कॅन झालेली फाईल/फोटो येथे अपलोड करा. AI ॲनालिसिस करून स्वयंचलित प्रश्न तयार करेल.</p>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <select id="scan_target_test_id">
+                {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
             </select>
+            <input type="file" id="hardcopyScanFile" accept="image/*,.pdf,.txt" style="background:white; padding:6px;">
+        </div>
+        <button id="scanAiBtn" type="button" class="btn" onclick="scanHardcopyToAI()" style="background:#2563eb; width:100%;">
+            🚀 हार्डकॉपी स्कॅन करून AI द्वारे CSV बनवा व अपलोड करा
+        </button>
+    </div>
+
+    <!-- Feature 2: Robust CSV Upload -->
+    <div style="background:#fefce8; border:2px dashed #ca8a04; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 8px; color:#854d0e;">📥 १०० प्रश्नांची CSV फाईल अपलोड (रोबस्ट पार्सर)</h4>
+        <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data">
+            <select name="test_id" required style="margin-bottom:8px;">
+                {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+            </select>
+            <input type="file" name="csv_file" accept=".csv,.txt" required style="margin-bottom:8px; background:white; padding:6px;">
+            <button type="submit" class="btn" style="background:#ca8a04; width:100%;">🚀 संपूर्ण प्रश्न CSV द्वारे अपलोड करा</button>
         </form>
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:25px;">
-        <form method="POST" action="/admin/add_question" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
-            <h4 style="margin:0 0 8px; color:#065f46;">➕ एक प्रश्न ॲड करा</h4>
-            <select name="test_id">
-                {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
-            </select>
-            <input type="text" name="question" placeholder="प्रश्न लिहा" required>
-            <input type="text" name="opt_a" placeholder="पर्याय A" required>
-            <input type="text" name="opt_b" placeholder="पर्याय B" required>
-            <input type="text" name="opt_c" placeholder="पर्याय C" required>
-            <input type="text" name="opt_d" placeholder="पर्याय D" required>
-            <input type="text" name="correct" placeholder="अचूक उत्तर (A, B, C, D)" maxlength="1" required style="width:140px;">
-            <input type="text" name="explanation" placeholder="स्पष्टीकरण">
-            <button type="submit" class="btn">सेव्ह करा</button>
-        </form>
-
-        <form method="POST" action="/admin/bulk_questions" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
-            <h4 style="margin:0 0 8px; color:#065f46;">⚡ बल्क प्रश्न अपलोडर (Pipe |)</h4>
-            <select name="test_id" required>
-                {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
-            </select>
-            <textarea id="bulkTextarea" name="bulk_questions_text" rows="5" placeholder="प्रश्न | पर्यायA | पर्यायB | पर्यायC | पर्यायD | अचूक उत्तर | स्पष्टीकरण" required></textarea>
-            <button type="submit" class="btn" style="background:#0284c7; width:100%;">📥 अपलोड करा</button>
-        </form>
-    </div>
-
-    <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data" style="background:#f0fdf4; border:2px dashed #059669; padding:15px; border-radius:8px; margin-bottom:20px;">
-        <h4 style="margin:0 0 8px; color:#065f46;">📥 १०० प्रश्नांची CSV फाईल अपलोड करा:</h4>
-        <select name="test_id" required>
-            {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
-        </select>
-        <input type="file" name="csv_file" accept=".csv" required style="margin-bottom:10px;">
-        <button type="submit" class="btn" style="width:100%;">🚀 संपूर्ण १०० प्रश्न CSV द्वारे अपलोड करा</button>
-    </form>
-
-    <!-- Feature 5: Bulk Delete Questions -->
+    <!-- Feature 5: Bulk Delete & Edit Options -->
     <form method="POST" action="/admin/bulk_delete_questions" onsubmit="return confirm('निवडलेले सर्व प्रश्न डिलीट करायचे का?');">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <h4 style="margin:0;">सर्व प्रश्न यादी:</h4>
             <button type="submit" class="btn" style="background:#dc2626; padding:5px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न डिलीट करा</button>
         </div>
         <table>
-            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'q-cb')"></th><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>कृती</th></tr>
+            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'q-cb')"></th><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>कृती (एडिट व डिलीट)</th></tr>
             {% for q in all_questions %}
             <tr>
                 <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="q-cb"></td>
@@ -1243,20 +1249,16 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </table>
     </form>
 
-    <!-- 5. TEST MANAGEMENT TAB (Feature 4, 5 & 6) -->
+    <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
-    
-    <!-- Feature 4 & 6: Rapid Fire Sequence Scheduling with Custom Start Sequence -->
     <div style="background:#ecfdf5; border:2px solid #10b981; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
-            <h4 style="margin:0; color:#065f46;">⚡ रॅपिड फायर क्रमानुसार (Sequence) १-क्लिक शेड्युलिंग</h4>
-            <small style="color:#047857;">५० रॅपिड फायर टेस्ट्स ठरवलेल्या क्रमाने (Start Seq) आणि वेळापत्रकानुसार तयार करा.</small>
+            <h4 style="margin:0; color:#065f46;">⚡ १-क्लिक रॅपिड फायर शेड्युलिंग</h4>
+            <small style="color:#047857;">५० रॅपिड फायर टेस्ट्स रोज सकाळी १०:०० वाजता अनलॉक होतील.</small>
         </div>
-        <form method="POST" action="/admin/bulk_schedule_all" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <label style="font-weight:bold; font-size:12px;">सुरुवात क्रम (Start Seq):</label>
-            <input type="number" name="start_seq" value="1" min="1" style="width:75px; margin-bottom:0;" required>
-            <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold;">🚀 ५० टेस्ट्स शेड्युल करा</button>
+        <form method="POST" action="/admin/bulk_schedule_all" onsubmit="return confirm('सर्व ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करायच्या का?');">
+            <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold;">🚀 ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करा</button>
         </form>
     </div>
 
@@ -1297,52 +1299,46 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn" style="margin-top:8px;">🚀 नवीन टेस्ट सेव्ह करा</button>
     </form>
 
-    <!-- Feature 5: Test Management Bulk Delete -->
-    <form method="POST" action="/admin/bulk_delete_tests" onsubmit="return confirm('निवडलेल्या सर्व टेस्ट्स डिलीट करायच्या का?');">
-        <div style="margin-bottom:10px;">
-            <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेल्या टेस्ट्स डिलीट करा</button>
-        </div>
-        <table>
-            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'test-cb')"></th><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>प्रकार</th><th>स्थिती (Status)</th><th>क्रम</th><th>फी</th><th>वेळ</th><th>कृती</th></tr>
-            {% for t in tests %}
-            <tr>
-                <td><input type="checkbox" name="test_ids" value="{{ t.id }}" class="test-cb"></td>
-                <form method="POST" action="/admin/update_test/{{ t.id }}">
-                    <td>{{ t.id }}</td>
-                    <td><input type="text" name="test_title" value="{{ t.test_title }}" style="margin-bottom:0;" required></td>
-                    <td>
-                        <select name="category" style="margin-bottom:0; font-weight:600;">
-                            <option value="free" {% if t.category=='free' %}selected{% endif %}>🟢 मोफत</option>
-                            <option value="paid" {% if t.category=='paid' %}selected{% endif %}>🎯 अतिसंभाव्य</option>
-                            <option value="live" {% if t.category=='live' %}selected{% endif %}>🔴 महासंग्राम</option>
-                            <option value="rapid" {% if t.category=='rapid' %}selected{% endif %}>⚡ रॅपिड फायर</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select name="test_type" style="margin-bottom:0;">
-                            <option value="Free" {% if t.test_type=='Free' %}selected{% endif %}>Free</option>
-                            <option value="Paid" {% if t.test_type=='Paid' %}selected{% endif %}>Paid</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select name="status" style="margin-bottom:0; font-weight:bold; color:{{ '#16a34a' if t.status=='Active' else '#dc2626' }};">
-                            <option value="Active" {% if t.status=='Active' %}selected{% endif %}>🟢 Active (चालू)</option>
-                            <option value="Closed" {% if t.status=='Closed' %}selected{% endif %}>🔴 Closed (बंद)</option>
-                        </select>
-                    </td>
-                    <td><input type="number" name="sequence_order" value="{{ t.sequence_order or 1 }}" style="width:50px; margin-bottom:0;"></td>
-                    <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:60px; margin-bottom:0;"></td>
-                    <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:60px; margin-bottom:0;"></td>
-                    <td style="white-space:nowrap;">
-                        <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; cursor:pointer;">💾 अपडेट</button>
-                        <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white;">🖨️ प्रिंट</a>
-                        <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का?');">🗑</a>
-                    </td>
-                </form>
-            </tr>
-            {% endfor %}
-        </table>
-    </form>
+    <h4>सर्व टेस्ट्स यादी व ॲक्टिव्ह/क्लोज्ड नियंत्रण (Feature 7):</h4>
+    <table>
+        <tr><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>प्रकार</th><th>स्थिती (Status)</th><th>क्रम</th><th>फी</th><th>वेळ</th><th>कृती</th></tr>
+        {% for t in tests %}
+        <tr>
+            <form method="POST" action="/admin/update_test/{{ t.id }}">
+                <td>{{ t.id }}</td>
+                <td><input type="text" name="test_title" value="{{ t.test_title }}" style="margin-bottom:0;" required></td>
+                <td>
+                    <select name="category" style="margin-bottom:0; font-weight:600;">
+                        <option value="free" {% if t.category=='free' %}selected{% endif %}>🟢 मोफत</option>
+                        <option value="paid" {% if t.category=='paid' %}selected{% endif %}>🎯 अतिसंभाव्य</option>
+                        <option value="live" {% if t.category=='live' %}selected{% endif %}>🔴 महासंग्राम</option>
+                        <option value="rapid" {% if t.category=='rapid' %}selected{% endif %}>⚡ रॅपिड फायर</option>
+                    </select>
+                </td>
+                <td>
+                    <select name="test_type" style="margin-bottom:0;">
+                        <option value="Free" {% if t.test_type=='Free' %}selected{% endif %}>Free</option>
+                        <option value="Paid" {% if t.test_type=='Paid' %}selected{% endif %}>Paid</option>
+                    </select>
+                </td>
+                <td>
+                    <select name="status" style="margin-bottom:0; font-weight:bold; color:{{ '#16a34a' if t.status=='Active' else '#dc2626' }};">
+                        <option value="Active" {% if t.status=='Active' %}selected{% endif %}>🟢 Active (चालू)</option>
+                        <option value="Closed" {% if t.status=='Closed' %}selected{% endif %}>🔴 Closed (बंद)</option>
+                    </select>
+                </td>
+                <td><input type="number" name="sequence_order" value="{{ t.sequence_order or 1 }}" style="width:50px; margin-bottom:0;"></td>
+                <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:60px; margin-bottom:0;"></td>
+                <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:60px; margin-bottom:0;"></td>
+                <td style="white-space:nowrap;">
+                    <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; cursor:pointer;">💾 अपडेट</button>
+                    <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white;">🖨️ प्रिंट</a>
+                    <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का?');">🗑</a>
+                </td>
+            </form>
+        </tr>
+        {% endfor %}
+    </table>
 
     <!-- 6. LEADERBOARD TAB -->
     {% elif active_tab == 'leaderboard' %}
@@ -1601,7 +1597,7 @@ def init_master_db():
                     ('admin_pass', 'admin2026'),
                     ('admin_phone', '9921111960'),
                     ('help_phone', '9921111960'),
-                    ('help_address', 'श्रीगुरु करिअर अकॅडमी, आडूर, कोल्हापूर - कळे मेन रोड, आडूर, करवीर, कोल्हापूर'),
+                    ('help_address', 'श्रीगुरु करिअर अकॅडमी, कोल्हापूर - कळे मेन रोड, आडूर, करवीर, कोल्हापूर'),
                     ('insta_link', ''),
                     ('yt_link', ''),
                     ('toppers_link', ''),
@@ -1696,7 +1692,6 @@ def home_tests_list():
     tests = []
     for t in raw_tests:
         t_dict = dict(t)
-        # Feature 1: Rapid Fire Test Link Fixes & Handling
         if t_dict.get('category') == 'rapid':
             seq = t_dict.get('sequence_order') or 1
             if seq == 1:
@@ -1922,10 +1917,11 @@ def submit_test(test_id):
             f_row = cur.fetchone()
             completed_friends_count = f_row['my_friends'] if f_row else 0
 
+            # State Rank Calculation
             cur.execute("SELECT COUNT(*) as higher FROM mock_test_leads WHERE test_id=%s AND score > %s AND is_deleted=0", (test_id, score))
             state_rank = cur.fetchone()['higher'] + 1
-
-            # District Rank calculation
+            
+            # District Rank Calculation (जिल्हा रँक)
             cur.execute("SELECT COUNT(*) as higher_dist FROM mock_test_leads WHERE test_id=%s AND district ILIKE %s AND score > %s AND is_deleted=0", (test_id, district, score))
             district_rank = cur.fetchone()['higher_dist'] + 1
             
@@ -1961,6 +1957,8 @@ def submit_test(test_id):
     ego_msg = f"महाराष्ट्र पोलीस भरती लेखी परीक्षा ओपन चॅलेंज मैदानावर खाकीची जिद्द दाखवली आता लेखी परीक्षेत तुमची तयारी किती आहे सिद्ध करा जिल्ह्यात आणि राज्यात तुझे लेखी तयारी किती आहे ती पाहायचे असेल तर खालील लिंक वर क्लिक करून मोफत पोलीस भरती सराव लेखी चाचणी दे {main_portal_url} तुझ्यासोबत तुझा मित्रही भरती झाला पाहिजे त्यालाही हा मेसेज पाठव आणि रोजचे रॅपिड फायर टेस्ट मोफत मिळव"
     ego_share_encoded = urllib.parse.quote(ego_msg)
 
+    # Result Summary template madhye district_rank pass kel ahe
+    # RESULT_SUMMARY_TEMPLATE madhil rank section madhe district rank disel.
     return render_template_string(
         RESULT_SUMMARY_TEMPLATE.replace(
             '🏆 संपूर्ण महाराष्ट्रातील रँक: <b style="color:#34d399; font-size:32px;">#{{ state_rank }}</b>',
@@ -2251,22 +2249,19 @@ def admin_bulk_delete_feedback():
                 conn.commit()
     return redirect('/admin/dashboard?tab=feedback')
 
-# Feature 6: One-Click Rapid Fire Sequence Scheduling with Custom Start Sequence
 @app.route('/admin/bulk_schedule_all', methods=['POST'])
 def admin_bulk_schedule_all():
     if not session.get('admin_logged'): return redirect('/admin/login')
-    start_seq = int(request.form.get('start_seq', 1) or 1)
     today = date.today()
     with get_db() as conn:
         with conn.cursor() as cur:
             for j in range(1, 51):
-                actual_seq = start_seq + (j - 1)
                 target_day = today + timedelta(days=(j - 1))
                 publish_time = datetime(target_day.year, target_day.month, target_day.day, 10, 0, 0)
                 cur.execute("""
                     INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, publish_at, sequence_order)
                     VALUES (%s, 'Free', 0, 15, 'Active', 'rapid', %s, %s)
-                """, (f'⚡ दैनिक रॅपिड फायर टेस्ट #{actual_seq} (सकाळी १०:००)', publish_time, actual_seq))
+                """, (f'⚡ दैनिक रॅपिड फायर टेस्ट #{j} (सकाळी १०:००)', publish_time, j))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
 
@@ -2366,7 +2361,7 @@ def admin_bulk_questions():
 
     lines = [l.strip() for l in bulk_data.split('\n') if l.strip()]
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             for line in lines:
                 parts = [p.strip() for p in line.split('|')]
                 if len(parts) >= 6:
@@ -2415,7 +2410,7 @@ def admin_upload_csv_questions():
 
     if questions_to_insert:
         with get_db() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.executemany("""
                     INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -2444,7 +2439,7 @@ def admin_ai_scan_hardcopy():
 
     if questions_to_insert:
         with get_db() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.executemany("""
                     INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -2480,7 +2475,7 @@ def admin_ai_generate_advanced():
 
     if generated_list:
         with get_db() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.executemany("""
                     INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -2654,7 +2649,7 @@ def add_special_unlimited():
 def delete_special_unlimited(uid):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute("DELETE FROM special_unlimited_attempts WHERE id=%s", (uid,))
             conn.commit()
     return redirect('/admin/dashboard?tab=special')
@@ -2681,7 +2676,7 @@ def add_special_free_pass():
 def delete_special_free_pass(fid):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute("DELETE FROM special_free_pass WHERE id=%s", (fid,))
             conn.commit()
     return redirect('/admin/dashboard?tab=special')
