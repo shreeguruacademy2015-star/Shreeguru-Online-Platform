@@ -2232,11 +2232,11 @@ def admin_ai_generate_advanced():
     test_id = data.get('test_id')
 
     api_key = "AQ.Ab8RN6LDVf9ZOn4wiAmlbFVONp6aCiq8XU7gTJyR0rgr73crgA"
-    if not api_key:
+    if genai is None:
         return jsonify({"success": False, "error": "Gemini API Key सेट केलेली नाही!"}), 400
 
     generated_list = []
-    try:
+    try:    
         client = genai.Client(api_key=api_key)
 
         for subj, num in subject_counts.items():
