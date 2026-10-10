@@ -14,7 +14,7 @@ from werkzeug.utils import secure_filename
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
-from google import genai
+import google.genai as genai
 
 # --- SURAKSHIT RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
 try:
