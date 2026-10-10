@@ -19,7 +19,10 @@ from psycopg2.extras import RealDictCursor
 try:
     import google.genai as genai
 except ImportError:
-    genai = None
+    try:
+        import google.generativeai as genai
+    except ImportError:
+        genai = None
 
 # --- SURAKSHIT RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
 try:
