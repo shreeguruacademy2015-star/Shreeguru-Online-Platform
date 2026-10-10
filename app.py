@@ -1252,13 +1252,29 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
-    <div style="background:#ecfdf5; border:2px solid #10b981; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-            <h4 style="margin:0; color:#065f46;">⚡ १-क्लिक रॅपिड फायर शेड्युलिंग</h4>
-            <small style="color:#047857;">५० रॅपिड फायर टेस्ट्स रोज सकाळी १०:०० वाजता अनलॉक होतील.</small>
-        </div>
-        <form method="POST" action="/admin/bulk_schedule_all" onsubmit="return confirm('सर्व ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करायच्या का?');">
-            <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold;">🚀 ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करा</button>
+    <div style="background:#ecfdf5; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px;">
+        <h4 style="margin:0 0 8px; color:#065f46;">⚡ मॅन्युअल रॅपिड फायर टेस्ट शेड्युलिंग (Manual Rapid Fire Scheduling)</h4>
+        <p style="font-size:12.5px; color:#047857; margin:0 0 12px;">येथून तुम्ही हव्या त्या तारखेला व वेळी नवीन रॅपिड फायर टेस्ट मॅन्युअली सुरू (शेड्युल) करू शकता.</p>
+        <form method="POST" action="/admin/manual_schedule_rapid" style="display:grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap:10px; align-items:end;">
+            <div>
+                <label style="font-size:12px; font-weight:bold;">टेस्टचे नाव:</label>
+                <input type="text" name="rapid_title" placeholder="उदा. दैनिक रॅपिड फायर टेस्ट #१" required style="margin-bottom:0;">
+            </div>
+            <div>
+                <label style="font-size:12px; font-weight:bold;">दिनांक:</label>
+                <input type="date" name="rapid_date" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:0;">
+            </div>
+            <div>
+                <label style="font-size:12px; font-weight:bold;">वेळ (सकाळी/संध्याकाळ):</label>
+                <input type="time" name="rapid_time" value="10:00" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:0;">
+            </div>
+            <div>
+                <label style="font-size:12px; font-weight:bold;">वेळ (मिनिटे):</label>
+                <input type="number" name="duration_minutes" value="15" min="5" max="120" style="margin-bottom:0;">
+            </div>
+            <div>
+                <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold; height:38px;">➕ रॅपिड टेस्ट सुरू करा</button>
+            </div>
         </form>
     </div>
 
@@ -2245,7 +2261,10 @@ def admin_bulk_delete_feedback():
     if selected_ids:
         with get_db() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM student_feedbacks WHERE id = ANY(%s)", (selected_ids,))
+                # Fixed deletion bug with explicit integer conversion / parameter passing
+            int_ids = [int(i) for i in selected_ids if str(i).isdigit()]
+            if int_ids:
+                cur.execute("DELETE FROM student_feedbacks WHERE id = ANY(%s)", (int_ids,))
                 conn.commit()
     return redirect('/admin/dashboard?tab=feedback')
 
@@ -2492,7 +2511,9 @@ def admin_bulk_delete_leads():
     if ids:
         with get_db() as conn:
             with conn.cursor() as cur:
-                cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id = ANY(%s)", (ids,))
+                int_ids = [int(i) for i in ids if str(i).isdigit()]
+            if int_ids:
+                cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
                 conn.commit()
     return redirect('/admin/dashboard?tab=leads')
 
@@ -2503,7 +2524,9 @@ def admin_bulk_delete_questions():
     if ids:
         with get_db() as conn:
             with conn.cursor() as cur:
-                cur.execute("UPDATE questions SET is_deleted=1 WHERE id = ANY(%s)", (ids,))
+                int_ids = [int(i) for i in ids if str(i).isdigit()]
+            if int_ids:
+                cur.execute("UPDATE questions SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
                 conn.commit()
     return redirect('/admin/dashboard?tab=questions')
 
@@ -2525,7 +2548,9 @@ def admin_bulk_delete_trash():
     if ids:
         with get_db() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM questions WHERE id = ANY(%s)", (ids,))
+                int_ids = [int(i) for i in ids if str(i).isdigit()]
+            if int_ids:
+                cur.execute("DELETE FROM questions WHERE id = ANY(%s)", (int_ids,))
                 conn.commit()
     return redirect('/admin/dashboard?tab=trash')
 
@@ -2755,3 +2780,27 @@ def admin_delete_payment(lead_id):
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
 
+
+@app.route('/admin/manual_schedule_rapid', methods=['POST'])
+def admin_manual_schedule_rapid():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    title = request.form.get('rapid_title', '').strip()
+    r_date = request.form.get('rapid_date', '')
+    r_time = request.form.get('rapid_time', '10:00')
+    duration = int(request.form.get('duration_minutes', 15) or 15)
+
+    if title and r_date:
+        publish_dt_str = f"{r_date} {r_time}:00"
+        publish_dt = datetime.strptime(publish_dt_str, "%Y-%m-%d %H:%M:%S")
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COALESCE(MAX(sequence_order), 0) + 1 as next_seq FROM test_papers WHERE category='rapid'")
+                seq_row = cur.fetchone()
+                next_seq = seq_row['next_seq'] if seq_row else 1
+
+                cur.execute('''
+                    INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, publish_at, sequence_order)
+                    VALUES (%s, 'Free', 0, %s, 'Active', 'rapid', %s, %s)
+                ''', (title, duration, publish_dt, next_seq))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
