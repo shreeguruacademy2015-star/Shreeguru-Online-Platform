@@ -2555,8 +2555,6 @@ def admin_ai_scan_hardcopy():
 
     return jsonify({"success": True, "inserted_count": len(questions_to_insert)})
 
-@app.route('/admin/ai_generate_advanced', methods=['POST'])
-def admin_ai_generate_advanced():
     if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
