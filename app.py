@@ -253,12 +253,11 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     </script>
 </head>
 <body>
-<!-- Feature 3: Sleep Mode Loading Notice Message -->
 <div id="loadingNoticeModal" class="loading-modal">
     <div class="modal-content">
-        <h3 style="color:#34d399; margin:0 0 10px; font-size:20px;">🛡️ परीक्षा कक्ष लोड होत आहे...</h3>
+        <h3 style="color:#34d399; margin:0 0 10px; font-size:20px;">🛡️ सुरक्षित परीक्षा कक्ष लोड होत आहे...</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0 0 20px;">
-            ⏳ <b>महाराष्ट्र पोलीस भरती टेस्ट पोर्टलवर आपले स्वागत आहे, आपली टेस्ट पेज सुरू होत आहे...</b> कृपया क्षणभर प्रतीक्षा करा!
+            ⏳ टेस्ट उघडण्यासाठी थोडा वेळ लागू शकतो, <b>पण घाबरण्याची काही गरज नाही आपण सुरक्षित आहात!</b> खाकीच्या अभ्यासासाठी सज्ज व्हा!
         </p>
         <button onclick="proceedToTest()" style="background:linear-gradient(135deg, #10b981, #059669); color:#022c22; border:none; padding:12px 28px; border-radius:8px; font-weight:800; font-size:15px; cursor:pointer; width:100%;">
             🚀 पुढे चला (कंटिन्यू) ➔
@@ -274,7 +273,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </div>
 
 <div class="box">
-    <!-- Floating bottom-corner Home button -->
+    <!-- Floating bottom-corner Home button (Feature 6) -->
     <a href="/" style="position:fixed; bottom:20px; right:20px; background:#10b981; color:#022c22; padding:10px 18px; border-radius:30px; text-decoration:none; font-weight:800; font-size:13px; box-shadow:0 4px 15px rgba(0,0,0,0.4); z-index:9999; border:2px solid #34d399;">
         🏠 मुख्य पानावर जा
     </a>
@@ -487,6 +486,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
                 localStorage.removeItem(testStorageKey);
                 localStorage.removeItem(timerStorageKey);
                 
+                // Show submission loading overlay
                 let overlay = document.getElementById('submittingOverlay');
                 if (!overlay) {
                     overlay = document.createElement('div');
@@ -582,10 +582,10 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
             document.getElementById('waRulesModal').style.display = 'none';
         }
         function handleSocialLink(url) {
-            // Feature 1: Exact required message popup on Social / Toppers click
-            alert("संपूर्ण प्रवासाची यशोगाथा लवकरच आपल्या भेटीस येत आहे.....\\nतुमचे खाकीचे स्वप्न लवकर पूर्ण व्हावे ही सदिच्छा....");
             if (url && url.trim() !== '') {
                 window.open(url, '_blank');
+            } else {
+                alert("🌟 संपूर्ण प्रवासाची यशोगाथा लवकरच आपल्या भेटीस येत आहे! खाकीचे स्वप्न नक्की पूर्ण होणार! ⚔️");
             }
         }
     </script>
@@ -904,9 +904,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         function toggleSelectAllFeedbacks(master) {
             document.querySelectorAll('.fb-checkbox').forEach(cb => cb.checked = master.checked);
         }
-        function toggleSelectAll(master, className) {
-            document.querySelectorAll('.' + className).forEach(cb => cb.checked = master.checked);
-        }
         function generateAIQuestions() {
             const btn = document.getElementById('aiBtn');
             btn.innerText = '⏳ AI प्रश्न तयार करत आहे...';
@@ -920,75 +917,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     alert("✅ AI द्वारे सराव प्रश्न यशस्वीपणे तयार केले गेले!");
                 }
                 btn.innerText = '🤖 AI द्वारे प्रश्न ऑटो-जनरेट करा';
-                btn.disabled = false;
-            });
-        }
-        function generateAIQuestionsFromAdvancedForm() {
-            const count = document.getElementById('ai_q_count').value;
-            const diff = document.getElementById('ai_q_diff').value;
-            const dept = document.getElementById('ai_department').value;
-            const testId = document.getElementById('ai_target_test_id').value;
-            
-            let selectedSubjects = [];
-            document.querySelectorAll('.ai_subj_cb:checked').forEach(cb => {
-                selectedSubjects.push(cb.value);
-            });
-
-            if (selectedSubjects.length === 0) {
-                alert("⚠️ कृपया किमान एक विषय निवडा!");
-                return;
-            }
-
-            const btn = document.getElementById('advancedAiBtn');
-            btn.innerText = '⏳ AI प्रश्न तयार करत आहे...';
-            btn.disabled = true;
-
-            fetch('/admin/ai_generate_advanced', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({count: count, difficulty: diff, department: dept, subjects: selectedSubjects, test_id: testId})
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("✅ AI द्वारे " + data.inserted_count + " प्रश्न यशस्वीपणे तयार करून थेट टेस्टमध्ये ॲड केले गेले!");
-                    location.reload();
-                } else {
-                    alert("⚠️ एरर: " + (data.error || 'अज्ञात एरर'));
-                }
-                btn.innerText = '🤖 AI स्मार्ट प्रश्न जनरेट करा व सेव्ह करा';
-                btn.disabled = false;
-            });
-        }
-
-        function scanHardcopyToAI() {
-            const fileInput = document.getElementById('hardcopyScanFile');
-            const testId = document.getElementById('scan_target_test_id').value;
-            if (!fileInput.files || fileInput.files.length === 0) {
-                alert("⚠️ कृपया स्कॅन केलेली फाईल किंवा फोटो अपलोड करा!");
-                return;
-            }
-            const formData = new FormData();
-            formData.append('scan_file', fileInput.files[0]);
-            formData.append('test_id', testId);
-
-            const btn = document.getElementById('scanAiBtn');
-            btn.innerText = '⏳ AI स्कॅनिंग व ॲनालिसिस सुरू आहे...';
-            btn.disabled = true;
-
-            fetch('/admin/ai_scan_hardcopy', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("✅ हार्डकॉपी स्कॅन करून " + data.inserted_count + " प्रश्न यशस्वीपणे CSV द्वारे टेस्टमध्ये ॲड केले गेले!");
-                    location.reload();
-                } else {
-                    alert("⚠️ एरर: " + (data.error || 'स्कॅनिंग एरर'));
-                }
-                btn.innerText = '🚀 हार्डकॉपी स्कॅन करून AI द्वारे CSV बनवा व अपलोड करा';
                 btn.disabled = false;
             });
         }
@@ -1029,26 +957,37 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 1. LEADS TAB -->
     {% if active_tab == 'leads' %}
     <h3>📱 विद्यार्थ्यांची लीड्स यादी</h3>
-    <form method="POST" action="/admin/bulk_delete_leads" onsubmit="return confirm('निवडलेले सर्व लीड्स डिलीट करायचे का?');">
-        <div style="margin-bottom:10px;">
-            <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेले लीड्स डिलीट करा</button>
-        </div>
-        <table>
-            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'lead-cb')"></th><th>दिनांक</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th><th>कृती</th></tr>
-            {% for l in leads %}
-            <tr>
-                <td><input type="checkbox" name="lead_ids" value="{{ l.id }}" class="lead-cb"></td>
-                <td>{{ l.test_date }}</td>
-                <td><b>{{ l.student_name }}</b></td>
-                <td>{{ l.district }}</td>
-                <td><a href="https://wa.me/91{{ l.phone }}" target="_blank" style="color:green; font-weight:bold;">💬 {{ l.phone }}</a></td>
-                <td>{{ l.test_name }}</td>
-                <td><b>{{ l.score }} / {{ l.total_marks }}</b></td>
-                <td><a href="/admin/delete_lead/{{ l.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का?');">🗑️</a></td>
-            </tr>
-            {% endfor %}
-        </table>
-    </form>
+    <div style="background:#f8fafc; padding:12px; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:15px;">
+        <form method="GET" action="/admin/dashboard" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <input type="hidden" name="tab" value="leads">
+            <label style="font-size:12px; font-weight:bold;">जिल्हा फिल्टर:</label>
+            <select name="lead_dist" style="width:160px; margin-bottom:0;" onchange="this.form.submit()">
+                <option value="">-- सर्व जिल्हे --</option>
+                {% for d in all_districts %}<option value="{{ d }}" {% if lead_dist==d %}selected{% endif %}>{{ d }}</option>{% endfor %}
+            </select>
+            <label style="font-size:12px; font-weight:bold; margin-left:10px;">टेस्ट फिल्टर:</label>
+            <select name="lead_test_id" style="width:200px; margin-bottom:0;" onchange="this.form.submit()">
+                <option value="">-- सर्व टेस्ट्स --</option>
+                {% for t in tests %}<option value="{{ t.id }}" {% if lead_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
+            </select>
+            <a href="/admin/dashboard?tab=leads" class="btn-sm" style="background:#64748b; color:white;">Clear</a>
+        </form>
+    </div>
+    <table>
+        <tr><th>दिनांक</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th><th>रेफरल?</th><th>कृती</th></tr>
+        {% for l in leads %}
+        <tr>
+            <td>{{ l.test_date }}</td>
+            <td><b>{{ l.student_name }}</b></td>
+            <td>{{ l.district }}</td>
+            <td><a href="https://wa.me/91{{ l.phone }}" target="_blank" style="color:green; font-weight:bold;">💬 {{ l.phone }}</a></td>
+            <td>{{ l.test_name }}</td>
+            <td><b>{{ l.score }} / {{ l.total_marks }}</b></td>
+            <td><span style="color:#0284c7;">{{ l.referred_by_phone or '-' }}</span></td>
+            <td><a href="/admin/delete_lead/{{ l.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का? (नंतर Undo करता येईल)');">🗑️</a></td>
+        </tr>
+        {% endfor %}
+    </table>
 
     <!-- 2. PAYMENTS TAB -->
     {% elif active_tab == 'payments' %}
@@ -1136,128 +1075,172 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- 4. QUESTIONS TAB (WITH FEATURE 6: ADVANCED AI SMART GENERATOR & HARDCOPY SCANNER & ROBUST CSV UPLOAD & BULK DELETE) -->
+    <!-- 4. QUESTIONS TAB (WITH AI GENERATOR) -->
     {% elif active_tab == 'questions' %}
-    <h3>📝 प्रश्न व्यवस्थापन, हार्डकॉपी स्कॅनर व AI स्मार्ट जनरेटर</h3>
+    <h3>📝 प्रश्न व्यवस्थापन व AI प्रश्न जनरेटर</h3>
     
-    <!-- Feature 6: Advanced AI Smart Mock Question Generator Form -->
-    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:25px;">
-        <h4 style="margin:0 0 10px; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर (विभाग व विषयवार)</h4>
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
-            <div>
-                <label style="font-weight:bold; font-size:12px;">टेस्ट निवडा:</label>
-                <select id="ai_target_test_id">
-                    {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
-                </select>
-            </div>
-            <div>
-                <label style="font-weight:bold; font-size:12px;">विभाग निवडा:</label>
-                <select id="ai_department">
-                    <option value="पोलीस भरती">पोलीस भरती</option>
-                    <option value="आर्मी भरती">आर्मी भरती</option>
-                    <option value="महाराष्ट्र लोकसेवा आयोग (MPSC)">महाराष्ट्र लोकसेवा आयोग (MPSC)</option>
-                    <option value="सरळ सेवा भरती">सरळ सेवा भरती</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-weight:bold; font-size:12px;">प्रश्नांची संख्या (उदा. १०):</label>
-                <input type="number" id="ai_q_count" value="10" min="1" max="100">
-            </div>
+    <div style="background:#f0fdf4; border:2px dashed #10b981; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+            <h4 style="margin:0; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर</h4>
+            <small style="color:#047857;">पोलीस भरतीसाठी संभाव्य प्रश्न एका क्लिकवर आपोआप Pipe (|) फॉरमॅटमध्ये तयार करा.</small>
         </div>
-        <div style="margin-bottom:12px;">
-            <label style="font-weight:bold; font-size:12px;">काठीिन्य पातळीची टक्केवारी (%):</label>
-            <input type="number" id="ai_q_diff" value="75" min="10" max="100" placeholder="उदा. ७५%">
-        </div>
-        <div style="margin-bottom:12px;">
-            <label style="font-weight:bold; font-size:12px; display:block; margin-bottom:4px;">विषय निवडा (एकापेक्षा जास्त निवडू शकता):</label>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:6px; background:white; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
-                <label><input type="checkbox" class="ai_subj_cb" value="मराठी व्याकरण" checked> मराठी व्याकरण</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="गणित"> गणित</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="बुद्धिमत्ता"> बुद्धिमत्ता</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="राज्यशास्त्र व नागरिक शास्त्र"> राज्यशास्त्र व नागरिक शास्त्र</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="भूगोल"> भूगोल</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="विज्ञान"> विज्ञान</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="इतिहास"> इतिहास</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="समाज सुधारक"> समाज सुधारक</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="सामान्य विज्ञान"> सामान्य विज्ञान</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="अर्थशास्त्र"> अर्थशास्त्र</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="चालू घडामोडी"> चालू घडामोडी</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="संगणक"> संगणक</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="माहिती अधिकार कायदा 2005"> माहिती अधिकार कायदा २००५</label>
-                <label><input type="checkbox" class="ai_subj_cb" value="इंग्रजी व्याकरण"> इंग्रजी व्याकरण</label>
-            </div>
-        </div>
-        <button id="advancedAiBtn" type="button" class="btn" onclick="generateAIQuestionsFromAdvancedForm()" style="background:#10b981; color:#022c22; font-weight:800; width:100%;">
-            🤖 AI स्मार्ट प्रश्न जनरेट करा व सेव्ह करा
+        <button id="aiBtn" type="button" class="btn" onclick="generateAIQuestions()" style="background:#10b981; color:#022c22; font-weight:800;">
+            🤖 AI द्वारे प्रश्न ऑटो-जनरेट करा
         </button>
     </div>
 
-    <!-- Feature 4: Hardcopy Scan AI Parser Tab -->
-    <div style="background:#eff6ff; border:2px dashed #3b82f6; padding:18px; border-radius:8px; margin-bottom:25px;">
-        <h4 style="margin:0 0 8px; color:#1e40af;">📄 प्रश्नपत्रिका हार्डकॉपी स्कॅनर व AI ऑटोमॅटिक CSV जनरेटर</h4>
-        <p style="font-size:12.5px; color:#1d4ed8; margin:0 0 10px;">प्रिंटर किंवा स्कॉनेरमध्ये हार्डकॉपी ठेवल्यानंतर स्कॅन झालेली फाईल/फोटो येथे अपलोड करा. AI त्याचे ॲनालिसिस करून स्वयंचलितपणे सर्व प्रश्न, पर्याय, उत्तरे व स्पष्टीकरण तयार करून टेस्टमध्ये ॲड करेल.</p>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
-            <select id="scan_target_test_id">
-                {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+    <div style="background:#ecfdf5; padding:15px; border-radius:6px; margin-bottom:20px; border:1px solid #a7f3d0;">
+        <form method="GET" action="/admin/dashboard" style="display:flex; gap:10px; align-items:center;">
+            <input type="hidden" name="tab" value="questions">
+            <label style="font-weight:bold; font-size:13px; color:#065f46;">टेस्ट निवडा:</label>
+            <select name="filter_test_id" onchange="this.form.submit()" style="max-width:320px; margin-bottom:0;">
+                <option value="">-- सर्व टेस्ट्सचे प्रश्न --</option>
+                {% for t in tests %}
+                <option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                {% endfor %}
             </select>
-            <input type="file" id="hardcopyScanFile" accept="image/*,.pdf,.txt" style="background:white; padding:6px;">
-        </div>
-        <button id="scanAiBtn" type="button" class="btn" onclick="scanHardcopyToAI()" style="background:#2563eb; width:100%;">
-            🚀 हार्डकॉपी स्कॅन करून AI द्वारे CSV बनवा व अपलोड करा
-        </button>
-    </div>
-
-    <!-- Feature 2: 100 Questions Robust CSV Upload -->
-    <div style="background:#fefce8; border:2px dashed #ca8a04; padding:18px; border-radius:8px; margin-bottom:25px;">
-        <h4 style="margin:0 0 8px; color:#854d0e;">📥 १०० प्रश्नांची CSV फाईल अपलोड (रोबस्ट पार्सर)</h4>
-        <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data">
-            <select name="test_id" required style="margin-bottom:8px;">
-                {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
-            </select>
-            <input type="file" name="csv_file" accept=".csv,.txt" required style="margin-bottom:8px; background:white; padding:6px;">
-            <button type="submit" class="btn" style="background:#ca8a04; width:100%;">🚀 संपूर्ण प्रश्न CSV द्वारे अपलोड करा</button>
         </form>
     </div>
 
-    <!-- Feature 5: Bulk Delete Questions -->
-    <form method="POST" action="/admin/bulk_delete_questions" onsubmit="return confirm('निवडलेले सर्व प्रश्न डिलीट करायचे का? यंत्रणा सुरक्षित आहे.');">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h4 style="margin:0;">सर्व प्रश्न यादी:</h4>
-            <button type="submit" class="btn" style="background:#dc2626; padding:5px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न डिलीट करा</button>
-        </div>
-        <table>
-            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'q-cb')"></th><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>कृती</th></tr>
-            {% for q in all_questions %}
-            <tr>
-                <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="q-cb"></td>
-                <td>{{ q.id }}</td><td><b>{{ q.question }}</b></td><td style="color:green; font-weight:bold;">{{ q.correct }}</td>
-                <td style="white-space:nowrap;">
-                    <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
-                    <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे?');">🗑️</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:25px;">
+        <form method="POST" action="/admin/add_question" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
+            <h4 style="margin:0 0 8px; color:#065f46;">➕ एक प्रश्न ॲड करा</h4>
+            <select name="test_id">
+                {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
+            </select>
+            <input type="text" name="question" placeholder="प्रश्न लिहा" required>
+            <input type="text" name="opt_a" placeholder="पर्याय A" required>
+            <input type="text" name="opt_b" placeholder="पर्याय B" required>
+            <input type="text" name="opt_c" placeholder="पर्याय C" required>
+            <input type="text" name="opt_d" placeholder="पर्याय D" required>
+            <input type="text" name="correct" placeholder="अचूक उत्तर (A, B, C, D)" maxlength="1" required style="width:140px;">
+            <input type="text" name="explanation" placeholder="स्पष्टीकरण">
+            <button type="submit" class="btn">सेव्ह करा</button>
+        </form>
+
+        <form method="POST" action="/admin/bulk_questions" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
+            <h4 style="margin:0 0 8px; color:#065f46;">⚡ बल्क प्रश्न अपलोडर (Pipe |)</h4>
+            <select name="test_id" required>
+                {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
+            </select>
+            <textarea id="bulkTextarea" name="bulk_questions_text" rows="5" placeholder="प्रश्न | पर्यायA | पर्यायB | पर्यायC | पर्यायD | अचूक उत्तर | स्पष्टीकरण" required></textarea>
+            <button type="submit" class="btn" style="background:#0284c7; width:100%;">📥 अपलोड करा</button>
+        </form>
+    </div>
+
+    <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data" style="background:#f0fdf4; border:2px dashed #059669; padding:15px; border-radius:8px; margin-bottom:20px;">
+        <h4 style="margin:0 0 8px; color:#065f46;">📥 १०० प्रश्नांची CSV फाईल अपलोड करा:</h4>
+        <select name="test_id" required>
+            {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
+        </select>
+        <input type="file" name="csv_file" accept=".csv" required style="margin-bottom:10px;">
+        <button type="submit" class="btn" style="width:100%;">🚀 संपूर्ण १०० प्रश्न CSV द्वारे अपलोड करा</button>
     </form>
+
+    <table>
+        <tr><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>स्पष्टीकरण</th><th>कृती</th></tr>
+        {% for q in all_questions %}
+        <tr>
+            <td>{{ q.id }}</td><td><b>{{ q.question }}</b></td><td style="color:green; font-weight:bold;">{{ q.correct }}</td>
+            <td>{{ q.explanation }}</td>
+            <td style="white-space:nowrap;">
+                <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
+                <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे? (Undo करता येईल)');">🗑️</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
 
     <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
-    <form method="POST" action="/admin/bulk_delete_tests" onsubmit="return confirm('निवडलेल्या सर्व टेस्ट्स डिलीट करायच्या का?');">
-        <div style="margin-bottom:10px;">
-            <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेल्या टेस्ट्स डिलीट करा</button>
+    <div style="background:#ecfdf5; border:2px solid #10b981; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+            <h4 style="margin:0; color:#065f46;">⚡ १-क्लिक रॅपिड फायर शेड्युलिंग</h4>
+            <small style="color:#047857;">५० रॅपिड फायर टेस्ट्स रोज सकाळी १०:०० वाजता अनलॉक होतील.</small>
         </div>
-        <table>
-            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'test-cb')"></th><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>स्थिती</th><th>कृती</th></tr>
-            {% for t in tests %}
-            <tr>
-                <td><input type="checkbox" name="test_ids" value="{{ t.id }}" class="test-cb"></td>
-                <td>{{ t.id }}</td><td><b>{{ t.test_title }}</b></td><td>{{ t.category }}</td><td style="color:green; font-weight:bold;">{{ t.status }}</td>
-                <td><a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;">🗑</a></td>
-            </tr>
-            {% endfor %}
-        </table>
+        <form method="POST" action="/admin/bulk_schedule_all" onsubmit="return confirm('सर्व ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करायच्या का?');">
+            <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold;">🚀 ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करा</button>
+        </form>
+    </div>
+
+    <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:18px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:25px;">
+        <label style="font-weight:bold; font-size:12.5px;">टेस्टचे नाव:</label>
+        <input type="text" name="test_title" placeholder="उदा. महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट संच #१०" required>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:10px;">
+            <div>
+                <label style="font-weight:bold; font-size:12.5px;">कॅटेगरी:</label>
+                <select name="category" required>
+                    <option value="free">🟢 मोफत टेस्ट्स</option>
+                    <option value="paid" selected>🎯 अतिसंभाव्य संच (₹९९)</option>
+                    <option value="live">🔴 मिशन खाकी महासंग्राम</option>
+                    <option value="rapid">⚡ २० गुण रॅपिड फायर</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12.5px;">प्रकार:</label>
+                <select name="test_type">
+                    <option value="Free">Free</option>
+                    <option value="Paid" selected>Paid</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12.5px;">अनुक्रमांक:</label>
+                <input type="number" name="sequence_order" placeholder="क्रम (उदा. 1)" value="1">
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12.5px;">फी (₹):</label>
+                <input type="number" name="test_fee" placeholder="फी" value="99">
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12.5px;">वेळ (मिनिटे):</label>
+                <input type="number" name="duration_minutes" placeholder="वेळ" value="60">
+            </div>
+        </div>
+        <button type="submit" class="btn" style="margin-top:8px;">🚀 नवीन टेस्ट सेव्ह करा</button>
     </form>
+
+    <h4>सर्व टेस्ट्स यादी व ॲक्टिव्ह/क्लोज्ड नियंत्रण (Feature 7):</h4>
+    <table>
+        <tr><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>प्रकार</th><th>स्थिती (Status)</th><th>क्रम</th><th>फी</th><th>वेळ</th><th>कृती</th></tr>
+        {% for t in tests %}
+        <tr>
+            <form method="POST" action="/admin/update_test/{{ t.id }}">
+                <td>{{ t.id }}</td>
+                <td><input type="text" name="test_title" value="{{ t.test_title }}" style="margin-bottom:0;" required></td>
+                <td>
+                    <select name="category" style="margin-bottom:0; font-weight:600;">
+                        <option value="free" {% if t.category=='free' %}selected{% endif %}>🟢 मोफत</option>
+                        <option value="paid" {% if t.category=='paid' %}selected{% endif %}>🎯 अतिसंभाव्य</option>
+                        <option value="live" {% if t.category=='live' %}selected{% endif %}>🔴 महासंग्राम</option>
+                        <option value="rapid" {% if t.category=='rapid' %}selected{% endif %}>⚡ रॅपिड फायर</option>
+                    </select>
+                </td>
+                <td>
+                    <select name="test_type" style="margin-bottom:0;">
+                        <option value="Free" {% if t.test_type=='Free' %}selected{% endif %}>Free</option>
+                        <option value="Paid" {% if t.test_type=='Paid' %}selected{% endif %}>Paid</option>
+                    </select>
+                </td>
+                <td>
+                    <select name="status" style="margin-bottom:0; font-weight:bold; color:{{ '#16a34a' if t.status=='Active' else '#dc2626' }};">
+                        <option value="Active" {% if t.status=='Active' %}selected{% endif %}>🟢 Active (चालू)</option>
+                        <option value="Closed" {% if t.status=='Closed' %}selected{% endif %}>🔴 Closed (बंद)</option>
+                    </select>
+                </td>
+                <td><input type="number" name="sequence_order" value="{{ t.sequence_order or 1 }}" style="width:50px; margin-bottom:0;"></td>
+                <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:60px; margin-bottom:0;"></td>
+                <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:60px; margin-bottom:0;"></td>
+                <td style="white-space:nowrap;">
+                    <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; cursor:pointer;">💾 अपडेट</button>
+                    <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white;">🖨️ प्रिंट</a>
+                    <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का?');">🗑</a>
+                </td>
+            </form>
+        </tr>
+        {% endfor %}
+    </table>
 
     <!-- 6. LEADERBOARD TAB -->
     {% elif active_tab == 'leaderboard' %}
@@ -1303,44 +1286,99 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn">सेव्ह करा</button>
     </form>
 
-    <!-- 9. TRASH / RECYCLE BIN TAB (Feature 7: Bulk Delete in Trash) -->
+    <!-- 9. TRASH / RECYCLE BIN TAB -->
     {% elif active_tab == 'trash' %}
-    <h3>🗑️ रिसायकल बिन (बल्क सिलेक्ट व डिलीट सुविधा)</h3>
-    <form method="POST" action="/admin/bulk_delete_trash" onsubmit="return confirm('निवडलेले सर्व घटक रिसायकल बिनमधून कायमचे डिलीट करायचे का?');">
-        <div style="margin-bottom:10px;">
-            <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न कायमचे डिलीट करा</button>
-        </div>
-        <table>
-            <tr>
-                <th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'trash-cb')"></th>
-                <th>ID</th><th>प्रश्न/नाव</th><th>कृती</th>
-            </tr>
-            {% for q in deleted_questions_list %}
-            <tr>
-                <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="trash-cb"></td>
-                <td>{{ q.id }}</td>
-                <td><b>{{ q.question }}</b></td>
-                <td><a href="/admin/restore_item/question/{{ q.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
-            {% endfor %}
-        </table>
-    </form>
+    <h3>🗑️ रिसायकल बिन (डिलीट केलेले डेटा व्यवस्थापन)</h3>
+    <p style="font-size:13px; color:#64748b;">येथे डिलीट केलेले प्रश्न आणि लीड्स आहेत. तुम्ही त्यांना कधीही पूर्ववत (Restore) करू शकता.</p>
+    
+    <h4 style="color:#065f46; margin-top:20px;">डिलीट केलेले प्रश्न:</h4>
+    <table>
+        <tr><th>ID</th><th>प्रश्न</th><th>कृती</th></tr>
+        {% for q in deleted_questions_list %}
+        <tr>
+            <td>{{ q.id }}</td>
+            <td><b>{{ q.question }}</b></td>
+            <td><a href="/admin/restore_item/question/{{ q.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
+        {% endfor %}
+    </table>
 
-    <!-- 10. SETTINGS TAB -->
+    <h4 style="color:#065f46; margin-top:25px;">डिलीट केलेल्या विद्यार्थी लीड्स:</h4>
+    <table>
+        <tr><th>ID</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>कृती</th></tr>
+        {% for l in deleted_leads_list %}
+        <tr>
+            <td>{{ l.id }}</td>
+            <td><b>{{ l.student_name }}</b></td>
+            <td>{{ l.district }}</td>
+            <td>{{ l.phone }}</td>
+            <td><a href="/admin/restore_item/lead/{{ l.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
+        {% endfor %}
+    </table>
+
+    <!-- 10. SETTINGS TAB (MAINTENANCE TOGGLE & HELP DESK & POWER BUTTON) -->
     {% elif active_tab == 'settings' %}
     <h3>🔐 ॲडमिन पासवर्ड, हेल्प डेस्क, मेंटेनन्स मोड व टॅब व्यवस्थापन</h3>
+
+    <!-- Feature 2: Dynamic QR Code with Download Option -->
+    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px; text-align:center;">
+        <h4 style="margin:0 0 8px; color:#065f46;">📱 डायनॅमिक टेस्ट व होम पेज QR कोड (Feature 2)</h4>
+        <p style="font-size:13px; color:#047857; margin:0 0 12px;">विद्यार्थ्यांनी हा QR कोड स्कॅन केल्यावर थेट मुख्य होम पेजवर / टेस्टवर जातील. वेबसाईटची लिंक बदलल्यास QR ऑटोमॅटिक अपडेट होईल.</p>
+        <div style="background:white; display:inline-block; padding:10px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:10px;">
+            <img id="adminPortalQR" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ request.host_url }}" alt="Portal QR" style="display:block; max-width:200px; height:auto;">
+        </div><br>
+        <a id="downloadQrBtn" href="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={{ request.host_url }}" download="Police_Bharti_Portal_QR.png" class="btn" style="background:#059669; color:white; text-decoration:none; display:inline-block; padding:10px 20px;">
+            📥 QR कोड इमेज डाऊनलोड करा (HD)
+        </a>
+    </div>
     <form method="POST" action="/admin/update_password">
+        
         <div style="background:#fef3c7; border:1.5px solid #f59e0b; padding:15px; border-radius:8px; margin-bottom:20px;">
             <label style="font-weight:bold; color:#b45309; font-size:14px;">🚧 संपूर्ण वेबसाईट चालू/बंद स्थिती (पॉवर बटण):</label>
             <select name="site_status" style="margin-top:6px; font-weight:bold;">
                 <option value="active" {% if site_status == 'active' %}selected{% endif %}>🟢 वेबसाईट पूर्णपणे चालू ठेवा (Active)</option>
                 <option value="maintenance" {% if site_status == 'maintenance' %}selected{% endif %}>🔴 वेबसाईट मेंटेनन्स मोडवर टाका (Under Maintenance)</option>
             </select>
+            <small style="color:#78350f;">(मेंटेनन्स मोड चालू केल्यास विद्यार्थ्यांना 'काम सुरू आहे' असा संदेश दिसेल, पण ॲडमिन पॅनेल चालू राहील.)</small>
         </div>
+
+        <div style="background:#eff6ff; border:1.5px solid #3b82f6; padding:15px; border-radius:8px; margin-bottom:20px;">
+            <h4 style="margin:0 0 10px; color:#1e40af;">📞 हेल्प डेस्क सेटिंग्ज (हेल्प डेस्क टॅब माहिती):</h4>
+            <label style="font-weight:bold; font-size:12px;">हेल्पलाईन फोन नंबर:</label>
+            <input type="text" name="help_phone" value="{{ help_phone }}" placeholder="उदा. 9921111960">
+            <label style="font-weight:bold; font-size:12px;">ऑफिस पत्ता / पत्ता:</label>
+            <input type="text" name="help_address" value="{{ help_address }}" placeholder="उदा. श्रीगुरु करिअर अकॅडमी, आडूर, कोल्हापूर">
+        </div>
+
         <label>नवा पासवर्ड:</label>
-        <input type="password" name="new_password" placeholder="नवा पासवर्ड टाका">
+        <div style="position:relative; width:100%; margin-bottom:12px;">
+            <input type="password" name="new_password" id="new_password" placeholder="नवा पासवर्ड टाका" style="padding-right:45px;">
+            <button type="button" id="passEyeBtn" onclick="togglePassVis()" style="position:absolute; right:10px; top:8px; background:none; border:none; cursor:pointer;">👁️</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:6px;">
+                <label style="font-weight:bold; color:#065f46;">🌐 होम पेज टॅबचा क्रम:</label>
+                <input type="text" name="home_tab_order" value="{{ home_tab_order }}">
+                <small style="color:#64748b;">(पर्याय: all, live, paid, free, rapid, battle, docs, help)</small>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:6px;">
+                <label style="font-weight:bold; color:#1e40af;">⚙️ ॲडमिन डॅशबोर्ड टॅबचा क्रम:</label>
+                <input type="text" name="admin_tab_order" value="{{ admin_tab_order }}">
+            </div>
+        </div>
+
+        <label style="font-weight:bold; color:#1e40af;">📱 अधिकृत WhatsApp ग्रुप लिंक्स (एकाखाली एक टाका):</label>
+        <textarea name="wa_groups_multiline" rows="4">{{ wa_groups_multiline }}</textarea>
+
+        <label>Instagram लिंक:</label><input type="text" name="insta_link" value="{{ insta_link }}">
+        <label>YouTube लिंक:</label><input type="text" name="yt_link" value="{{ yt_link }}">
+        <label>यशवंतांचे फोटो लिंक:</label><input type="text" name="toppers_link" value="{{ toppers_link }}">
         <button type="submit" class="btn">💾 बदल सेव्ह करा</button>
     </form>
     {% endif %}
@@ -2227,7 +2265,7 @@ def admin_bulk_questions():
 
     lines = [l.strip() for l in bulk_data.split('\n') if l.strip()]
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             for line in lines:
                 parts = [p.strip() for p in line.split('|')]
                 if len(parts) >= 6:
@@ -2243,157 +2281,90 @@ def admin_bulk_questions():
 
     return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
-# --- Feature 2: Robust CSV Upload Handler ---
 @app.route('/admin/upload_csv_questions', methods=['POST'])
 def admin_upload_csv_questions():
     if not session.get('admin_logged'): return redirect('/admin/login')
     test_id = request.form.get('test_id')
     file = request.files.get('csv_file')
-    if not file: return "Failing: No file uploaded", 400
 
-    try:
-        content = file.stream.read().decode("utf-8-sig", errors="ignore")
-    except Exception:
-        content = file.stream.read().decode("latin1", errors="ignore")
+    if not file or not file.filename.endswith(('.csv', '.txt')):
+        return "कृपया वैध CSV फाईल अपलोड करा!", 400
 
-    stream = io.StringIO(content, newline=None)
+    stream = io.StringIO(file.stream.read().decode("utf-8-sig"), newline=None)
     csv_reader = csv.reader(stream)
 
     questions_to_insert = []
     for row in csv_reader:
-        if not row or len(row) < 5: continue
-        if row[0].strip().lower() in ['question_text', 'question', 'प्रश्न']: continue
-        q = row[0].strip()
-        oa = row[1].strip() if len(row) > 1 else ''
-        ob = row[2].strip() if len(row) > 2 else ''
-        oc = row[3].strip() if len(row) > 3 else ''
-        od = row[4].strip() if len(row) > 4 else ''
-        corr = row[5].strip().upper() if len(row) > 5 else 'A'
-        if corr not in ['A', 'B', 'C', 'D']: corr = 'A'
-        exp = row[6].strip() if len(row) > 6 else ''
-        if q:
-            questions_to_insert.append((test_id, q, oa, ob, oc, od, corr, exp))
+        if len(row) >= 6:
+            q = row[0].strip()
+            oa, ob, oc, od = row[1].strip(), row[2].strip(), row[3].strip(), row[4].strip()
+            corr = row[5].strip().upper()
+            exp = row[6].strip() if len(row) > 6 else ''
+            if q and corr in ['A', 'B', 'C', 'D']:
+                questions_to_insert.append((test_id, q, oa, ob, oc, od, corr, exp))
 
     if questions_to_insert:
         with get_db() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.executemany("""
                     INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """, questions_to_insert)
                 conn.commit()
 
-    return redirect(f'/admin/dashboard?tab=questions')
-
-# --- Feature 4: Hardcopy Scan AI Endpoint ---
-@app.route('/admin/ai_scan_hardcopy', methods=['POST'])
-def admin_ai_scan_hardcopy():
-    if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
-    test_id = request.form.get('test_id')
-    
-    simulated_scanned_questions = [
-        ("हार्डकॉपी स्कॅन प्रश्न १: महाराष्ट्राची राजधानी कोणती? | मुंबई | पुणे | नागपूर | औरंगाबाद | A | मुंबई ही महाराष्ट्राची आर्थिक राजधानी व राजधानी आहे."),
-        ("हार्डकॉपी स्कॅन प्रश्न २: भारताचे सध्याचे राष्ट्रीय गीत कोणते? | जन गण मन | वंदे मातरम् | सारे जहाँ से अच्छा | जय हिंद | B | बकीमचंद्र चटर्जी यांनी वंदे मातरम् लिहिले."),
-        ("हार्डकॉपी स्कॅन प्रश्न ३: क्षेत्रफळानुसार जगातील सर्वात मोठा देश कोणता? | रशिया | कॅनडा | चीन | अमेरिका | A | रशिया हा जगातील क्षेत्रफलानुसार सर्वात मोठा देश आहे.")
-    ]
-
-    questions_to_insert = []
-    for item in simulated_scanned_questions:
-        parts = [p.strip() for p in item.split('|')]
-        if len(parts) >= 6:
-            questions_to_insert.append((test_id, parts[0], parts[1], parts[2], parts[3], parts[4], parts[5].upper(), parts[6] if len(parts) > 6 else ''))
-
-    if questions_to_insert:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.executemany("""
-                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, questions_to_insert)
-                conn.commit()
-
-    return jsonify({"success": True, "inserted_count": len(questions_to_insert)})
-
-# --- Feature 6: Advanced AI Smart Mock Question Generator Endpoint ---
-@app.route('/admin/ai_generate_advanced', methods=['POST'])
-def admin_ai_generate_advanced():
-    if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
-    data = request.get_json() or {}
-    count = int(data.get('count', 10))
-    department = data.get('department', 'पोलीस भरती')
-    subjects = data.get('subjects', ['मराठी व्याकरण'])
-    test_id = data.get('test_id')
-
-    generated_list = []
-    for i in range(1, count + 1):
-        subj = subjects[(i - 1) % len(subjects)]
-        q_text = f"[{department} - {subj}] अतिसंभाव्य सराव प्रश्न क्रमांक {i}."
-        generated_list.append((test_id, q_text, "पर्याय A", "पर्याय B", "पर्याय C", "पर्याय D", "A", f"स्पष्टीकरण: {subj} विभागातील या प्रश्नाचे योग्य स्पष्टीकरण."))
-
-    if generated_list:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.executemany("""
-                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, generated_list)
-                conn.commit()
-
-    return jsonify({"success": True, "inserted_count": len(generated_list)})
-
-# --- Feature 5 & 7: Bulk Delete Endpoints (Leads, Questions, Tests, Trash) ---
-@app.route('/admin/bulk_delete_leads', methods=['POST'])
-def admin_bulk_delete_leads():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    ids = request.form.getlist('lead_ids')
-    if ids:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id = ANY(%s)", (ids,))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=leads')
-
-@app.route('/admin/bulk_delete_questions', methods=['POST'])
-def admin_bulk_delete_questions():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    ids = request.form.getlist('question_ids')
-    if ids:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("UPDATE questions SET is_deleted=1 WHERE id = ANY(%s)", (ids,))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=questions')
-
-@app.route('/admin/bulk_delete_tests', methods=['POST'])
-def admin_bulk_delete_tests():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    ids = request.form.getlist('test_ids')
-    if ids:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("UPDATE test_papers SET is_deleted=1 WHERE id = ANY(%s)", (ids,))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=launch')
-
-@app.route('/admin/bulk_delete_trash', methods=['POST'])
-def admin_bulk_delete_trash():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    ids = request.form.getlist('question_ids')
-    if ids:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM questions WHERE id = ANY(%s)", (ids,))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=trash')
+    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
 @app.route('/admin/delete_question/<int:q_id>')
 def admin_delete_question(q_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT test_id FROM questions WHERE id=%s", (q_id,))
+            q_row = cur.fetchone()
+            t_id = q_row['test_id'] if q_row else ''
             cur.execute("UPDATE questions SET is_deleted=1 WHERE id=%s", (q_id,))
             conn.commit()
-    return redirect('/admin/dashboard?tab=questions')
+    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={t_id}')
+
+@app.route('/admin/add_test', methods=['POST'])
+def admin_add_test():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    title = request.form.get('test_title', '').strip()
+    category = request.form.get('category', 'paid')
+    ttype = request.form.get('test_type', 'Paid')
+    seq = int(request.form.get('sequence_order', 1) or 1)
+    fee = float(request.form.get('test_fee', 99) or 0)
+    duration = int(request.form.get('duration_minutes', 60) or 60)
+    
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, sequence_order) 
+                VALUES (%s, %s, %s, %s, 'Active', %s, %s)
+            """, (title, ttype, fee, duration, category, seq))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
+
+@app.route('/admin/update_test/<int:test_id>', methods=['POST'])
+def admin_update_test(test_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    title = request.form.get('test_title', '').strip()
+    category = request.form.get('category', 'paid')
+    ttype = request.form.get('test_type', 'Paid')
+    seq = int(request.form.get('sequence_order', 1) or 1)
+    fee = float(request.form.get('test_fee', 0) or 0)
+    duration = int(request.form.get('duration_minutes', 60) or 60)
+    status = request.form.get('status', 'Active').strip()
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                UPDATE test_papers 
+                SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, category=%s, sequence_order=%s, status=%s 
+                WHERE id=%s
+            """, (title, ttype, fee, duration, category, seq, status, test_id))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
 
 @app.route('/admin/delete_test/<int:test_id>')
 def admin_delete_test(test_id):
@@ -2403,6 +2374,149 @@ def admin_delete_test(test_id):
             cur.execute("UPDATE test_papers SET is_deleted=1 WHERE id=%s", (test_id,))
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
+
+@app.route('/admin/print_test/<int:test_id>')
+def admin_print_test(test_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM test_papers WHERE id=%s", (test_id,))
+            test = cur.fetchone()
+            cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
+            questions = cur.fetchall()
+
+    html = f'''<!DOCTYPE html><html lang="mr"><head><meta charset="UTF-8"><title>{test['test_title']} - Print</title></head>
+    <body style="font-family:sans-serif; padding:30px; color:#000;">
+        <h2 style="text-align:center;">महाराष्ट्र पोलीस भरती सराव प्रश्नपत्रिका</h2>
+        <h3 style="text-align:center;">{test['test_title']}</h3>
+        <p style="text-align:center;"><b>वेळ:</b> {test['duration_minutes']} मिनिटे | <b>एकूण प्रश्न:</b> {len(questions)}</p>
+        <hr>
+        <ol>{ "".join([f"<li style='margin-bottom:15px;'><b>{q['question']}</b><br>A) {q['opt_a']}&nbsp;&nbsp;&nbsp;B) {q['opt_b']}&nbsp;&nbsp;&nbsp;C) {q['opt_c']}&nbsp;&nbsp;&nbsp;D) {q['opt_d']}<br><small style='color:green;'>अचूक उत्तर: {q['correct']} | स्पष्टीकरण: {q['explanation']}</small></li>" for q in questions]) }</ol>
+        <script>window.print();</script>
+    </body></html>'''
+    return render_template_string(html)
+
+@app.route('/admin/approve_payment/<int:lead_id>', methods=['POST'])
+def admin_approve_payment(lead_id):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    token = secrets.token_hex(8)
+    expires = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                UPDATE mock_test_leads 
+                SET payment_status='Approved', access_token=%s, token_expires_at=%s 
+                WHERE id=%s
+            """, (token, expires, lead_id))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=payments')
+
+@app.route('/admin/add_special_unlimited', methods=['POST'])
+def add_special_unlimited():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    phone = request.form.get('phone', '').strip()
+    name = request.form.get('student_name', '').strip()
+    note = request.form.get('note', '').strip()
+    added_on = datetime.now().strftime("%Y-%m-%d %H:%M")
+    if re.match(r'^[6-9]\d{9}$', phone):
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO special_unlimited_attempts (phone, student_name, note, added_on)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (phone) DO UPDATE SET student_name=EXCLUDED.student_name, note=EXCLUDED.note
+                """, (phone, name, note, added_on))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+@app.route('/admin/delete_special_unlimited/<int:uid>')
+def delete_special_unlimited(uid):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("DELETE FROM special_unlimited_attempts WHERE id=%s", (uid,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+@app.route('/admin/add_special_free_pass', methods=['POST'])
+def add_special_free_pass():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    phone = request.form.get('phone', '').strip()
+    name = request.form.get('student_name', '').strip()
+    note = request.form.get('note', '').strip()
+    added_on = datetime.now().strftime("%Y-%m-%d %H:%M")
+    if re.match(r'^[6-9]\d{9}$', phone):
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO special_free_pass (phone, student_name, note, added_on)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (phone) DO UPDATE SET student_name=EXCLUDED.student_name, note=EXCLUDED.note
+                """, (phone, name, note, added_on))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+@app.route('/admin/delete_special_free_pass/<int:fid>')
+def delete_special_free_pass(fid):
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("DELETE FROM special_free_pass WHERE id=%s", (fid,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+@app.route('/admin/update_pdf_docs', methods=['POST'])
+def admin_update_pdf_docs():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    rec_file = request.files.get('recruitment_pdf_file')
+    elg_file = request.files.get('eligibility_pdf_file')
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if rec_file and rec_file.filename != '':
+                fname = secure_filename(f"recruitment_{int(datetime.now().timestamp())}_{rec_file.filename}")
+                rec_file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='recruitment_pdf'", (f"/static/uploads/{fname}",))
+            
+            if elg_file and elg_file.filename != '':
+                fname = secure_filename(f"eligibility_{int(datetime.now().timestamp())}_{elg_file.filename}")
+                elg_file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='eligibility_pdf'", (f"/static/uploads/{fname}",))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=notices')
+
+@app.route('/admin/update_password', methods=['POST'])
+def admin_update_password():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    new_pass = request.form.get('new_password')
+    site_status = request.form.get('site_status', 'active')
+    home_tab_order = request.form.get('home_tab_order', 'all,live,paid,free,rapid,battle,docs,help').strip()
+    admin_tab_order = request.form.get('admin_tab_order', 'leads,payments,special,questions,launch,leaderboard,feedback,notices,trash,settings').strip()
+    wa_groups = request.form.get('wa_groups_multiline', '').strip()
+    help_phone = request.form.get('help_phone', '').strip()
+    help_address = request.form.get('help_address', '').strip()
+    insta = request.form.get('insta_link', '')
+    yt = request.form.get('yt_link', '')
+    top = request.form.get('toppers_link', '')
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            if new_pass:
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_pass'", (new_pass,))
+            if help_phone:
+                cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('help_phone', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (help_phone,))
+            if help_address:
+                cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('help_address', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (help_address,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('site_status', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (site_status,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('home_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (home_tab_order,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('wa_groups_multiline', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (wa_groups,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='insta_link'", (insta,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='yt_link'", (yt,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='toppers_link'", (top,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=settings')
 
 @app.route('/admin/delete_lead/<int:lead_id>')
 def admin_delete_lead(lead_id):
@@ -2422,96 +2536,7 @@ def admin_delete_payment(lead_id):
             conn.commit()
     return redirect('/admin/dashboard?tab=payments')
 
-@app.route('/admin/add_special_unlimited', methods=['POST'])
-def add_special_unlimited():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    phone = request.form.get('phone', '').strip()
-    name = request.form.get('student_name', '').strip()
-    if re.match(r'^[6-9]\d{9}$', phone):
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("INSERT INTO special_unlimited_attempts (phone, student_name, added_on) VALUES (%s, %s, NOW()) ON CONFLICT (phone) DO NOTHING", (phone, name))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=special')
-
-@app.route('/admin/delete_special_unlimited/<int:uid>')
-def delete_special_unlimited(uid):
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM special_unlimited_attempts WHERE id=%s", (uid,))
-            conn.commit()
-    return redirect('/admin/dashboard?tab=special')
-
-@app.route('/admin/add_special_free_pass', methods=['POST'])
-def add_special_free_pass():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    phone = request.form.get('phone', '').strip()
-    name = request.form.get('student_name', '').strip()
-    if re.match(r'^[6-9]\d{9}$', phone):
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("INSERT INTO special_free_pass (phone, student_name, added_on) VALUES (%s, %s, NOW()) ON CONFLICT (phone) DO NOTHING", (phone, name))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=special')
-
-@app.route('/admin/delete_special_free_pass/<int:fid>')
-def delete_special_free_pass(fid):
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM special_free_pass WHERE id=%s", (fid,))
-            conn.commit()
-    return redirect('/admin/dashboard?tab=special')
-
-@app.route('/admin/update_pdf_docs', methods=['POST'])
-def admin_update_pdf_docs():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    rec_file = request.files.get('recruitment_pdf_file')
-    if rec_file and rec_file.filename != '':
-        fname = secure_filename(f"rec_{int(datetime.now().timestamp())}_{rec_file.filename}")
-        rec_file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='recruitment_pdf'", (f"/static/uploads/{fname}",))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=notices')
-
-@app.route('/admin/restore_item/<item_type>/<int:item_id>')
-def admin_restore_item(item_type, item_id):
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            if item_type == 'question': cur.execute("UPDATE questions SET is_deleted=0 WHERE id=%s", (item_id,))
-            conn.commit()
-    return redirect('/admin/dashboard?tab=trash')
-
-@app.route('/admin/edit_question/<int:q_id>', methods=['GET', 'POST'])
-def admin_edit_question(q_id):
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            if request.method == 'POST':
-                cur.execute("UPDATE questions SET question=%s, opt_a=%s, opt_b=%s, opt_c=%s, opt_d=%s, correct=%s, explanation=%s WHERE id=%s",
-                            (request.form.get('question'), request.form.get('opt_a'), request.form.get('opt_b'), request.form.get('opt_c'), request.form.get('opt_d'), request.form.get('correct'), request.form.get('explanation'), q_id))
-                conn.commit()
-                return redirect('/admin/dashboard?tab=questions')
-            cur.execute("SELECT * FROM questions WHERE id=%s", (q_id,))
-            q = cur.fetchone()
-    return render_template_string(EDIT_QUESTION_TEMPLATE, q=q)
-
-@app.route('/admin/update_password', methods=['POST'])
-def admin_update_password():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    new_pass = request.form.get('new_password')
-    site_status = request.form.get('site_status', 'active')
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            if new_pass: cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_pass'", (new_pass,))
-            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='site_status'", (site_status,))
-            conn.commit()
-    return redirect('/admin/dashboard?tab=settings')
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
 
+Displaying app (22).py.
