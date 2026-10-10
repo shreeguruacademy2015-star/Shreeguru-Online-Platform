@@ -2219,8 +2219,6 @@ def admin_dashboard():
         deleted_leads_list=deleted_leads_list
     )
 
-import os
-
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
@@ -2228,22 +2226,19 @@ def admin_ai_generate_advanced():
     
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
-    subject_counts = data.get('subject_counts', {}) # जसे की {"मराठी व्याकरण": 5}
+    subject_counts = data.get('subject_counts', {})
     test_id = data.get('test_id')
 
     api_key = "AQ.Ab8RN6LDVf9ZOn4wiAmlbFVONp6aCiq8XU7gTJyR0rgr73crgA"
-   try:
-    client = genai.Client(api_key=api_key)
-except Exception as e:
-    return jsonify({"success": False, "error": str(e)})
-    generated_list = []
+    try:
+        client = genai.Client(api_key=api_key)
+        generated_list = []
 
         for subj, num in subject_counts.items():
             count = int(num)
             if count <= 0:
                 continue
             
-            # जेमिनी एआयला प्रत्येक विषयासाठी रिअल प्रश्न मागण्यासाठी प्राम्प्ट
             prompt = (
                 f"महाराष्ट्र {department} परीक्षेसाठी '{subj}' या विषयावर अचूक आणि नवीन {count} बहुपर्यायी प्रश्न तयार कर. "
                 f"उत्तर खालीलप्रमाणे विशिष्ट पाईप (|) सेपरेटेड फॉरमॅटमध्ये एका ओळीत एक प्रश्न असावा:\n"
@@ -2285,15 +2280,6 @@ except Exception as e:
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-    
-    sample_ai_questions = [
-        f"{subject}: महाराष्ट्रातील सर्वोच्च शिखर कोणते? | कळसूबाई | साल्हेर | महाबळेश्वर | त्र्यंबकेश्वर | A | कळसूबाई हे महाराष्ट्रातील सर्वात उंच शिखर असून त्याची उंची १६४६ मीटर आहे.",
-        f"{subject}: 'उंटावरचा शहाणा' या अलंकारिक शब्दाचा अर्थ काय? | मूर्खपणाचा सल्ला देणारा | शहाणा माणूस | उंटावर बसणारा | व्यापारी | A | मूर्खपणाचा आणि नको असलेला सल्ला देणाऱ्या व्यक्तीस उंटावरचा शहाणा म्हणतात.",
-        f"{subject}: एका त्रिकोणाच्या तिन्ही कोनांची बेरीज किती अंश असते? | १८०° | ३६०° | ९०° | २७०° | A | कोणत्याही त्रिकोणाच्या सर्व आंतरकोनांची बेरीज नेहमी १८० अंश असते.",
-        f"{subject}: भारतीय राज्यघटनेतील कलम १७ कशाशी संबंधित आहे? | अस्पृश्यता निर्मूलन | शिक्षणाचा हक्क | भाषण स्वातंत्र्य | बालमजुरी बंदी | A | संविधानातील कलम १७ अन्वये अस्पृश्यता पाळणे कायद्याने गुन्हा ठरवण्यात आला आहे.",
-        f"{subject}: विसंगत घटक ओळखा: ८, २७, ६४, १०० | १०० | ६४ | २७ | ८ | A | इतर सर्व संख्या घन संख्या आहेत (२³, ३³, ४³), तर १०० ही वर्ग संख्या (१०²) आहे."
-    ]
-    return jsonify({"success": True, "questions_text": "\n".join(sample_ai_questions)})
 
 @app.route('/admin/undo_delete/<item_type>/<int:item_id>')
 def admin_undo_delete(item_type, item_id):
@@ -2553,38 +2539,6 @@ def admin_ai_scan_hardcopy():
                 conn.commit()
 
     return jsonify({"success": True, "inserted_count": len(questions_to_insert)})
-
-    if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
-    data = request.get_json() or {}
-    department = data.get('department', 'पोलीस भरती')
-    subject_counts = data.get('subject_counts', {})
-    test_id = data.get('test_id')
-
-    existing_questions = set()
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT question FROM questions WHERE test_id=%s AND is_deleted=0", (test_id,))
-            for row in cur.fetchall():
-                existing_questions.add(row['question'].strip())
-
-    generated_list = []
-    for subj, num in subject_counts.items():
-        for i in range(1, int(num) + 1):
-            q_text = f"[{department} - {subj}] अतिसंभाव्य सराव प्रश्न क्रमांक {i}."
-            if q_text not in existing_questions:
-                generated_list.append((test_id, q_text, "पर्याय A", "पर्याय B", "पर्याय C", "पर्याय D", "A", f"स्पष्टीकरण: {subj} विभागातील या प्रश्नाचे योग्य स्पष्टीकरण."))
-                existing_questions.add(q_text)
-
-    if generated_list:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.executemany("""
-                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, generated_list)
-                conn.commit()
-
-    return jsonify({"success": True, "inserted_count": len(generated_list)})
 
 @app.route('/admin/bulk_delete_leads', methods=['POST'])
 def admin_bulk_delete_leads():
