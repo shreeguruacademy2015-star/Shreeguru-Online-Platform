@@ -16,13 +16,7 @@ from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
 # --- सुरक्षित जेमिनी एआय इम्पोर्ट (रेन्डर क्रॅश-प्रूफ) ---
-try:
-    import google.genai as genai
-except ImportError:
-    try:
-        import google.generativeai as genai
-    except ImportError:
-        genai = None
+from google import genai
 
 # --- SURAKSHIT RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
 try:
