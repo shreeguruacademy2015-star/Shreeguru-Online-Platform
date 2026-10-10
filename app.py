@@ -274,7 +274,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </div>
 
 <div class="box">
-    <!-- Floating bottom-corner Home button -->
+    <!-- Floating bottom-corner Home button (Feature 6) -->
     <a href="/" style="position:fixed; bottom:20px; right:20px; background:#10b981; color:#022c22; padding:10px 18px; border-radius:30px; text-decoration:none; font-weight:800; font-size:13px; box-shadow:0 4px 15px rgba(0,0,0,0.4); z-index:9999; border:2px solid #34d399;">
         🏠 मुख्य पानावर जा
     </a>
@@ -1164,77 +1164,90 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     {% elif active_tab == 'questions' %}
     <h3>📝 प्रश्न व्यवस्थापन व AI प्रश्न जनरेटर</h3>
     
-    <div style="background:#f0fdf4; border:2px dashed #10b981; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-            <h4 style="margin:0; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर</h4>
-            <small style="color:#047857;">पोलीस भरतीसाठी संभाव्य प्रश्न एका क्लिकवर आपोआप Pipe (|) फॉरमॅटमध्ये तयार करा.</small>
+    <!-- Feature 6: Advanced AI Smart Mock Question Generator Form -->
+    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 10px; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर (विभाग व विषयनिहाय संख्या)</h4>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div>
+                <label style="font-weight:bold; font-size:12px;">टेस्ट निवडा:</label>
+                <select id="ai_target_test_id">
+                    {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12px;">विभाग निवडा:</label>
+                <select id="ai_department">
+                    <option value="पोलीस भरती">पोलीस भरती</option>
+                    <option value="आर्मी भरती">आर्मी भरती</option>
+                    <option value="महाराष्ट्र लोकसेवा आयोग (MPSC)">महाराष्ट्र लोकसेवा आयोग (MPSC)</option>
+                    <option value="सरळ सेवा भरती">सरळ सेवा भरती</option>
+                </select>
+            </div>
         </div>
-        <button id="aiBtn" type="button" class="btn" onclick="generateAIQuestions()" style="background:#10b981; color:#022c22; font-weight:800;">
-            🤖 AI द्वारे प्रश्न ऑटो-जनरेट करा
+        <div style="margin-bottom:12px;">
+            <label style="font-weight:bold; font-size:12px; display:block; margin-bottom:4px;">विषय निवडा व त्यासमोर हवी असलेली प्रश्नांची संख्या टाका:</label>
+            <div style="background:white; padding:12px; border-radius:6px; border:1px solid #cbd5e1; display:flex; flex-direction:column; gap:8px;">
+                {% set subjects_list = ['मराठी व्याकरण', 'गणित', 'बुद्धिमत्ता', 'राज्यशास्त्र व नागरिक शास्त्र', 'भूगोल', 'विज्ञान', 'इतिहास', 'समाज सुधारक', 'सामान्य विज्ञान', 'अर्थशास्त्र', 'चालू घडामोडी', 'संगणक', 'माहिती अधिकार कायदा 2005', 'इंग्रजी व्याकरण'] %}
+                {% for subj in subjects_list %}
+                <div class="subject-row" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:4px;">
+                    <label style="font-size:13px; font-weight:600;"><input type="checkbox" class="ai_subj_cb" value="{{ subj }}"> {{ subj }}</label>
+                    <input type="number" class="ai_subj_count" value="0" min="0" max="100" style="width:90px; margin-bottom:0; text-align:center;" placeholder="संख्या">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <button id="advancedAiBtn" type="button" class="btn" onclick="generateAIQuestionsFromAdvancedForm()" style="background:#10b981; color:#022c22; font-weight:800; width:100%;">
+            🤖 AI स्मार्ट प्रश्न जनरेट करा व सेव्ह करा (डुप्युटेशन टाळून)
         </button>
     </div>
 
-    <div style="background:#ecfdf5; padding:15px; border-radius:6px; margin-bottom:20px; border:1px solid #a7f3d0;">
-        <form method="GET" action="/admin/dashboard" style="display:flex; gap:10px; align-items:center;">
-            <input type="hidden" name="tab" value="questions">
-            <label style="font-weight:bold; font-size:13px; color:#065f46;">टेस्ट निवडा:</label>
-            <select name="filter_test_id" onchange="this.form.submit()" style="max-width:320px; margin-bottom:0;">
-                <option value="">-- सर्व टेस्ट्सचे प्रश्न --</option>
-                {% for t in tests %}
-                <option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
-                {% endfor %}
+    <!-- Feature 4: Hardcopy Scan AI Parser -->
+    <div style="background:#eff6ff; border:2px dashed #3b82f6; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 8px; color:#1e40af;">📄 प्रश्नपत्रिका हार्डकॉपी स्कॅनर व AI ऑटोमॅटिक CSV जनरेटर</h4>
+        <p style="font-size:12.5px; color:#1d4ed8; margin:0 0 10px;">प्रिंटर किंवा स्कॉनेरमध्ये हार्डकॉपी ठेवल्यानंतर स्कॅन झालेली फाईल/फोटो येथे अपलोड करा. AI ॲनालिसिस करून स्वयंचलित प्रश्न तयार करेल.</p>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <select id="scan_target_test_id">
+                {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
             </select>
+            <input type="file" id="hardcopyScanFile" accept="image/*,.pdf,.txt" style="background:white; padding:6px;">
+        </div>
+        <button id="scanAiBtn" type="button" class="btn" onclick="scanHardcopyToAI()" style="background:#2563eb; width:100%;">
+            🚀 हार्डकॉपी स्कॅन करून AI द्वारे CSV बनवा व अपलोड करा
+        </button>
+    </div>
+
+    <!-- Feature 2: Robust CSV Upload -->
+    <div style="background:#fefce8; border:2px dashed #ca8a04; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 8px; color:#854d0e;">📥 १०० प्रश्नांची CSV फाईल अपलोड (रोबस्ट पार्सर)</h4>
+        <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data">
+            <select name="test_id" required style="margin-bottom:8px;">
+                {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+            </select>
+            <input type="file" name="csv_file" accept=".csv,.txt" required style="margin-bottom:8px; background:white; padding:6px;">
+            <button type="submit" class="btn" style="background:#ca8a04; width:100%;">🚀 संपूर्ण प्रश्न CSV द्वारे अपलोड करा</button>
         </form>
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:25px;">
-        <form method="POST" action="/admin/add_question" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
-            <h4 style="margin:0 0 8px; color:#065f46;">➕ एक प्रश्न ॲड करा</h4>
-            <select name="test_id">
-                {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
-            </select>
-            <input type="text" name="question" placeholder="प्रश्न लिहा" required>
-            <input type="text" name="opt_a" placeholder="पर्याय A" required>
-            <input type="text" name="opt_b" placeholder="पर्याय B" required>
-            <input type="text" name="opt_c" placeholder="पर्याय C" required>
-            <input type="text" name="opt_d" placeholder="पर्याय D" required>
-            <input type="text" name="correct" placeholder="अचूक उत्तर (A, B, C, D)" maxlength="1" required style="width:140px;">
-            <input type="text" name="explanation" placeholder="स्पष्टीकरण">
-            <button type="submit" class="btn">सेव्ह करा</button>
-        </form>
-
-        <form method="POST" action="/admin/bulk_questions" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
-            <h4 style="margin:0 0 8px; color:#065f46;">⚡ बल्क प्रश्न अपलोडर (Pipe |)</h4>
-            <select name="test_id" required>
-                {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
-            </select>
-            <textarea id="bulkTextarea" name="bulk_questions_text" rows="5" placeholder="प्रश्न | पर्यायA | पर्यायB | पर्यायC | पर्यायD | अचूक उत्तर | स्पष्टीकरण" required></textarea>
-            <button type="submit" class="btn" style="background:#0284c7; width:100%;">📥 अपलोड करा</button>
-        </form>
-    </div>
-
-    <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data" style="background:#f0fdf4; border:2px dashed #059669; padding:15px; border-radius:8px; margin-bottom:20px;">
-        <h4 style="margin:0 0 8px; color:#065f46;">📥 १०० प्रश्नांची CSV फाईल अपलोड करा:</h4>
-        <select name="test_id" required>
-            {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
-        </select>
-        <input type="file" name="csv_file" accept=".csv" required style="margin-bottom:10px;">
-        <button type="submit" class="btn" style="width:100%;">🚀 संपूर्ण १०० प्रश्न CSV द्वारे अपलोड करा</button>
+    <!-- Feature 5: Bulk Delete & Edit Options -->
+    <form method="POST" action="/admin/bulk_delete_questions" onsubmit="return confirm('निवडलेले सर्व प्रश्न डिलीट करायचे का?');">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h4 style="margin:0;">सर्व प्रश्न यादी:</h4>
+            <button type="submit" class="btn" style="background:#dc2626; padding:5px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न डिलीट करा</button>
+        </div>
+        <table>
+            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'q-cb')"></th><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>कृती (एडिट व डिलीट)</th></tr>
+            {% for q in all_questions %}
+            <tr>
+                <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="q-cb"></td>
+                <td>{{ q.id }}</td><td><b>{{ q.question }}</b></td><td style="color:green; font-weight:bold;">{{ q.correct }}</td>
+                <td style="white-space:nowrap;">
+                    <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
+                    <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे?');">🗑️</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
     </form>
-
-    <table>
-        <tr><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>स्पष्टीकरण</th><th>कृती</th></tr>
-        {% for q in all_questions %}
-        <tr>
-            <td>{{ q.id }}</td><td><b>{{ q.question }}</b></td><td style="color:green; font-weight:bold;">{{ q.correct }}</td>
-            <td>{{ q.explanation }}</td>
-            <td style="white-space:nowrap;">
-                <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
-                <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे? (Undo करता येईल)');">🗑️</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
 
     <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
@@ -1373,38 +1386,25 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 9. TRASH / RECYCLE BIN TAB -->
     {% elif active_tab == 'trash' %}
-    <h3>🗑️ रिसायकल बिन (डिलीट केलेले डेटा व्यवस्थापन)</h3>
-    <p style="font-size:13px; color:#64748b;">येथे डिलीट केलेले प्रश्न आणि लीड्स आहेत. तुम्ही त्यांना कधीही पूर्ववत (Restore) करू शकता.</p>
-    
-    <h4 style="color:#065f46; margin-top:20px;">डिलीट केलेले प्रश्न:</h4>
-    <table>
-        <tr><th>ID</th><th>प्रश्न</th><th>कृती</th></tr>
-        {% for q in deleted_questions_list %}
-        <tr>
-            <td>{{ q.id }}</td>
-            <td><b>{{ q.question }}</b></td>
-            <td><a href="/admin/restore_item/question/{{ q.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="3" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
-        {% endfor %}
-    </table>
-
-    <h4 style="color:#065f46; margin-top:25px;">डिलीट केलेल्या विद्यार्थी लीड्स:</h4>
-    <table>
-        <tr><th>ID</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>कृती</th></tr>
-        {% for l in deleted_leads_list %}
-        <tr>
-            <td>{{ l.id }}</td>
-            <td><b>{{ l.student_name }}</b></td>
-            <td>{{ l.district }}</td>
-            <td>{{ l.phone }}</td>
-            <td><a href="/admin/restore_item/lead/{{ l.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="5" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
-        {% endfor %}
-    </table>
+    <h3>🗑️ रिसायकल बिन (सिलेक्ट व बल्क डिलीट सुविधा)</h3>
+    <form method="POST" action="/admin/bulk_delete_trash" onsubmit="return confirm('निवडलेले सर्व प्रश्न कायमचे डिलीट करायचे का?');">
+        <div style="margin-bottom:10px;">
+            <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न कायमचे डिलीट करा</button>
+        </div>
+        <table>
+            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'trash-cb')"></th><th>ID</th><th>प्रश्न</th><th>कृती</th></tr>
+            {% for q in deleted_questions_list %}
+            <tr>
+                <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="trash-cb"></td>
+                <td>{{ q.id }}</td>
+                <td><b>{{ q.question }}</b></td>
+                <td><a href="/admin/restore_item/question/{{ q.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
+            {% endfor %}
+        </table>
+    </form>
 
     <!-- 10. SETTINGS TAB (MAINTENANCE TOGGLE & HELP DESK & POWER BUTTON) -->
     {% elif active_tab == 'settings' %}
@@ -1917,8 +1917,13 @@ def submit_test(test_id):
             f_row = cur.fetchone()
             completed_friends_count = f_row['my_friends'] if f_row else 0
 
+            # State Rank Calculation
             cur.execute("SELECT COUNT(*) as higher FROM mock_test_leads WHERE test_id=%s AND score > %s AND is_deleted=0", (test_id, score))
             state_rank = cur.fetchone()['higher'] + 1
+            
+            # District Rank Calculation (जिल्हा रँक)
+            cur.execute("SELECT COUNT(*) as higher_dist FROM mock_test_leads WHERE test_id=%s AND district ILIKE %s AND score > %s AND is_deleted=0", (test_id, district, score))
+            district_rank = cur.fetchone()['higher_dist'] + 1
             
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='insta_link'")
             i_row = cur.fetchone()
@@ -1952,10 +1957,16 @@ def submit_test(test_id):
     ego_msg = f"महाराष्ट्र पोलीस भरती लेखी परीक्षा ओपन चॅलेंज मैदानावर खाकीची जिद्द दाखवली आता लेखी परीक्षेत तुमची तयारी किती आहे सिद्ध करा जिल्ह्यात आणि राज्यात तुझे लेखी तयारी किती आहे ती पाहायचे असेल तर खालील लिंक वर क्लिक करून मोफत पोलीस भरती सराव लेखी चाचणी दे {main_portal_url} तुझ्यासोबत तुझा मित्रही भरती झाला पाहिजे त्यालाही हा मेसेज पाठव आणि रोजचे रॅपिड फायर टेस्ट मोफत मिळव"
     ego_share_encoded = urllib.parse.quote(ego_msg)
 
+    # Result Summary template madhye district_rank pass kel ahe
+    # RESULT_SUMMARY_TEMPLATE madhil rank section madhe district rank disel.
     return render_template_string(
-        RESULT_SUMMARY_TEMPLATE,
+        RESULT_SUMMARY_TEMPLATE.replace(
+            '🏆 संपूर्ण महाराष्ट्रातील रँक: <b style="color:#34d399; font-size:32px;">#{{ state_rank }}</b>',
+            '🏆 संपूर्ण महाराष्ट्रातील रँक: <b style="color:#34d399; font-size:32px;">#{{ state_rank }}</b><br><span style="font-size:16px; color:#38bdf8;">📍 जिल्हा रँक ({{ lead.district }}): <b>#{{ district_rank }}</b></span>'
+        ),
         lead={'student_name': student_name, 'district': district, 'phone': phone, 'test_name': test['test_title'], 'score': score, 'total_marks': total, 'access_token': result_token},
         state_rank=state_rank,
+        district_rank=district_rank,
         result_url=result_url,
         main_portal_url=main_portal_url,
         ego_share_encoded=ego_share_encoded,
@@ -2197,7 +2208,7 @@ def admin_ai_generate_mock():
     sample_ai_questions = [
         f"{subject}: महाराष्ट्रातील सर्वोच्च शिखर कोणते? | कळसूबाई | साल्हेर | महाबळेश्वर | त्र्यंबकेश्वर | A | कळसूबाई हे महाराष्ट्रातील सर्वात उंच शिखर असून त्याची उंची १६४६ मीटर आहे.",
         f"{subject}: 'उंटावरचा शहाणा' या अलंकारिक शब्दाचा अर्थ काय? | मूर्खपणाचा सल्ला देणारा | शहाणा माणूस | उंटावर बसणारा | व्यापारी | A | मूर्खपणाचा आणि नको असलेला सल्ला देणाऱ्या व्यक्तीस उंटावरचा शहाणा म्हणतात.",
-        f"{subject}: एका त्रिकोणाच्या तिन्ही कोनांची बेरीज किती अंश असते? | १८०° | ३६0° | ९०° | २७०° | A | कोणत्याही त्रिकोणाच्या सर्व आंतरकोनांची बेरीज नेहमी १८० अंश असते.",
+        f"{subject}: एका त्रिकोणाच्या तिन्ही कोनांची बेरीज किती अंश असते? | १८०° | ३६०° | ९०° | २७०° | A | कोणत्याही त्रिकोणाच्या सर्व आंतरकोनांची बेरीज नेहमी १८० अंश असते.",
         f"{subject}: भारतीय राज्यघटनेतील कलम १७ कशाशी संबंधित आहे? | अस्पृश्यता निर्मूलन | शिक्षणाचा हक्क | भाषण स्वातंत्र्य | बालमजुरी बंदी | A | संविधानातील कलम १७ अन्वये अस्पृश्यता पाळणे कायद्याने गुन्हा ठरवण्यात आला आहे.",
         f"{subject}: विसंगत घटक ओळखा: ८, २७, ६४, १०० | १०० | ६४ | २७ | ८ | A | इतर सर्व संख्या घन संख्या आहेत (२³, ३³, ४³), तर १०० ही वर्ग संख्या (१०²) आहे."
     ]
@@ -2350,7 +2361,7 @@ def admin_bulk_questions():
 
     lines = [l.strip() for l in bulk_data.split('\n') if l.strip()]
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             for line in lines:
                 parts = [p.strip() for p in line.split('|')]
                 if len(parts) >= 6:
@@ -2366,27 +2377,36 @@ def admin_bulk_questions():
 
     return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
+# --- Feature 2: Robust CSV Upload Handler ---
 @app.route('/admin/upload_csv_questions', methods=['POST'])
 def admin_upload_csv_questions():
     if not session.get('admin_logged'): return redirect('/admin/login')
     test_id = request.form.get('test_id')
     file = request.files.get('csv_file')
+    if not file: return "Failing: No file uploaded", 400
 
-    if not file or not file.filename.endswith(('.csv', '.txt')):
-        return "कृपया वैध CSV फाईल अपलोड करा!", 400
+    try:
+        content = file.stream.read().decode("utf-8-sig", errors="ignore")
+    except Exception:
+        content = file.stream.read().decode("latin1", errors="ignore")
 
-    stream = io.StringIO(file.stream.read().decode("utf-8-sig"), newline=None)
+    stream = io.StringIO(content, newline=None)
     csv_reader = csv.reader(stream)
 
     questions_to_insert = []
     for row in csv_reader:
-        if len(row) >= 6:
-            q = row[0].strip()
-            oa, ob, oc, od = row[1].strip(), row[2].strip(), row[3].strip(), row[4].strip()
-            corr = row[5].strip().upper()
-            exp = row[6].strip() if len(row) > 6 else ''
-            if q and corr in ['A', 'B', 'C', 'D']:
-                questions_to_insert.append((test_id, q, oa, ob, oc, od, corr, exp))
+        if not row or len(row) < 5: continue
+        if row[0].strip().lower() in ['question_text', 'question', 'प्रश्न']: continue
+        q = row[0].strip()
+        oa = row[1].strip() if len(row) > 1 else ''
+        ob = row[2].strip() if len(row) > 2 else ''
+        oc = row[3].strip() if len(row) > 3 else ''
+        od = row[4].strip() if len(row) > 4 else ''
+        corr = row[5].strip().upper() if len(row) > 5 else 'A'
+        if corr not in ['A', 'B', 'C', 'D']: corr = 'A'
+        exp = row[6].strip() if len(row) > 6 else ''
+        if q:
+            questions_to_insert.append((test_id, q, oa, ob, oc, od, corr, exp))
 
     if questions_to_insert:
         with get_db() as conn:
@@ -2397,8 +2417,9 @@ def admin_upload_csv_questions():
                 """, questions_to_insert)
                 conn.commit()
 
-    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
+    return redirect(f'/admin/dashboard?tab=questions')
 
+# --- Feature 4: Hardcopy Scan AI Parser Endpoint ---
 @app.route('/admin/ai_scan_hardcopy', methods=['POST'])
 def admin_ai_scan_hardcopy():
     if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
@@ -2418,7 +2439,7 @@ def admin_ai_scan_hardcopy():
 
     if questions_to_insert:
         with get_db() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.executemany("""
                     INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -2427,14 +2448,16 @@ def admin_ai_scan_hardcopy():
 
     return jsonify({"success": True, "inserted_count": len(questions_to_insert)})
 
+# --- Feature 6: Advanced AI Smart Mock Generator with Subject-wise Counts & Anti-Repetition Check ---
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
-    subject_counts = data.get('subject_counts', {})
+    subject_counts = data.get('subject_counts', {}) # Dict like {"मराठी व्याकरण": 5, "गणित": 5}
     test_id = data.get('test_id')
 
+    # Fetch existing questions to prevent duplication / repetition
     existing_questions = set()
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -2452,7 +2475,7 @@ def admin_ai_generate_advanced():
 
     if generated_list:
         with get_db() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.executemany("""
                     INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -2461,6 +2484,7 @@ def admin_ai_generate_advanced():
 
     return jsonify({"success": True, "inserted_count": len(generated_list)})
 
+# --- Feature 5 & 7: Bulk Delete Endpoints (Leads, Questions, Tests, Trash Recycle Bin with Select/Select All) ---
 @app.route('/admin/bulk_delete_leads', methods=['POST'])
 def admin_bulk_delete_leads():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -2612,7 +2636,7 @@ def add_special_unlimited():
     added_on = datetime.now().strftime("%Y-%m-%d %H:%M")
     if re.match(r'^[6-9]\d{9}$', phone):
         with get_db() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
                     INSERT INTO special_unlimited_attempts (phone, student_name, note, added_on)
                     VALUES (%s, %s, %s, %s)
@@ -2639,7 +2663,7 @@ def add_special_free_pass():
     added_on = datetime.now().strftime("%Y-%m-%d %H:%M")
     if re.match(r'^[6-9]\d{9}$', phone):
         with get_db() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
                     INSERT INTO special_free_pass (phone, student_name, note, added_on)
                     VALUES (%s, %s, %s, %s)
@@ -2701,6 +2725,7 @@ def admin_update_password():
                 cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('help_address', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (help_address,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('site_status', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (site_status,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('home_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (home_tab_order,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) administrative_tab_order VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,)) if False else None
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('wa_groups_multiline', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (wa_groups,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='insta_link'", (insta,))
