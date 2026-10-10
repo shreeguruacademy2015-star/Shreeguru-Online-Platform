@@ -487,7 +487,6 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
                 localStorage.removeItem(testStorageKey);
                 localStorage.removeItem(timerStorageKey);
                 
-                // Show submission loading overlay
                 let overlay = document.getElementById('submittingOverlay');
                 if (!overlay) {
                     overlay = document.createElement('div');
@@ -583,8 +582,7 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
             document.getElementById('waRulesModal').style.display = 'none';
         }
         function handleSocialLink(url) {
-            # Feature 1: Exact required popup message
-            alert("संपूर्ण प्रवासाची यशोगाथा लवकरच आपल्या भेटीस येत आहे.....\\nतुमचे खाकीचे स्वप्न लवकर पूर्ण व्हावे ही सदिच्छा....");
+            alert("संपूर्ण प्रवासाची यशोगाथा लवकरच आपले भेटीस.....\\nतुमचे वर्दीचे स्वप्न लवकर पूर्ण व्हावे ही सदिच्छा.....");
             if (url && url.trim() !== '') {
                 window.open(url, '_blank');
             }
@@ -1252,6 +1250,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
+    <!-- Feature 3: Replaced One-Click with Manual Rapid Fire Scheduling -->
     <div style="background:#ecfdf5; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px;">
         <h4 style="margin:0 0 8px; color:#065f46;">⚡ मॅन्युअल रॅपिड फायर टेस्ट शेड्युलिंग (Manual Rapid Fire Scheduling)</h4>
         <p style="font-size:12.5px; color:#047857; margin:0 0 12px;">येथून तुम्ही हव्या त्या तारखेला व वेळी नवीन रॅपिड फायर टेस्ट मॅन्युअली सुरू (शेड्युल) करू शकता.</p>
@@ -1265,7 +1264,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 <input type="date" name="rapid_date" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:0;">
             </div>
             <div>
-                <label style="font-size:12px; font-weight:bold;">वेळ (सकाळी/संध्याकाळ):</label>
+                <label style="font-size:12px; font-weight:bold;">वेळ:</label>
                 <input type="time" name="rapid_time" value="10:00" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:0;">
             </div>
             <div>
@@ -1973,8 +1972,6 @@ def submit_test(test_id):
     ego_msg = f"महाराष्ट्र पोलीस भरती लेखी परीक्षा ओपन चॅलेंज मैदानावर खाकीची जिद्द दाखवली आता लेखी परीक्षेत तुमची तयारी किती आहे सिद्ध करा जिल्ह्यात आणि राज्यात तुझे लेखी तयारी किती आहे ती पाहायचे असेल तर खालील लिंक वर क्लिक करून मोफत पोलीस भरती सराव लेखी चाचणी दे {main_portal_url} तुझ्यासोबत तुझा मित्रही भरती झाला पाहिजे त्यालाही हा मेसेज पाठव आणि रोजचे रॅपिड फायर टेस्ट मोफत मिळव"
     ego_share_encoded = urllib.parse.quote(ego_msg)
 
-    # Result Summary template madhye district_rank pass kel ahe
-    # RESULT_SUMMARY_TEMPLATE madhil rank section madhe district rank disel.
     return render_template_string(
         RESULT_SUMMARY_TEMPLATE.replace(
             '🏆 संपूर्ण महाराष्ट्रातील रँक: <b style="color:#34d399; font-size:32px;">#{{ state_rank }}</b>',
@@ -2261,12 +2258,36 @@ def admin_bulk_delete_feedback():
     if selected_ids:
         with get_db() as conn:
             with conn.cursor() as cur:
-                # Fixed deletion bug with explicit integer conversion / parameter passing
-            int_ids = [int(i) for i in selected_ids if str(i).isdigit()]
-            if int_ids:
-                cur.execute("DELETE FROM student_feedbacks WHERE id = ANY(%s)", (int_ids,))
-                conn.commit()
+                int_ids = [int(i) for i in selected_ids if str(i).isdigit()]
+                if int_ids:
+                    cur.execute("DELETE FROM student_feedbacks WHERE id = ANY(%s)", (int_ids,))
+                    conn.commit()
     return redirect('/admin/dashboard?tab=feedback')
+
+# --- Manual Rapid Fire Scheduling Route ---
+@app.route('/admin/manual_schedule_rapid', methods=['POST'])
+def admin_manual_schedule_rapid():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    title = request.form.get('rapid_title', '').strip()
+    r_date = request.form.get('rapid_date', '')
+    r_time = request.form.get('rapid_time', '10:00')
+    duration = int(request.form.get('duration_minutes', 15) or 15)
+
+    if title and r_date:
+        publish_dt_str = f"{r_date} {r_time}:00"
+        publish_dt = datetime.strptime(publish_dt_str, "%Y-%m-%d %H:%M:%S")
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COALESCE(MAX(sequence_order), 0) + 1 as next_seq FROM test_papers WHERE category='rapid'")
+                seq_row = cur.fetchone()
+                next_seq = seq_row['next_seq'] if seq_row else 1
+
+                cur.execute('''
+                    INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, publish_at, sequence_order)
+                    VALUES (%s, 'Free', 0, %s, 'Active', 'rapid', %s, %s)
+                ''', (title, duration, publish_dt, next_seq))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
 
 @app.route('/admin/bulk_schedule_all', methods=['POST'])
 def admin_bulk_schedule_all():
@@ -2396,7 +2417,6 @@ def admin_bulk_questions():
 
     return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
-# --- Feature 2: Robust CSV Upload Handler ---
 @app.route('/admin/upload_csv_questions', methods=['POST'])
 def admin_upload_csv_questions():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -2438,7 +2458,6 @@ def admin_upload_csv_questions():
 
     return redirect(f'/admin/dashboard?tab=questions')
 
-# --- Feature 4: Hardcopy Scan AI Parser Endpoint ---
 @app.route('/admin/ai_scan_hardcopy', methods=['POST'])
 def admin_ai_scan_hardcopy():
     if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
@@ -2467,16 +2486,14 @@ def admin_ai_scan_hardcopy():
 
     return jsonify({"success": True, "inserted_count": len(questions_to_insert)})
 
-# --- Feature 6: Advanced AI Smart Mock Generator with Subject-wise Counts & Anti-Repetition Check ---
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
-    subject_counts = data.get('subject_counts', {}) # Dict like {"मराठी व्याकरण": 5, "गणित": 5}
+    subject_counts = data.get('subject_counts', {})
     test_id = data.get('test_id')
 
-    # Fetch existing questions to prevent duplication / repetition
     existing_questions = set()
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -2503,7 +2520,6 @@ def admin_ai_generate_advanced():
 
     return jsonify({"success": True, "inserted_count": len(generated_list)})
 
-# --- Feature 5 & 7: Bulk Delete Endpoints (Leads, Questions, Tests, Trash Recycle Bin with Select/Select All) ---
 @app.route('/admin/bulk_delete_leads', methods=['POST'])
 def admin_bulk_delete_leads():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -2512,9 +2528,9 @@ def admin_bulk_delete_leads():
         with get_db() as conn:
             with conn.cursor() as cur:
                 int_ids = [int(i) for i in ids if str(i).isdigit()]
-            if int_ids:
-                cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
-                conn.commit()
+                if int_ids:
+                    cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
+                    conn.commit()
     return redirect('/admin/dashboard?tab=leads')
 
 @app.route('/admin/bulk_delete_questions', methods=['POST'])
@@ -2525,9 +2541,9 @@ def admin_bulk_delete_questions():
         with get_db() as conn:
             with conn.cursor() as cur:
                 int_ids = [int(i) for i in ids if str(i).isdigit()]
-            if int_ids:
-                cur.execute("UPDATE questions SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
-                conn.commit()
+                if int_ids:
+                    cur.execute("UPDATE questions SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
+                    conn.commit()
     return redirect('/admin/dashboard?tab=questions')
 
 @app.route('/admin/bulk_delete_tests', methods=['POST'])
@@ -2549,9 +2565,9 @@ def admin_bulk_delete_trash():
         with get_db() as conn:
             with conn.cursor() as cur:
                 int_ids = [int(i) for i in ids if str(i).isdigit()]
-            if int_ids:
-                cur.execute("DELETE FROM questions WHERE id = ANY(%s)", (int_ids,))
-                conn.commit()
+                if int_ids:
+                    cur.execute("DELETE FROM questions WHERE id = ANY(%s)", (int_ids,))
+                    conn.commit()
     return redirect('/admin/dashboard?tab=trash')
 
 @app.route('/admin/delete_question/<int:q_id>')
@@ -2750,7 +2766,6 @@ def admin_update_password():
                 cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('help_address', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (help_address,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('site_status', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (site_status,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('home_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (home_tab_order,))
-            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) administrative_tab_order VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,)) if False else None
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,))
             cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('wa_groups_multiline', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (wa_groups,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='insta_link'", (insta,))
@@ -2780,27 +2795,3 @@ def admin_delete_payment(lead_id):
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
 
-
-@app.route('/admin/manual_schedule_rapid', methods=['POST'])
-def admin_manual_schedule_rapid():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    title = request.form.get('rapid_title', '').strip()
-    r_date = request.form.get('rapid_date', '')
-    r_time = request.form.get('rapid_time', '10:00')
-    duration = int(request.form.get('duration_minutes', 15) or 15)
-
-    if title and r_date:
-        publish_dt_str = f"{r_date} {r_time}:00"
-        publish_dt = datetime.strptime(publish_dt_str, "%Y-%m-%d %H:%M:%S")
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT COALESCE(MAX(sequence_order), 0) + 1 as next_seq FROM test_papers WHERE category='rapid'")
-                seq_row = cur.fetchone()
-                next_seq = seq_row['next_seq'] if seq_row else 1
-
-                cur.execute('''
-                    INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, publish_at, sequence_order)
-                    VALUES (%s, 'Free', 0, %s, 'Active', 'rapid', %s, %s)
-                ''', (title, duration, publish_dt, next_seq))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=launch')
