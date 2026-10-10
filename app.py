@@ -2218,14 +2218,10 @@ def admin_dashboard():
         deleted_questions_list=deleted_questions_list,
         deleted_leads_list=deleted_leads_list
     )
-
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
         return jsonify({"success": False, "error": "Unauthorized"}), 401
-    
-    if genai is None:
-        return jsonify({"success": False, "error": "Google GenAI library लोड झालेली नाही!"}), 500
 
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
@@ -2234,7 +2230,8 @@ def admin_ai_generate_advanced():
 
     api_key = "AQ.Ab8RN6LDVf9ZOn4wiAmlbFVONp6aCiq8XU7gTJyR0rgr73crgA"
     try:
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
         generated_list = []
 
         for subj, num in subject_counts.items():
@@ -2248,10 +2245,7 @@ def admin_ai_generate_advanced():
                 f"Prashn yethe liha | paryay A | paryay B | paryay C | paryay D | achuk uttar (fakt A, B, C kinva D paiki ek) | savistar spashtikaran"
             )
 
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
-            )
+            response = model.generate_content(prompt)
             
             lines = response.text.strip().split('\n')
             for line in lines:
@@ -2282,7 +2276,6 @@ def admin_ai_generate_advanced():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-
 @app.route('/admin/undo_delete/<item_type>/<int:item_id>')
 def admin_undo_delete(item_type, item_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
