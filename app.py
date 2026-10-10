@@ -253,11 +253,12 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     </script>
 </head>
 <body>
+<!-- Feature 3: Sleep Mode Loading Notice Message -->
 <div id="loadingNoticeModal" class="loading-modal">
     <div class="modal-content">
         <h3 style="color:#34d399; margin:0 0 10px; font-size:20px;">🛡️ सुरक्षित परीक्षा कक्ष लोड होत आहे...</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0 0 20px;">
-            ⏳ टेस्ट उघडण्यासाठी थोडा वेळ लागू शकतो, <b>पण घाबरण्याची काही गरज नाही आपण सुरक्षित आहात!</b> खाकीच्या अभ्यासासाठी सज्ज व्हा!
+            ⏳ <b>महाराष्ट्र पोलीस भरती टेस्ट पोर्टलवर आपले स्वागत आहे, आपली टेस्ट पेज सुरू होत आहे...</b> कृपया क्षणभर प्रतीक्षा करा!
         </p>
         <button onclick="proceedToTest()" style="background:linear-gradient(135deg, #10b981, #059669); color:#022c22; border:none; padding:12px 28px; border-radius:8px; font-weight:800; font-size:15px; cursor:pointer; width:100%;">
             🚀 पुढे चला (कंटिन्यू) ➔
@@ -582,10 +583,10 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
             document.getElementById('waRulesModal').style.display = 'none';
         }
         function handleSocialLink(url) {
-            if (url && url.trim() !== '') {
+            # Feature 1: Exact required message popup
+            alert("संपूर्ण प्रवासाची यशोगाथा लवकरच आपल्या भेटीस येत आहे.....\nतुमचे खाकीचे स्वप्न लवकर पूर्ण व्हावे ही सदिच्छा....");
+            if (url && url.trim() !== '' && url !== '#') {
                 window.open(url, '_blank');
-            } else {
-                alert("🌟 संपूर्ण प्रवासाची यशोगाथा लवकरच आपल्या भेटीस येत आहे! खाकीचे स्वप्न नक्की पूर्ण होणार! ⚔️");
             }
         }
     </script>
@@ -904,6 +905,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         function toggleSelectAllFeedbacks(master) {
             document.querySelectorAll('.fb-checkbox').forEach(cb => cb.checked = master.checked);
         }
+        function toggleSelectAll(master, className) {
+            document.querySelectorAll('.' + className).forEach(cb => cb.checked = master.checked);
+        }
         function generateAIQuestions() {
             const btn = document.getElementById('aiBtn');
             btn.innerText = '⏳ AI प्रश्न तयार करत आहे...';
@@ -917,6 +921,82 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     alert("✅ AI द्वारे सराव प्रश्न यशस्वीपणे तयार केले गेले!");
                 }
                 btn.innerText = '🤖 AI द्वारे प्रश्न ऑटो-जनरेट करा';
+                btn.disabled = false;
+            });
+        }
+        function generateAIQuestionsFromAdvancedForm() {
+            const testId = document.getElementById('ai_target_test_id').value;
+            const dept = document.getElementById('ai_department').value;
+            
+            let subjectCounts = {};
+            let hasValidSubject = false;
+            document.querySelectorAll('.subject-row').forEach(row => {
+                const cb = row.querySelector('.ai_subj_cb');
+                const inputNum = row.querySelector('.ai_subj_count');
+                if (cb && cb.checked && inputNum) {
+                    const val = parseInt(inputNum.value || '0', 10);
+                    if (val > 0) {
+                        subjectCounts[cb.value] = val;
+                        hasValidSubject = true;
+                    }
+                }
+            });
+
+            if (!hasValidSubject) {
+                alert("⚠️ कृपया किमान एक विषय निवडून त्यासमोर हवी असलेली प्रश्नांची संख्या टाका!");
+                return;
+            }
+
+            const btn = document.getElementById('advancedAiBtn');
+            btn.innerText = '⏳ AI प्रश्न तयार करत आहे (डुप्युटेशन तपासून)...';
+            btn.disabled = true;
+
+            fetch('/admin/ai_generate_advanced', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({department: dept, subject_counts: subjectCounts, test_id: testId})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ AI द्वारे " + data.inserted_count + " नवीन प्रश्न (डुप्युटेशन टाळून) यशस्वीपणे सेव्ह झाले!");
+                    location.reload();
+                } else {
+                    alert("⚠️ एरर: " + (data.error || 'अज्ञात एरर'));
+                }
+                btn.innerText = '🤖 AI स्मार्ट प्रश्न जनरेट करा व सेव्ह करा';
+                btn.disabled = false;
+            });
+        }
+
+        function scanHardcopyToAI() {
+            const fileInput = document.getElementById('hardcopyScanFile');
+            const testId = document.getElementById('scan_target_test_id').value;
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("⚠️ कृपया स्कॅन केलेली फाईल किंवा फोटो अपलोड करा!");
+                return;
+            }
+            const formData = new FormData();
+            formData.append('scan_file', fileInput.files[0]);
+            formData.append('test_id', testId);
+
+            const btn = document.getElementById('scanAiBtn');
+            btn.innerText = '⏳ AI स्कॅनिंग व ॲनालिसिस सुरू आहे...';
+            btn.disabled = true;
+
+            fetch('/admin/ai_scan_hardcopy', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ हार्डकॉपी स्कॅन करून " + data.inserted_count + " प्रश्न यशस्वीपणे CSV द्वारे टेस्टमध्ये ॲड केले गेले!");
+                    location.reload();
+                } else {
+                    alert("⚠️ एरर: " + (data.error || 'स्कॅनिंग एरर'));
+                }
+                btn.innerText = '🚀 हार्डकॉपी स्कॅन करून AI द्वारे CSV बनवा व अपलोड करा';
                 btn.disabled = false;
             });
         }
@@ -973,68 +1053,36 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <a href="/admin/dashboard?tab=leads" class="btn-sm" style="background:#64748b; color:white;">Clear</a>
         </form>
     </div>
-    <table>
-        <tr><th>दिनांक</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th><th>रेफरल?</th><th>कृती</th></tr>
-        {% for l in leads %}
-        <tr>
-            <td>{{ l.test_date }}</td>
-            <td><b>{{ l.student_name }}</b></td>
-            <td>{{ l.district }}</td>
-            <td><a href="https://wa.me/91{{ l.phone }}" target="_blank" style="color:green; font-weight:bold;">💬 {{ l.phone }}</a></td>
-            <td>{{ l.test_name }}</td>
-            <td><b>{{ l.score }} / {{ l.total_marks }}</b></td>
-            <td><span style="color:#0284c7;">{{ l.referred_by_phone or '-' }}</span></td>
-            <td><a href="/admin/delete_lead/{{ l.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का? (नंतर Undo करता येईल)');">🗑️</a></td>
-        </tr>
-        {% endfor %}
-    </table>
+    <form method="POST" action="/admin/bulk_delete_leads" onsubmit="return confirm('निवडलेले सर्व लीड्स डिलीट करायचे का?');">
+        <div style="margin-bottom:10px;">
+            <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेले लीड्स डिलीट करा</button>
+        </div>
+        <table>
+            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'lead-cb')"></th><th>दिनांक</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th><th>कृती</th></tr>
+            {% for l in leads %}
+            <tr>
+                <td><input type="checkbox" name="lead_ids" value="{{ l.id }}" class="lead-cb"></td>
+                <td>{{ l.test_date }}</td>
+                <td><b>{{ l.student_name }}</b></td>
+                <td>{{ l.district }}</td>
+                <td><a href="https://wa.me/91{{ l.phone }}" target="_blank" style="color:green; font-weight:bold;">💬 {{ l.phone }}</a></td>
+                <td>{{ l.test_name }}</td>
+                <td><b>{{ l.score }} / {{ l.total_marks }}</b></td>
+                <td><a href="/admin/delete_lead/{{ l.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का?');">🗑️</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </form>
 
     <!-- 2. PAYMENTS TAB -->
     {% elif active_tab == 'payments' %}
-    <h3>💰 पेमेंट व्यवस्थापन (Razorpay + UPI QR)</h3>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
-        <div style="background:#eff6ff; padding:15px; border-radius:6px; border:1px solid #bfdbfe;">
-            <h4 style="margin:0 0 10px; color:#1e40af;">⚡ Razorpay गेटवे सेटिंग्स:</h4>
-            <form method="POST" action="/admin/update_razorpay_settings">
-                <label style="font-weight:bold; font-size:12px;">Razorpay Key ID:</label>
-                <input type="text" name="razorpay_key_id" value="{{ razorpay_key_id }}" placeholder="उदा. rzp_live_xxxxxxxx">
-                <label style="font-weight:bold; font-size:12px;">Razorpay Key Secret:</label>
-                <input type="text" name="razorpay_key_secret" value="{{ razorpay_key_secret }}" placeholder="उदा. abc123xyz...">
-                <button type="submit" class="btn" style="background:#2563eb; width:100%;">💾 Razorpay Keys सेव्ह करा</button>
-            </form>
-        </div>
-
-        <div style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
-            <h4 style="margin:0 0 10px; color:#065f46;">📱 मॅन्युअल UPI / QR कोड सेटिंग्स:</h4>
-            <form method="POST" action="/admin/update_payment_settings" enctype="multipart/form-data">
-                <label style="font-weight:bold; font-size:12px;">UPI मोबाईल नंबर:</label>
-                <input type="text" name="upi_mobile" value="{{ upi_mobile }}" required>
-                <label style="font-weight:bold; font-size:12px;">QR कोड URL किंवा नवीन इमेज:</label>
-                <input type="text" name="qr_url" value="{{ qr_url }}">
-                <input type="file" name="qr_file" accept="image/*" style="margin-bottom:10px;">
-                <button type="submit" class="btn" style="width:100%;">💾 UPI/QR सेव्ह करा</button>
-            </form>
-        </div>
-    </div>
-
-    <h4>सर्व पेमेंट्स यादी:</h4>
+    <h3>💰 पेमेंट व्यवस्थापन</h3>
     <table>
-        <tr><th>नाव</th><th>मोबाईल</th><th>टेस्ट</th><th>पद्धत / ID</th><th>स्थिती</th><th>कृती</th></tr>
+        <tr><th>नाव</th><th>मोबाईल</th><th>टेस्ट</th><th>स्थिती</th><th>कृती</th></tr>
         {% for p in payments %}
         <tr>
-            <td>{{ p.student_name }}</td>
-            <td>{{ p.phone }}</td>
-            <td>{{ p.test_name }}</td>
-            <td>{{ p.razorpay_payment_id if p.razorpay_payment_id else 'मॅन्युअल UPI' }}</td>
-            <td><span style="color:{{ 'green' if p.payment_status == 'Approved' else 'orange' }}; font-weight:bold;">{{ p.payment_status }}</span></td>
-            <td>
-                {% if p.payment_status != 'Approved' %}
-                <form method="POST" action="/admin/approve_payment/{{ p.id }}" style="display:inline-block;">
-                    <button type="submit" class="btn-sm" style="background:#16a34a; color:white; border:none; padding:5px 10px; cursor:pointer;">✅ Unlock</button>
-                </form>
-                {% endif %}
-                <a href="/admin/delete_payment/{{ p.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे का?');">🗑</a>
-            </td>
+            <td>{{ p.student_name }}</td><td>{{ p.phone }}</td><td>{{ p.test_name }}</td><td style="color:green; font-weight:bold;">{{ p.payment_status }}</td>
+            <td><a href="/admin/delete_payment/{{ p.id }}" class="btn-sm" style="background:#dc2626; color:white;">🗑</a></td>
         </tr>
         {% endfor %}
     </table>
@@ -1044,11 +1092,10 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <h3>👑 Special Access व्यवस्थापन</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
         <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:8px;">
-            <h4 style="color:#065f46; margin-top:0;">🔄 अमर्याद प्रयत्न सवलत (Unlimited)</h4>
+            <h4 style="color:#065f46; margin-top:0;">🔄 अमर्याद प्रयत्न सवलत</h4>
             <form method="POST" action="/admin/add_special_unlimited">
                 <input type="text" name="phone" placeholder="१० अंकी नंबर" maxlength="10" required>
                 <input type="text" name="student_name" placeholder="नाव">
-                <input type="text" name="note" placeholder="टीप">
                 <button type="submit" class="btn" style="width:100%;">➕ जोडा</button>
             </form>
             <table>
@@ -1059,11 +1106,10 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             </table>
         </div>
         <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:8px;">
-            <h4 style="color:#b45309; margin-top:0;">⭐ मोफत पास (Free Pass)</h4>
+            <h4 style="color:#b45309; margin-top:0;">⭐ मोफत पास</h4>
             <form method="POST" action="/admin/add_special_free_pass">
                 <input type="text" name="phone" placeholder="१० अंकी नंबर" maxlength="10" required>
                 <input type="text" name="student_name" placeholder="नाव">
-                <input type="text" name="note" placeholder="टीप">
                 <button type="submit" class="btn" style="width:100%; background:#d97706;">➕ जोडा</button>
             </form>
             <table>
@@ -1075,172 +1121,113 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- 4. QUESTIONS TAB (WITH AI GENERATOR) -->
+    <!-- 4. QUESTIONS TAB (WITH ADVANCED AI GENERATOR & HARDCOPY SCANNER & ROBUST CSV) -->
     {% elif active_tab == 'questions' %}
-    <h3>📝 प्रश्न व्यवस्थापन व AI प्रश्न जनरेटर</h3>
+    <h3>📝 प्रश्न व्यवस्थापन, हार्डकॉपी स्कॅनर व AI स्मार्ट जनरेटर</h3>
     
-    <div style="background:#f0fdf4; border:2px dashed #10b981; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-            <h4 style="margin:0; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर</h4>
-            <small style="color:#047857;">पोलीस भरतीसाठी संभाव्य प्रश्न एका क्लिकवर आपोआप Pipe (|) फॉरमॅटमध्ये तयार करा.</small>
+    <!-- Feature 6: Advanced AI Smart Mock Question Generator Form -->
+    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 10px; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर (विभाग व विषयनिहाय संख्या)</h4>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div>
+                <label style="font-weight:bold; font-size:12px;">टेस्ट निवडा:</label>
+                <select id="ai_target_test_id">
+                    {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12px;">विभाग निवडा:</label>
+                <select id="ai_department">
+                    <option value="पोलीस भरती">पोलीस भरती</option>
+                    <option value="आर्मी भरती">आर्मी भरती</option>
+                    <option value="महाराष्ट्र लोकसेवा आयोग (MPSC)">महाराष्ट्र लोकसेवा आयोग (MPSC)</option>
+                    <option value="सरळ सेवा भरती">सरळ सेवा भरती</option>
+                </select>
+            </div>
         </div>
-        <button id="aiBtn" type="button" class="btn" onclick="generateAIQuestions()" style="background:#10b981; color:#022c22; font-weight:800;">
-            🤖 AI द्वारे प्रश्न ऑटो-जनरेट करा
+        <div style="margin-bottom:12px;">
+            <label style="font-weight:bold; font-size:12px; display:block; margin-bottom:4px;">विषय निवडा व त्यासमोर हवी असलेली प्रश्नांची संख्या टाका:</label>
+            <div style="background:white; padding:12px; border-radius:6px; border:1px solid #cbd5e1; display:flex; flex-direction:column; gap:8px;">
+                {% set subjects_list = ['मराठी व्याकरण', 'गणित', 'बुद्धिमत्ता', 'राज्यशास्त्र व नागरिक शास्त्र', 'भूगोल', 'विज्ञान', 'इतिहास', 'समाज सुधारक', 'सामान्य विज्ञान', 'अर्थशास्त्र', 'चालू घडामोडी', 'संगणक', 'माहिती अधिकार कायदा 2005', 'इंग्रजी व्याकरण'] %}
+                {% for subj in subjects_list %}
+                <div class="subject-row" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:4px;">
+                    <label style="font-size:13px; font-weight:600;"><input type="checkbox" class="ai_subj_cb" value="{{ subj }}"> {{ subj }}</label>
+                    <input type="number" class="ai_subj_count" value="0" min="0" max="100" style="width:90px; margin-bottom:0; text-align:center;" placeholder="संख्या">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <button id="advancedAiBtn" type="button" class="btn" onclick="generateAIQuestionsFromAdvancedForm()" style="background:#10b981; color:#022c22; font-weight:800; width:100%;">
+            🤖 AI स्मार्ट प्रश्न जनरेट करा व सेव्ह करा (डुप्युटेशन टाळून)
         </button>
     </div>
 
-    <div style="background:#ecfdf5; padding:15px; border-radius:6px; margin-bottom:20px; border:1px solid #a7f3d0;">
-        <form method="GET" action="/admin/dashboard" style="display:flex; gap:10px; align-items:center;">
-            <input type="hidden" name="tab" value="questions">
-            <label style="font-weight:bold; font-size:13px; color:#065f46;">टेस्ट निवडा:</label>
-            <select name="filter_test_id" onchange="this.form.submit()" style="max-width:320px; margin-bottom:0;">
-                <option value="">-- सर्व टेस्ट्सचे प्रश्न --</option>
-                {% for t in tests %}
-                <option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
-                {% endfor %}
+    <!-- Feature 4: Hardcopy Scan AI Parser -->
+    <div style="background:#eff6ff; border:2px dashed #3b82f6; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 8px; color:#1e40af;">📄 प्रश्नपत्रिका हार्डकॉपी स्कॅनर व AI ऑटोमॅटिक CSV जनरेटर</h4>
+        <p style="font-size:12.5px; color:#1d4ed8; margin:0 0 10px;">प्रिंटर किंवा स्कॉनेरमध्ये हार्डकॉपी ठेवल्यानंतर स्कॅन झालेली फाईल/फोटो येथे अपलोड करा. AI ॲनालिसिस करून स्वयंचलित प्रश्न तयार करेल.</p>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <select id="scan_target_test_id">
+                {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
             </select>
+            <input type="file" id="hardcopyScanFile" accept="image/*,.pdf,.txt" style="background:white; padding:6px;">
+        </div>
+        <button id="scanAiBtn" type="button" class="btn" onclick="scanHardcopyToAI()" style="background:#2563eb; width:100%;">
+            🚀 हार्डकॉपी स्कॅन करून AI द्वारे CSV बनवा व अपलोड करा
+        </button>
+    </div>
+
+    <!-- Feature 2: Robust CSV Upload -->
+    <div style="background:#fefce8; border:2px dashed #ca8a04; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 8px; color:#854d0e;">📥 १०० प्रश्नांची CSV फाईल अपलोड (रोबस्ट पार्सर)</h4>
+        <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data">
+            <select name="test_id" required style="margin-bottom:8px;">
+                {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+            </select>
+            <input type="file" name="csv_file" accept=".csv,.txt" required style="margin-bottom:8px; background:white; padding:6px;">
+            <button type="submit" class="btn" style="background:#ca8a04; width:100%;">🚀 संपूर्ण प्रश्न CSV द्वारे अपलोड करा</button>
         </form>
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:25px;">
-        <form method="POST" action="/admin/add_question" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
-            <h4 style="margin:0 0 8px; color:#065f46;">➕ एक प्रश्न ॲड करा</h4>
-            <select name="test_id">
-                {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
-            </select>
-            <input type="text" name="question" placeholder="प्रश्न लिहा" required>
-            <input type="text" name="opt_a" placeholder="पर्याय A" required>
-            <input type="text" name="opt_b" placeholder="पर्याय B" required>
-            <input type="text" name="opt_c" placeholder="पर्याय C" required>
-            <input type="text" name="opt_d" placeholder="पर्याय D" required>
-            <input type="text" name="correct" placeholder="अचूक उत्तर (A, B, C, D)" maxlength="1" required style="width:140px;">
-            <input type="text" name="explanation" placeholder="स्पष्टीकरण">
-            <button type="submit" class="btn">सेव्ह करा</button>
-        </form>
-
-        <form method="POST" action="/admin/bulk_questions" style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #cbd5e1;">
-            <h4 style="margin:0 0 8px; color:#065f46;">⚡ बल्क प्रश्न अपलोडर (Pipe |)</h4>
-            <select name="test_id" required>
-                {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
-            </select>
-            <textarea id="bulkTextarea" name="bulk_questions_text" rows="5" placeholder="प्रश्न | पर्यायA | पर्यायB | पर्यायC | पर्यायD | अचूक उत्तर | स्पष्टीकरण" required></textarea>
-            <button type="submit" class="btn" style="background:#0284c7; width:100%;">📥 अपलोड करा</button>
-        </form>
-    </div>
-
-    <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data" style="background:#f0fdf4; border:2px dashed #059669; padding:15px; border-radius:8px; margin-bottom:20px;">
-        <h4 style="margin:0 0 8px; color:#065f46;">📥 १०० प्रश्नांची CSV फाईल अपलोड करा:</h4>
-        <select name="test_id" required>
-            {% for t in tests %}<option value="{{ t.id }}" {% if filter_test_id == t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
-        </select>
-        <input type="file" name="csv_file" accept=".csv" required style="margin-bottom:10px;">
-        <button type="submit" class="btn" style="width:100%;">🚀 संपूर्ण १०० प्रश्न CSV द्वारे अपलोड करा</button>
+    <!-- Feature 5: Bulk Delete & Edit Options -->
+    <form method="POST" action="/admin/bulk_delete_questions" onsubmit="return confirm('निवडलेले सर्व प्रश्न डिलीट करायचे का?');">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h4 style="margin:0;">सर्व प्रश्न यादी:</h4>
+            <button type="submit" class="btn" style="background:#dc2626; padding:5px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न डिलीट करा</button>
+        </div>
+        <table>
+            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'q-cb')"></th><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>कृती (एडिट व डिलीट)</th></tr>
+            {% for q in all_questions %}
+            <tr>
+                <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="q-cb"></td>
+                <td>{{ q.id }}</td><td><b>{{ q.question }}</b></td><td style="color:green; font-weight:bold;">{{ q.correct }}</td>
+                <td style="white-space:nowrap;">
+                    <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
+                    <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे?');">🗑️</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
     </form>
-
-    <table>
-        <tr><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>स्पष्टीकरण</th><th>कृती</th></tr>
-        {% for q in all_questions %}
-        <tr>
-            <td>{{ q.id }}</td><td><b>{{ q.question }}</b></td><td style="color:green; font-weight:bold;">{{ q.correct }}</td>
-            <td>{{ q.explanation }}</td>
-            <td style="white-space:nowrap;">
-                <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
-                <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे? (Undo करता येईल)');">🗑️</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
 
     <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
-    <div style="background:#ecfdf5; border:2px solid #10b981; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-            <h4 style="margin:0; color:#065f46;">⚡ १-क्लिक रॅपिड फायर शेड्युलिंग</h4>
-            <small style="color:#047857;">५० रॅपिड फायर टेस्ट्स रोज सकाळी १०:०० वाजता अनलॉक होतील.</small>
+    <form method="POST" action="/admin/bulk_delete_tests" onsubmit="return confirm('निवडलेल्या सर्व टेस्ट्स डिलीट करायच्या का?');">
+        <div style="margin-bottom:10px;">
+            <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेल्या टेस्ट्स डिलीट करा</button>
         </div>
-        <form method="POST" action="/admin/bulk_schedule_all" onsubmit="return confirm('सर्व ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करायच्या का?');">
-            <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold;">🚀 ५० रॅपिड टेस्ट्स रोज सकाळी १० ला शेड्युल करा</button>
-        </form>
-    </div>
-
-    <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:18px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:25px;">
-        <label style="font-weight:bold; font-size:12.5px;">टेस्टचे नाव:</label>
-        <input type="text" name="test_title" placeholder="उदा. महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट संच #१०" required>
-        
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:10px;">
-            <div>
-                <label style="font-weight:bold; font-size:12.5px;">कॅटेगरी:</label>
-                <select name="category" required>
-                    <option value="free">🟢 मोफत टेस्ट्स</option>
-                    <option value="paid" selected>🎯 अतिसंभाव्य संच (₹९९)</option>
-                    <option value="live">🔴 मिशन खाकी महासंग्राम</option>
-                    <option value="rapid">⚡ २० गुण रॅपिड फायर</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-weight:bold; font-size:12.5px;">प्रकार:</label>
-                <select name="test_type">
-                    <option value="Free">Free</option>
-                    <option value="Paid" selected>Paid</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-weight:bold; font-size:12.5px;">अनुक्रमांक:</label>
-                <input type="number" name="sequence_order" placeholder="क्रम (उदा. 1)" value="1">
-            </div>
-            <div>
-                <label style="font-weight:bold; font-size:12.5px;">फी (₹):</label>
-                <input type="number" name="test_fee" placeholder="फी" value="99">
-            </div>
-            <div>
-                <label style="font-weight:bold; font-size:12.5px;">वेळ (मिनिटे):</label>
-                <input type="number" name="duration_minutes" placeholder="वेळ" value="60">
-            </div>
-        </div>
-        <button type="submit" class="btn" style="margin-top:8px;">🚀 नवीन टेस्ट सेव्ह करा</button>
+        <table>
+            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'test-cb')"></th><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>स्थिती</th><th>कृती</th></tr>
+            {% for t in tests %}
+            <tr>
+                <td><input type="checkbox" name="test_ids" value="{{ t.id }}" class="test-cb"></td>
+                <td>{{ t.id }}</td><td><b>{{ t.test_title }}</b></td><td>{{ t.category }}</td><td style="color:green; font-weight:bold;">{{ t.status }}</td>
+                <td><a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;">🗑</a></td>
+            </tr>
+            {% endfor %}
+        </table>
     </form>
-
-    <h4>सर्व टेस्ट्स यादी व ॲक्टिव्ह/क्लोज्ड नियंत्रण (Feature 7):</h4>
-    <table>
-        <tr><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>प्रकार</th><th>स्थिती (Status)</th><th>क्रम</th><th>फी</th><th>वेळ</th><th>कृती</th></tr>
-        {% for t in tests %}
-        <tr>
-            <form method="POST" action="/admin/update_test/{{ t.id }}">
-                <td>{{ t.id }}</td>
-                <td><input type="text" name="test_title" value="{{ t.test_title }}" style="margin-bottom:0;" required></td>
-                <td>
-                    <select name="category" style="margin-bottom:0; font-weight:600;">
-                        <option value="free" {% if t.category=='free' %}selected{% endif %}>🟢 मोफत</option>
-                        <option value="paid" {% if t.category=='paid' %}selected{% endif %}>🎯 अतिसंभाव्य</option>
-                        <option value="live" {% if t.category=='live' %}selected{% endif %}>🔴 महासंग्राम</option>
-                        <option value="rapid" {% if t.category=='rapid' %}selected{% endif %}>⚡ रॅपिड फायर</option>
-                    </select>
-                </td>
-                <td>
-                    <select name="test_type" style="margin-bottom:0;">
-                        <option value="Free" {% if t.test_type=='Free' %}selected{% endif %}>Free</option>
-                        <option value="Paid" {% if t.test_type=='Paid' %}selected{% endif %}>Paid</option>
-                    </select>
-                </td>
-                <td>
-                    <select name="status" style="margin-bottom:0; font-weight:bold; color:{{ '#16a34a' if t.status=='Active' else '#dc2626' }};">
-                        <option value="Active" {% if t.status=='Active' %}selected{% endif %}>🟢 Active (चालू)</option>
-                        <option value="Closed" {% if t.status=='Closed' %}selected{% endif %}>🔴 Closed (बंद)</option>
-                    </select>
-                </td>
-                <td><input type="number" name="sequence_order" value="{{ t.sequence_order or 1 }}" style="width:50px; margin-bottom:0;"></td>
-                <td><input type="number" name="test_fee" value="{{ t.test_fee }}" style="width:60px; margin-bottom:0;"></td>
-                <td><input type="number" name="duration_minutes" value="{{ t.duration_minutes }}" style="width:60px; margin-bottom:0;"></td>
-                <td style="white-space:nowrap;">
-                    <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; cursor:pointer;">💾 अपडेट</button>
-                    <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white;">🖨️ प्रिंट</a>
-                    <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची का?');">🗑</a>
-                </td>
-            </form>
-        </tr>
-        {% endfor %}
-    </table>
 
     <!-- 6. LEADERBOARD TAB -->
     {% elif active_tab == 'leaderboard' %}
@@ -1256,7 +1243,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         {% endfor %}
     </table>
 
-    <!-- 7. FEEDBACK TAB (WITH BULK SELECT & DELETE) -->
+    <!-- 7. FEEDBACK TAB -->
     {% elif active_tab == 'feedback' %}
     <h3>💬 विद्यार्थ्यांचे अभिप्राय</h3>
     <form method="POST" action="/admin/bulk_delete_feedback" onsubmit="return confirm('निवडलेले सर्व अभिप्राय कायमचे डिलीट करायचे का?');">
@@ -1286,100 +1273,41 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn">सेव्ह करा</button>
     </form>
 
-    <!-- 9. TRASH / RECYCLE BIN TAB -->
+    <!-- 9. TRASH TAB (Feature 7: Recycle Bin Select & Bulk Delete) -->
     {% elif active_tab == 'trash' %}
-    <h3>🗑️ रिसायकल बिन (डिलीट केलेले डेटा व्यवस्थापन)</h3>
-    <p style="font-size:13px; color:#64748b;">येथे डिलीट केलेले प्रश्न आणि लीड्स आहेत. तुम्ही त्यांना कधीही पूर्ववत (Restore) करू शकता.</p>
-    
-    <h4 style="color:#065f46; margin-top:20px;">डिलीट केलेले प्रश्न:</h4>
-    <table>
-        <tr><th>ID</th><th>प्रश्न</th><th>कृती</th></tr>
-        {% for q in deleted_questions_list %}
-        <tr>
-            <td>{{ q.id }}</td>
-            <td><b>{{ q.question }}</b></td>
-            <td><a href="/admin/restore_item/question/{{ q.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="3" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
-        {% endfor %}
-    </table>
+    <h3>🗑️ रिसायकल बिन (सिलेक्ट व बल्क डिलीट सुविधा)</h3>
+    <form method="POST" action="/admin/bulk_delete_trash" onsubmit="return confirm('निवडलेले सर्व घटक रिसायकल बिनमधून कायमचे डिलीट करायचे का?');">
+        <div style="margin-bottom:10px;">
+            <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न कायमचे डिलीट करा</button>
+        </div>
+        <table>
+            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'trash-cb')"></th><th>ID</th><th>प्रश्न/नाव</th><th>कृती</th></tr>
+            {% for q in deleted_questions_list %}
+            <tr>
+                <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="trash-cb"></td>
+                <td>{{ q.id }}</td>
+                <td><b>{{ q.question }}</b></td>
+                <td><a href="/admin/restore_item/question/{{ q.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
+            {% endfor %}
+        </table>
+    </form>
 
-    <h4 style="color:#065f46; margin-top:25px;">डिलीट केलेल्या विद्यार्थी लीड्स:</h4>
-    <table>
-        <tr><th>ID</th><th>नाव</th><th>जिल्हा</th><th>WhatsApp</th><th>कृती</th></tr>
-        {% for l in deleted_leads_list %}
-        <tr>
-            <td>{{ l.id }}</td>
-            <td><b>{{ l.student_name }}</b></td>
-            <td>{{ l.district }}</td>
-            <td>{{ l.phone }}</td>
-            <td><a href="/admin/restore_item/lead/{{ l.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="5" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
-        {% endfor %}
-    </table>
-
-    <!-- 10. SETTINGS TAB (MAINTENANCE TOGGLE & HELP DESK & POWER BUTTON) -->
+    <!-- 10. SETTINGS TAB -->
     {% elif active_tab == 'settings' %}
     <h3>🔐 ॲडमिन पासवर्ड, हेल्प डेस्क, मेंटेनन्स मोड व टॅब व्यवस्थापन</h3>
-
-    <!-- Feature 2: Dynamic QR Code with Download Option -->
-    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px; text-align:center;">
-        <h4 style="margin:0 0 8px; color:#065f46;">📱 डायनॅमिक टेस्ट व होम पेज QR कोड (Feature 2)</h4>
-        <p style="font-size:13px; color:#047857; margin:0 0 12px;">विद्यार्थ्यांनी हा QR कोड स्कॅन केल्यावर थेट मुख्य होम पेजवर / टेस्टवर जातील. वेबसाईटची लिंक बदलल्यास QR ऑटोमॅटिक अपडेट होईल.</p>
-        <div style="background:white; display:inline-block; padding:10px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:10px;">
-            <img id="adminPortalQR" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ request.host_url }}" alt="Portal QR" style="display:block; max-width:200px; height:auto;">
-        </div><br>
-        <a id="downloadQrBtn" href="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={{ request.host_url }}" download="Police_Bharti_Portal_QR.png" class="btn" style="background:#059669; color:white; text-decoration:none; display:inline-block; padding:10px 20px;">
-            📥 QR कोड इमेज डाऊनलोड करा (HD)
-        </a>
-    </div>
     <form method="POST" action="/admin/update_password">
-        
         <div style="background:#fef3c7; border:1.5px solid #f59e0b; padding:15px; border-radius:8px; margin-bottom:20px;">
             <label style="font-weight:bold; color:#b45309; font-size:14px;">🚧 संपूर्ण वेबसाईट चालू/बंद स्थिती (पॉवर बटण):</label>
             <select name="site_status" style="margin-top:6px; font-weight:bold;">
                 <option value="active" {% if site_status == 'active' %}selected{% endif %}>🟢 वेबसाईट पूर्णपणे चालू ठेवा (Active)</option>
                 <option value="maintenance" {% if site_status == 'maintenance' %}selected{% endif %}>🔴 वेबसाईट मेंटेनन्स मोडवर टाका (Under Maintenance)</option>
             </select>
-            <small style="color:#78350f;">(मेंटेनन्स मोड चालू केल्यास विद्यार्थ्यांना 'काम सुरू आहे' असा संदेश दिसेल, पण ॲडमिन पॅनेल चालू राहील.)</small>
         </div>
-
-        <div style="background:#eff6ff; border:1.5px solid #3b82f6; padding:15px; border-radius:8px; margin-bottom:20px;">
-            <h4 style="margin:0 0 10px; color:#1e40af;">📞 हेल्प डेस्क सेटिंग्ज (हेल्प डेस्क टॅब माहिती):</h4>
-            <label style="font-weight:bold; font-size:12px;">हेल्पलाईन फोन नंबर:</label>
-            <input type="text" name="help_phone" value="{{ help_phone }}" placeholder="उदा. 9921111960">
-            <label style="font-weight:bold; font-size:12px;">ऑफिस पत्ता / पत्ता:</label>
-            <input type="text" name="help_address" value="{{ help_address }}" placeholder="उदा. श्रीगुरु करिअर अकॅडमी, आडूर, कोल्हापूर">
-        </div>
-
-        <label>नवा पासवर्ड:</label>
-        <div style="position:relative; width:100%; margin-bottom:12px;">
-            <input type="password" name="new_password" id="new_password" placeholder="नवा पासवर्ड टाका" style="padding-right:45px;">
-            <button type="button" id="passEyeBtn" onclick="togglePassVis()" style="position:absolute; right:10px; top:8px; background:none; border:none; cursor:pointer;">👁️</button>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
-            <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:6px;">
-                <label style="font-weight:bold; color:#065f46;">🌐 होम पेज टॅबचा क्रम:</label>
-                <input type="text" name="home_tab_order" value="{{ home_tab_order }}">
-                <small style="color:#64748b;">(पर्याय: all, live, paid, free, rapid, battle, docs, help)</small>
-            </div>
-            <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:6px;">
-                <label style="font-weight:bold; color:#1e40af;">⚙️ ॲडमिन डॅशबोर्ड टॅबचा क्रम:</label>
-                <input type="text" name="admin_tab_order" value="{{ admin_tab_order }}">
-            </div>
-        </div>
-
-        <label style="font-weight:bold; color:#1e40af;">📱 अधिकृत WhatsApp ग्रुप लिंक्स (एकाखाली एक टाका):</label>
-        <textarea name="wa_groups_multiline" rows="4">{{ wa_groups_multiline }}</textarea>
-
-        <label>Instagram लिंक:</label><input type="text" name="insta_link" value="{{ insta_link }}">
-        <label>YouTube लिंक:</label><input type="text" name="yt_link" value="{{ yt_link }}">
-        <label>यशवंतांचे फोटो लिंक:</label><input type="text" name="toppers_link" value="{{ toppers_link }}">
-        <button type="submit" class="btn">💾 बदल सेव्ह करा</button>
+        <label>नवा पासवर्ड:</label><input type="password" name="new_password" placeholder="पासवर्ड">
+        <button type="submit" class="btn">💾 सेव्ह करा</button>
     </form>
     {% endif %}
 </div>
@@ -1512,7 +1440,7 @@ def init_master_db():
                     ('admin_pass', 'admin2026'),
                     ('admin_phone', '9921111960'),
                     ('help_phone', '9921111960'),
-                    ('help_address', 'श्रीगुरु करिअर अकॅडमी, कोल्हापूर - कळे मेन रोड, आडूर, करवीर, कोल्हापूर'),
+                    ('help_address', 'श्रीगुरु करिअर अकॅडमी, आडूर, कोल्हापूर - कळे मेन रोड, आडूर, करवीर, कोल्हापूर'),
                     ('insta_link', ''),
                     ('yt_link', ''),
                     ('toppers_link', ''),
@@ -2265,7 +2193,7 @@ def admin_bulk_questions():
 
     lines = [l.strip() for l in bulk_data.split('\n') if l.strip()]
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             for line in lines:
                 parts = [p.strip() for p in line.split('|')]
                 if len(parts) >= 6:
@@ -2318,7 +2246,7 @@ def admin_upload_csv_questions():
 def admin_delete_question(q_id):
     if not session.get('admin_logged'): return redirect('/admin/login')
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute("SELECT test_id FROM questions WHERE id=%s", (q_id,))
             q_row = cur.fetchone()
             t_id = q_row['test_id'] if q_row else ''
