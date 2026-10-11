@@ -600,7 +600,7 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
 <div id="waRulesModal" class="rules-modal">
     <div class="rules-content">
         <h3 style="color:#25D366; margin-top:0; text-align:center;">🚨 अधिकृत सराव ग्रुप नियम व अटी</h3>
-        <p style="font-size:13px; color:#cbd5e1; line-height:1.5;">या ग्रुपचा उद्देश केवळ पोलीस भरती परीक्षेचा सराव, मोफत टेस्ट्स आणि अभ्यासाची माहिती देणे हा आहे. ग्रुपमध्ये सहभागी होण्यापूर्वी खालील नियमांचे पालन करणे बंधनकारक आहे:</p>
+        <p style="font-size:13px; color:#cbd5e1; line-left:1.5;">या ग्रुपचा उद्देश केवळ पोलीस भरती परीक्षेचा सराव, मोफत टेस्ट्स आणि अभ्यासाची माहिती देणे हा आहे. ग्रुपमध्ये सहभागी होण्यापूर्वी खालील नियमांचे पालन करणे बंधनकारक आहे:</p>
         
         <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #ef4444; margin-bottom:10px;">
             <b style="color:#fca5a5; font-size:13px;">१. प्रायव्हसी व महिलांचा सन्मान (Privacy Rules):</b>
@@ -1011,7 +1011,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             {% if tab == 'leads' %}<a href="/admin/dashboard?tab=leads" class="{{ 'active' if active_tab == 'leads' else '' }}">📱 Leads (विद्यार्थी डेटा)</a>
             {% elif tab == 'payments' %}<a href="/admin/dashboard?tab=payments" class="{{ 'active' if active_tab == 'payments' else '' }}">💰 Payments & Razorpay</a>
             {% elif tab == 'special' %}<a href="/admin/dashboard?tab=special" class="{{ 'active' if active_tab == 'special' else '' }}">👑 Special Access</a>
-            {% elif tab == 'questions' %}<a href="/admin/dashboard?tab=questions" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (AI टूलसह)</a>
+            {% elif tab == 'questions' %}<a href="/admin/dashboard?tab=questions" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (मॅन्युअल व AI)</a>
             {% elif tab == 'launch' %}<a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Tests Management</a>
             {% elif tab == 'leaderboard' %}<a href="/admin/dashboard?tab=leaderboard" class="{{ 'active' if active_tab == 'leaderboard' else '' }}">🏆 Leaderboard</a>
             {% elif tab == 'feedback' %}<a href="/admin/dashboard?tab=feedback" class="{{ 'active' if active_tab == 'feedback' else '' }}">💬 Feedback</a>
@@ -1148,10 +1148,63 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- 4. QUESTIONS TAB (WITH AI GENERATOR) -->
+    <!-- 4. QUESTIONS TAB (MANUAL ENTRY, AI GENERATOR, CSV & HARDCOPY) -->
     {% elif active_tab == 'questions' %}
-    <h3>📝 प्रश्न व्यवस्थापन व AI प्रश्न जनरेटर</h3>
+    <h3>📝 प्रश्न व्यवस्थापन (मॅन्युअल नोंद, AI प्रश्न जनरेटर व CSV)</h3>
     
+    <!-- नवीन मॅन्युअल प्रश्न नोंदणी फॉर्म -->
+    <div style="background:#ffffff; border:2px solid #059669; padding:20px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+        <h4 style="margin:0 0 12px; color:#065f46; font-size:16px;">✍️ मॅन्युअल प्रश्न, पर्याय, अचूक उत्तर व स्पष्टीकरण जोडा</h4>
+        <form method="POST" action="/admin/add_manual_question">
+            <div style="margin-bottom:10px;">
+                <label style="font-weight:bold; font-size:12px;">टेस्ट निवडा:</label>
+                <select name="test_id" required>
+                    {% for t in tests %}
+                    <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:10px;">
+                <label style="font-weight:bold; font-size:12px;">प्रश्न टाइप करा:</label>
+                <textarea name="question" rows="2" placeholder="येथे प्रश्न लिहा..." required></textarea>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div>
+                    <label style="font-weight:bold; font-size:12px;">पर्याय A:</label>
+                    <input type="text" name="opt_a" placeholder="पर्याय A" required>
+                </div>
+                <div>
+                    <label style="font-weight:bold; font-size:12px;">पर्याय B:</label>
+                    <input type="text" name="opt_b" placeholder="पर्याय B" required>
+                </div>
+                <div>
+                    <label style="font-weight:bold; font-size:12px;">पर्याय C:</label>
+                    <input type="text" name="opt_c" placeholder="पर्याय C" required>
+                </div>
+                <div>
+                    <label style="font-weight:bold; font-size:12px;">पर्याय D:</label>
+                    <input type="text" name="opt_d" placeholder="पर्याय D" required>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px; margin-bottom:10px;">
+                <div>
+                    <label style="font-weight:bold; font-size:12px;">अचूक पर्याय निवडा:</label>
+                    <select name="correct" required>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight:bold; font-size:12px;">सविस्तर स्पष्टीकरण (पर्यायी):</label>
+                    <input type="text" name="explanation" placeholder="या प्रश्नाचे अचूक स्पष्टीकरण येथे लिहा...">
+                </div>
+            </div>
+            <button type="submit" class="btn" style="width:100%; background:#059669; font-weight:800;">➕ हा प्रश्न टेस्टमध्ये जोडा</button>
+        </form>
+    </div>
+
     <!-- Feature 6: Advanced AI Smart Mock Question Generator Form -->
     <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:25px;">
         <h4 style="margin:0 0 10px; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर (विभाग व विषयनिहाय संख्या)</h4>
@@ -2191,6 +2244,32 @@ def admin_dashboard():
         deleted_questions_list=deleted_questions_list,
         deleted_leads_list=deleted_leads_list
     )
+
+# नवीन मार्ग: मॅन्युअली प्रश्न ॲड करणे
+@app.route('/admin/add_manual_question', methods=['POST'])
+def admin_add_manual_question():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    
+    test_id = request.form.get('test_id')
+    question = request.form.get('question', '').strip()
+    opt_a = request.form.get('opt_a', '').strip()
+    opt_b = request.form.get('opt_b', '').strip()
+    opt_c = request.form.get('opt_c', '').strip()
+    opt_d = request.form.get('opt_d', '').strip()
+    correct = request.form.get('correct', 'A').strip().upper()
+    explanation = request.form.get('explanation', '').strip()
+
+    if question and opt_a and opt_b and opt_c and opt_d and test_id:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation))
+                conn.commit()
+
+    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
