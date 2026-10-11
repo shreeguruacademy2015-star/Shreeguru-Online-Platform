@@ -71,7 +71,7 @@ def verify_tamper_signature(data_str, sig):
 def get_razorpay_client():
     if not razorpay:
         return None, ""
-    if key_id = os.environ.get("RAZORPAY_KEY_ID") or "rzp_test_TmZeM28Io87AQj"
+    key_id = os.environ.get("RAZORPAY_KEY_ID") or "rzp_test_TmZeM28Io87AQj"
     key_secret = os.environ.get("RAZORPAY_KEY_SECRET") or "ROU0G52FQUIEZsojiy6GOBvI"
       
     if key_id and key_secret:
@@ -247,7 +247,6 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     </script>
 </head>
 <body>
-<!-- Feature 3: Sleep Mode Loading Notice Message -->
 <div id="loadingNoticeModal" class="loading-modal">
     <div class="modal-content">
         <h3 style="color:#34d399; margin:0 0 10px; font-size:20px;">🛡️ परीक्षा कक्ष लोड होत आहे...</h3>
@@ -268,7 +267,6 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </div>
 
 <div class="box">
-    <!-- Floating bottom-corner Home button (Feature 6) -->
     <a href="/" style="position:fixed; bottom:20px; right:20px; background:#10b981; color:#022c22; padding:10px 18px; border-radius:30px; text-decoration:none; font-weight:800; font-size:13px; box-shadow:0 4px 15px rgba(0,0,0,0.4); z-index:9999; border:2px solid #34d399;">
         🏠 मुख्य पानावर जा
     </a>
@@ -304,7 +302,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                     </span>
                     <span class="badge-rapid">⏱️ {{ t.duration_minutes }} मिनिटे</span>
                     {% if t.is_locked and t.category == 'rapid' %}
-                    <span style="font-size:12px; color:#fbbf24;">⏳ रोज सकाळी १०:०० वाजता अनलॉक होईल</span>
+                    <span style="font-size:12px; color:#fbbf24;">⏳ पुढील टेस्ट दुसऱ्या दिवशी सकाळी १०:०० वाजता अनलॉक होईल</span>
                     {% endif %}
                 </div>
             </div>
@@ -562,49 +560,33 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
         .btn-wa { display: inline-block; background: #25D366; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px; margin: 8px 4px; cursor: pointer; border: none; }
         .btn-group { display: block; background: linear-gradient(135deg, #25D366, #128C7E); color: white; padding: 14px 20px; border-radius: 10px; text-decoration: none; font-weight: 800; font-size: 15px; text-align: center; margin: 20px 0; box-shadow: 0 6px 18px rgba(37,211,102,0.3); border: 1.5px solid #86efac; cursor: pointer; }
         .promo-box { background: #0f172a; border: 1.5px solid #334155; padding: 15px; border-radius: 10px; margin-top: 20px; text-align: center; }
-        .btn-link { display: inline-block; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; cursor: pointer; border: none; }
+        .btn-link { display: inline-block; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; cursor: border: none; }
         input[type="tel"] { width: 100%; max-width: 280px; padding: 11px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: white; font-size: 14px; text-align: center; margin-bottom: 10px; }
-
         .rules-modal { display: none; position: fixed; inset: 0; background: rgba(11,19,41,0.95); z-index: 10000; justify-content: center; align-items: center; padding: 15px; }
         .rules-content { background: #162036; border: 2px solid #25D366; border-radius: 14px; padding: 25px; max-width: 580px; max-height: 90vh; overflow-y: auto; text-align: left; }
     </style>
     <script>
-        function openRulesModal() {
-            document.getElementById('waRulesModal').style.display = 'flex';
-        }
-        function closeRulesModal() {
-            document.getElementById('waRulesModal').style.display = 'none';
-        }
+        function openRulesModal() { document.getElementById('waRulesModal').style.display = 'flex'; }
+        function closeRulesModal() { document.getElementById('waRulesModal').style.display = 'none'; }
         function handleSocialLink(url) {
             alert("संपूर्ण प्रवासाची यशोगाथा लवकरच आपले भेटीस.....\\nतुमचे वर्दीचे स्वप्न लवकर पूर्ण व्हावे ही सदिच्छा.....");
-            if (url && url.trim() !== '') {
-                window.open(url, '_blank');
-            }
+            if (url && url.trim() !== '') { window.open(url, '_blank'); }
         }
     </script>
 </head>
 <body>
-
 <div id="waRulesModal" class="rules-modal">
     <div class="rules-content">
         <h3 style="color:#25D366; margin-top:0; text-align:center;">🚨 अधिकृत सराव ग्रुप नियम व अटी</h3>
         <p style="font-size:13px; color:#cbd5e1; line-height:1.5;">या ग्रुपचा उद्देश केवळ पोलीस भरती परीक्षेचा सराव, मोफत टेस्ट्स आणि अभ्यासाची माहिती देणे हा आहे. ग्रुपमध्ये सहभागी होण्यापूर्वी खालील नियमांचे पालन करणे बंधनकारक आहे:</p>
-        
         <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #ef4444; margin-bottom:10px;">
             <b style="color:#fca5a5; font-size:13px;">१. प्रायव्हसी व महिलांचा सन्मान (Privacy Rules):</b>
-            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;">ग्रुपमध्ये महिला/विद्यार्थिनी सदस्य देखील आहेत. कोणत्याही सदस्याने इतर सदस्याला (विशेषतः महिलांना) परस्पर वैयक्तिक मेसेज (DM) किंवा कॉल करणे सक्त मनाई आहे. असा प्रकार आढळल्यास संबंधित व्यक्तीचा नंबर विनाशीर्षक त्वरित ब्लॉक केला जाईल.</p>
+            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;">ग्रुपमध्ये महिला सदस्य देखील आहेत. कोणत्याही सदस्याने इतर सदस्याला (विशेषतः महिलांना) परस्पर वैयक्तिक मेसेज (DM) किंवा कॉल करणे सक्त मनाई आहे.</p>
         </div>
-
         <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #38bdf8; margin-bottom:10px;">
             <b style="color:#7dd3fc; font-size:13px;">२. फक्त अभ्यास चर्चा व सुरक्षितता:</b>
-            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;">कोणतेही राजकीय, वैयक्तिक, वादग्रस्त किंवा धार्मिक फॉरवर्ड मेसेज टाकण्यास सक्त बंदी आहे. कोणीही आपली वैयक्तिक माहिती (जसे की वैयक्तिक मोबाईल नंबर इ.) सार्वजनिक चॅटमध्ये शेअर करू नये.</p>
+            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;">कोणतेही वादग्रस्त किंवा धार्मिक फॉरवर्ड मेसेज टाकण्यास सक्त बंदी आहे.</p>
         </div>
-
-        <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #f59e0b; margin-bottom:15px;">
-            <b style="color:#fde047; font-size:13px;">३. कायदेशीर अस्वीकरण (Disclaimer / ॲडमिन जबाबदारी):</b>
-            <p style="font-size:12px; color:#cbd5e1; margin:4px 0;"><b>हा ग्रुप फक्त शैक्षणिक अभ्यासासाठी आहे. ग्रुपमधील सदस्यांच्या कोणत्याही परस्पर वैयक्तिक संभाषणाला किंवा गैरवर्तनाला ग्रुप ॲडमिन जबाबदार असणार नाही.</b> कोणीही नियम मोडल्यास सायबर सेल किंवा ग्रुप ॲडमिनकडे त्याची कठोर तक्रार केली जाईल.</p>
-        </div>
-
         <div style="display:flex; gap:10px;">
             <a href="{{ wa_active_link }}" target="_blank" onclick="closeRulesModal()" style="flex:2; background:#25D366; color:#064e3b; text-align:center; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; text-decoration:none;">
                 ✅ नियम मान्य आहेत — ग्रुपमध्ये सामील व्हा
@@ -627,7 +609,7 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
     <div class="share-unlock-box">
         <h3 style="margin:0 0 6px; font-size:18px; color:#fbbf24;">🎁 विशेष ऑफर: पहिल्या २ अतिसंभाव्य पेड टेस्ट्स मोफत अनलॉक करा!</h3>
         <p style="font-size:13.5px; line-height:1.5; margin:0 0 10px;">
-            ही लिंक तुमच्या ३ मित्रांना पाठवा. <b>तुमच्या ३ मित्रांनी ही मोफत १०० गुणांची टेस्ट पूर्ण सोडवून सबमिट केल्यास</b> तुम्हाला १०० गुणांच्या <b>पहिल्या २ पेड टेस्ट्स पूर्णपणे मोफत अनलॉक होतील!</b>
+            ही लिंक तुमच्या ३ मित्रांना पाठवा. <b>तुमच्या ३ मित्रांनी ही मोफत टेस्ट पूर्ण सोडवून सबमिट केल्यास</b> तुम्हाला पहिल्या २ पेड टेस्ट्स मोफत अनलॉक होतील!
         </p>
         <div style="background:#0f172a; padding:6px 12px; border-radius:20px; display:inline-block; font-size:13px; font-weight:bold; color:#38bdf8;">
             📡 मित्रांनी सोडवलेल्या टेस्ट्स: {{ completed_friends_count }} / ३
@@ -837,7 +819,7 @@ EDIT_QUESTION_TEMPLATE = '''<!DOCTYPE html>
         <label style="font-weight:600; font-size:13px;">स्पष्टीकरण:</label>
         <textarea name="explanation" rows="2">{{ q.explanation }}</textarea>
         <button type="submit" class="btn">💾 बदल सेव्ह करा</button>
-        <a href="/admin/dashboard?tab=questions&filter_test_id={{ q.test_id }}" style="margin-left:10px; color:#dc2626; text-decoration:none; font-weight:600;">रद्द करा</a>
+        <a href="/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={{ q.test_id }}" style="margin-left:10px; color:#dc2626; text-decoration:none; font-weight:600;">रद्द करा</a>
     </form>
 </div>
 </body>
@@ -872,7 +854,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
 <head>
     <meta charset="UTF-8"><title>ॲडमिन डॅशबोर्ड - सराव व्यासपीठ</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; background: #f1f5f9; color: #1e293b; padding: 15px; }
@@ -881,6 +863,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         .nav-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
         .nav-tabs a { padding: 8px 14px; background: #e2e8f0; color: #334155; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; }
         .nav-tabs a.active { background: #059669; color: white; }
+        .sub-nav-tabs { display: flex; gap: 8px; margin-bottom: 15px; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; }
+        .sub-nav-tabs a { padding: 6px 14px; background: white; color: #334155; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; font-size: 12.5px; font-weight: 600; }
+        .sub-nav-tabs a.active { background: #10b981; color: #064e3b; border-color: #059669; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
         th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
         th { background: #f8fafc; color: #0f172a; }
@@ -895,14 +880,11 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             if (p.type === "password") { p.type = "text"; btn.innerText = "🙈"; }
             else { p.type = "password"; btn.innerText = "👁️"; }
         }
-        function toggleSelectAllFeedbacks(master) {
-            document.querySelectorAll('.fb-checkbox').forEach(cb => cb.checked = master.checked);
-        }
         function toggleSelectAll(master, className) {
             document.querySelectorAll('.' + className).forEach(cb => cb.checked = master.checked);
         }
-        function switchTestView(testId) {
-            window.location.href = '/admin/dashboard?tab=questions&filter_test_id=' + testId;
+        function switchTestView(testId, subtab) {
+            window.location.href = '/admin/dashboard?tab=questions&q_subtab=' + subtab + '&filter_test_id=' + testId;
         }
         function generateAIQuestionsFromAdvancedForm() {
             const testId = document.getElementById('ai_target_test_id').value;
@@ -940,7 +922,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             .then(data => {
                 if (data.success) {
                     alert("✅ AI द्वारे " + data.inserted_count + " नवीन प्रश्न यशस्वीपणे सेव्ह झाले!");
-                    window.location.href = '/admin/dashboard?tab=questions&filter_test_id=' + testId;
+                    window.location.href = '/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id=' + testId;
                 } else {
                     alert("⚠️ एरर: " + (data.error || 'अज्ञात एरर'));
                 }
@@ -972,7 +954,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             .then(data => {
                 if (data.success) {
                     alert("✅ हार्डकॉपी स्कॅन करून " + data.inserted_count + " प्रश्न यशस्वीपणे टेस्टमध्ये ॲड केले गेले!");
-                    window.location.href = '/admin/dashboard?tab=questions&filter_test_id=' + testId;
+                    window.location.href = '/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id=' + testId;
                 } else {
                     alert("⚠️ एरर: " + (data.error || 'स्कॅनिंग एरर'));
                 }
@@ -990,7 +972,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <a href="/admin/logout" style="font-weight:bold; color:#dc2626; text-decoration:none;">🚪 लॉगआऊट</a>
     </div>
 
-    <!-- Undo Notification Panel -->
     {% if undo_items %}
     <div style="background:#fef3c7; border:1px solid #f59e0b; padding:10px 15px; border-radius:6px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:12.5px; color:#92400e;">⚠️ अलीकडे डिलीट केलेली नोंद: <b>{{ undo_items[0].title[:35] }}...</b></span>
@@ -1003,8 +984,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             {% if tab == 'leads' %}<a href="/admin/dashboard?tab=leads" class="{{ 'active' if active_tab == 'leads' else '' }}">📱 Leads (विद्यार्थी डेटा)</a>
             {% elif tab == 'payments' %}<a href="/admin/dashboard?tab=payments" class="{{ 'active' if active_tab == 'payments' else '' }}">💰 Payments & Razorpay</a>
             {% elif tab == 'special' %}<a href="/admin/dashboard?tab=special" class="{{ 'active' if active_tab == 'special' else '' }}">👑 Special Access</a>
-            {% elif tab == 'questions' %}<a href="/admin/dashboard?tab=questions{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (मॅन्युअल व AI)</a>
-            {% elif tab == 'launch' %}<a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Tests Management</a>
+            {% elif tab == 'questions' %}<a href="/admin/dashboard?tab=questions&q_subtab={{ q_subtab }}{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (मॅन्युअल व AI)</a>
+            {% elif tab == 'launch' %}<a href="/admin/dashboard?tab=launch&cat_tab={{ cat_tab }}" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Tests Management</a>
             {% elif tab == 'leaderboard' %}<a href="/admin/dashboard?tab=leaderboard" class="{{ 'active' if active_tab == 'leaderboard' else '' }}">🏆 Leaderboard</a>
             {% elif tab == 'feedback' %}<a href="/admin/dashboard?tab=feedback" class="{{ 'active' if active_tab == 'feedback' else '' }}">💬 Feedback</a>
             {% elif tab == 'notices' %}<a href="/admin/dashboard?tab=notices" class="{{ 'active' if active_tab == 'notices' else '' }}">📢 PDF Docs</a>
@@ -1140,17 +1121,24 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- 4. QUESTIONS TAB (मॅन्युअल, AI जनरेटर व CSV) -->
+    <!-- 4. QUESTIONS TAB (४ स्वतंत्र सब-टॅब्स) -->
     {% elif active_tab == 'questions' %}
-    <h3>📝 प्रश्न व्यवस्थापन (मॅन्युअल नोंद, AI प्रश्न जनरेटर व CSV)</h3>
+    <h3>📝 प्रश्न व्यवस्थापन</h3>
+    <div class="sub-nav-tabs">
+        <a href="/admin/dashboard?tab=questions&q_subtab=manual{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'manual' else '' }}">✍️ प्रश्न व्यवस्थापन मॅन्युअल नोंद</a>
+        <a href="/admin/dashboard?tab=questions&q_subtab=ai{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'ai' else '' }}">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर</a>
+        <a href="/admin/dashboard?tab=questions&q_subtab=scanner{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'scanner' else '' }}">📄 प्रश्नपत्रिका हार्डकॉपी स्कॅनर व CSV</a>
+        <a href="/admin/dashboard?tab=questions&q_subtab=csv{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'csv' else '' }}">📥 १०० प्रश्नांची CSV फाईल अपलोड</a>
+    </div>
 
-    <!-- मॅन्युअल प्रश्न नोंदणी फॉर्म -->
+    {% if q_subtab == 'manual' %}
+    <!-- मॅन्युअल प्रश्न नोंदणी -->
     <div style="background:#ffffff; border:2px solid #059669; padding:20px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
         <h4 style="margin:0 0 12px; color:#065f46; font-size:16px;">✍️ मॅन्युअल प्रश्न, पर्याय, अचूक उत्तर व स्पष्टीकरण जोडा</h4>
         <form method="POST" action="/admin/add_manual_question">
             <div style="margin-bottom:10px;">
                 <label style="font-weight:bold; font-size:12px;">कोणत्या टेस्टमध्ये प्रश्न जोडायचा आहे ती टेस्ट निवडा:</label>
-                <select name="test_id" required onchange="switchTestView(this.value)">
+                <select name="test_id" required onchange="switchTestView(this.value, 'manual')">
                     {% for t in tests %}
                     <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }} (ID: {{ t.id }})</option>
                     {% endfor %}
@@ -1161,31 +1149,16 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 <textarea name="question" rows="2" placeholder="येथे प्रश्न लिहा..." required></textarea>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-                <div>
-                    <label style="font-weight:bold; font-size:12px;">पर्याय A:</label>
-                    <input type="text" name="opt_a" placeholder="पर्याय A" required>
-                </div>
-                <div>
-                    <label style="font-weight:bold; font-size:12px;">पर्याय B:</label>
-                    <input type="text" name="opt_b" placeholder="पर्याय B" required>
-                </div>
-                <div>
-                    <label style="font-weight:bold; font-size:12px;">पर्याय C:</label>
-                    <input type="text" name="opt_c" placeholder="पर्याय C" required>
-                </div>
-                <div>
-                    <label style="font-weight:bold; font-size:12px;">पर्याय D:</label>
-                    <input type="text" name="opt_d" placeholder="पर्याय D" required>
-                </div>
+                <div><label style="font-weight:bold; font-size:12px;">पर्याय A:</label><input type="text" name="opt_a" placeholder="पर्याय A" required></div>
+                <div><label style="font-weight:bold; font-size:12px;">पर्याय B:</label><input type="text" name="opt_b" placeholder="पर्याय B" required></div>
+                <div><label style="font-weight:bold; font-size:12px;">पर्याय C:</label><input type="text" name="opt_c" placeholder="पर्याय C" required></div>
+                <div><label style="font-weight:bold; font-size:12px;">पर्याय D:</label><input type="text" name="opt_d" placeholder="पर्याय D" required></div>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px; margin-bottom:10px;">
                 <div>
                     <label style="font-weight:bold; font-size:12px;">अचूक उत्तर निवडा:</label>
                     <select name="correct" required>
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
+                        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
                     </select>
                 </div>
                 <div>
@@ -1197,6 +1170,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </form>
     </div>
 
+    {% elif q_subtab == 'ai' %}
     <!-- AI स्मार्ट मॉक प्रश्न जनरेटर फॉर्म -->
     <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:25px;">
         <h4 style="margin:0 0 10px; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर (विभाग व विषयनिहाय)</h4>
@@ -1236,6 +1210,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </button>
     </div>
 
+    {% elif q_subtab == 'scanner' %}
     <!-- हार्डकॉपी स्कॅनर -->
     <div style="background:#eff6ff; border:2px dashed #3b82f6; padding:18px; border-radius:8px; margin-bottom:25px;">
         <h4 style="margin:0 0 8px; color:#1e40af;">📄 प्रश्नपत्रिका हार्डकॉपी स्कॅनर व AI ऑटोमॅटिक CSV जनरेटर</h4>
@@ -1252,7 +1227,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </button>
     </div>
 
-    <!-- CSV अपलोड फॉर्म (रोबस्ट पार्सर) -->
+    {% elif q_subtab == 'csv' %}
+    <!-- CSV अपलोड फॉर्म -->
     <div style="background:#fefce8; border:2px dashed #ca8a04; padding:18px; border-radius:8px; margin-bottom:25px;">
         <h4 style="margin:0 0 8px; color:#854d0e;">📥 १०० प्रश्नांची CSV फाईल अपलोड (रोबस्ट पार्सर)</h4>
         <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data">
@@ -1265,12 +1241,13 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <button type="submit" class="btn" style="background:#ca8a04; width:100%;">🚀 संपूर्ण प्रश्न CSV द्वारे अपलोड करा</button>
         </form>
     </div>
+    {% endif %}
 
-    <!-- फक्त निवडलेल्या टेस्टचे प्रश्न पाहणे आणि मॅनेज करणे -->
+    <!-- निवडलेल्या टेस्टचे प्रश्न व्यवस्थापन -->
     <div style="background:#f8fafc; border:1.5px solid #cbd5e1; padding:15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
             <label style="font-weight:bold; font-size:13px; color:#0f172a;">🎯 खालील तक्त्यामध्ये कोणत्या टेस्टचे प्रश्न पाहायचे आहेत ते निवडा:</label>
-            <select style="width:300px; margin-bottom:0; font-weight:bold; color:#065f46;" onchange="switchTestView(this.value)">
+            <select style="width:300px; margin-bottom:0; font-weight:bold; color:#065f46;" onchange="switchTestView(this.value, '{{ q_subtab }}')">
                 {% for t in tests %}
                 <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
                 {% endfor %}
@@ -1300,17 +1277,38 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">या टेस्टमध्ये अजून एकही प्रश्न जोडलेला नाही. वरून मॅन्युअली किंवा CSV द्वारे प्रश्न जोडा.</td></tr>
+            <tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">या टेस्टमध्ये अजून एकही प्रश्न जोडलेला नाही.</td></tr>
             {% endfor %}
         </table>
     </form>
 
-    <!-- 5. TEST MANAGEMENT TAB -->
+    <!-- 5. TEST MANAGEMENT TAB (वर्गवारीनुसार सब-टॅब्स) -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
+    <div class="sub-nav-tabs">
+        <a href="/admin/dashboard?tab=launch&cat_tab=all" class="{{ 'active' if cat_tab == 'all' else '' }}">🌐 सर्व टेस्ट्स</a>
+        <a href="/admin/dashboard?tab=launch&cat_tab=rapid" class="{{ 'active' if cat_tab == 'rapid' else '' }}">⚡ रॅपिड फायर संच</a>
+        <a href="/admin/dashboard?tab=launch&cat_tab=paid" class="{{ 'active' if cat_tab == 'paid' else '' }}">🎯 अतिसंभाव्य १०० गुण संच</a>
+        <a href="/admin/dashboard?tab=launch&cat_tab=live" class="{{ 'active' if cat_tab == 'live' else '' }}">🔴 मिशन खाकी महासंग्राम</a>
+    </div>
+
+    <!-- सिक्वेन्स व सॉर्टिंग बार -->
+    <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:10px 15px; border-radius:6px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+        <span style="font-size:12.5px; font-weight:bold; color:#334155;">सध्याचा विभाग: <span style="color:#059669;">{{ cat_tab|upper }}</span> (एकूण: {{ tests|length }} टेस्ट्स)</span>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <label style="font-size:12px; font-weight:bold;">क्रमवारी (Sort By):</label>
+            <select style="width:160px; margin-bottom:0;" onchange="location.href='/admin/dashboard?tab=launch&cat_tab={{ cat_tab }}&sort_by='+this.value">
+                <option value="seq" {% if sort_by == 'seq' %}selected{% endif %}>अनुक्रमांक (Sequence)</option>
+                <option value="name" {% if sort_by == 'name' %}selected{% endif %}>नावानुसार (A-Z)</option>
+                <option value="id" {% if sort_by == 'id' %}selected{% endif %}>नवीन आयडी (ID)</option>
+            </select>
+        </div>
+    </div>
+
+    {% if cat_tab == 'rapid' or cat_tab == 'all' %}
     <div style="background:#ecfdf5; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px;">
-        <h4 style="margin:0 0 8px; color:#065f46;">⚡ मॅन्युअल रॅपिड फायर टेस्ट शेड्युलिंग (Manual Rapid Fire Scheduling)</h4>
-        <p style="font-size:12.5px; color:#047857; margin:0 0 12px;">येथून तुम्ही हव्या त्या तारखेला व वेळी नवीन रॅपिड फायर टेस्ट मॅन्युअली सुरू (शेड्युल) करू शकता.</p>
+        <h4 style="margin:0 0 8px; color:#065f46;">⚡ रॅपिड फायर टेस्ट शेड्युलिंग (सकाळी १०:०० ऑटो अनलॉक)</h4>
+        <p style="font-size:12.5px; color:#047857; margin:0 0 12px;">विद्यार्थ्याने पहिली टेस्ट सोडवल्यावर दुसऱ्या दिवशी सकाळी १०:०० वाजता पुढील टेस्ट आपोआप अनलॉक होईल.</p>
         <form method="POST" action="/admin/manual_schedule_rapid" style="display:grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap:10px; align-items:end;">
             <div>
                 <label style="font-size:12px; font-weight:bold;">टेस्टचे नाव:</label>
@@ -1329,23 +1327,23 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 <input type="number" name="duration_minutes" value="15" min="5" max="120" style="margin-bottom:0;">
             </div>
             <div>
-                <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold; height:38px;">➕ रॅपिड टेस्ट सुरू करा</button>
+                <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold; height:38px;">➕ टेस्ट जोडा</button>
             </div>
         </form>
     </div>
+    {% endif %}
 
     <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:18px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:25px;">
-        <label style="font-weight:bold; font-size:12.5px;">टेस्टचे नाव:</label>
-        <input type="text" name="test_title" placeholder="उदा. महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट संच #१०" required>
-        
+        <label style="font-weight:bold; font-size:12.5px;">नवीन टेस्ट जोडा:</label>
+        <input type="text" name="test_title" placeholder="उदा. महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट संच" required>
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:10px;">
             <div>
                 <label style="font-weight:bold; font-size:12.5px;">कॅटेगरी:</label>
                 <select name="category" required>
-                    <option value="free">🟢 मोफत टेस्ट्स</option>
-                    <option value="paid" selected>🎯 अतिसंभाव्य संच (₹९९)</option>
-                    <option value="live">🔴 मिशन खाकी महासंग्राम</option>
-                    <option value="rapid">⚡ २० गुण रॅपिड फायर</option>
+                    <option value="free" {% if cat_tab=='free' %}selected{% endif %}>🟢 मोफत टेस्ट्स</option>
+                    <option value="paid" {% if cat_tab=='paid' %}selected{% endif %}>🎯 अतिसंभाव्य संच (₹९९)</option>
+                    <option value="live" {% if cat_tab=='live' %}selected{% endif %}>🔴 मिशन खाकी महासंग्राम</option>
+                    <option value="rapid" {% if cat_tab=='rapid' %}selected{% endif %}>⚡ २० गुण रॅपिड फायर</option>
                 </select>
             </div>
             <div>
@@ -1356,7 +1354,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 </select>
             </div>
             <div>
-                <label style="font-weight:bold; font-size:12.5px;">अनुक्रमांक:</label>
+                <label style="font-weight:bold; font-size:12.5px;">अनुक्रमांक (Seq):</label>
                 <input type="number" name="sequence_order" placeholder="क्रम (उदा. 1)" value="1">
             </div>
             <div>
@@ -1368,15 +1366,16 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 <input type="number" name="duration_minutes" placeholder="वेळ" value="60">
             </div>
         </div>
-        <button type="submit" class="btn" style="margin-top:8px;">🚀 नवीन टेस्ट सेव्ह करा</button>
+        <button type="submit" class="btn" style="margin-top:8px;">🚀 टेस्ट सेव्ह करा</button>
     </form>
 
-    <h4>सर्व टेस्ट्स यादी व ॲक्टिव्ह/क्लोज्ड नियंत्रण:</h4>
+    <h4>यादी व व्यवस्थापन:</h4>
     <table>
-        <tr><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>प्रकार</th><th>स्थिती (Status)</th><th>क्रम</th><th>फी</th><th>वेळ</th><th>कृती</th></tr>
+        <tr><th>ID</th><th>नाव</th><th>कॅटेगरी</th><th>प्रकार</th><th>स्थिती (Status)</th><th>क्रम (Seq)</th><th>फी</th><th>वेळ</th><th>कृती</th></tr>
         {% for t in tests %}
         <tr>
             <form method="POST" action="/admin/update_test/{{ t.id }}">
+                <input type="hidden" name="return_cat_tab" value="{{ cat_tab }}">
                 <td>{{ t.id }}</td>
                 <td><input type="text" name="test_title" value="{{ t.test_title }}" style="margin-bottom:0;" required></td>
                 <td>
@@ -1435,7 +1434,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
         <table>
             <tr>
-                <th style="width:40px;"><input type="checkbox" onclick="toggleSelectAllFeedbacks(this)"></th>
+                <th style="width:40px;"><input type="checkbox" onclick="toggleSelectAll(this, 'fb-checkbox')"></th>
                 <th>दिनांक</th><th>नाव</th><th>मोबाईल</th><th>अभिप्राय</th>
             </tr>
             {% for f in feedbacks %}
@@ -1456,12 +1455,13 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn">सेव्ह करा</button>
     </form>
 
-    <!-- 9. TRASH / RECYCLE BIN TAB -->
+    <!-- 9. TRASH / RECYCLE BIN TAB (बल्क रिस्टोर व बल्क डिलीट पर्याय) -->
     {% elif active_tab == 'trash' %}
     <h3>🗑️ रिसायकल बिन</h3>
-    <form method="POST" action="/admin/bulk_delete_trash" onsubmit="return confirm('निवडलेले सर्व प्रश्न कायमचे डिलीट करायचे का?');">
-        <div style="margin-bottom:10px;">
-            <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न कायमचे डिलीट करा</button>
+    <form method="POST" id="trashForm">
+        <div style="margin-bottom:12px; display:flex; gap:10px;">
+            <button type="submit" formaction="/admin/bulk_restore_trash" class="btn" style="background:#16a34a; padding:7px 14px; font-size:12.5px;">♻️ निवडलेले प्रश्न पूर्ववत (Restore) करा</button>
+            <button type="submit" formaction="/admin/bulk_delete_trash" class="btn" style="background:#dc2626; padding:7px 14px; font-size:12.5px;" onclick="return confirm('निवडलेले सर्व प्रश्न कायमचे नष्ट करायचे का?');">🗑️ निवडलेले प्रश्न कायमचे नष्ट करा</button>
         </div>
         <table>
             <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'trash-cb')"></th><th>ID</th><th>प्रश्न</th><th>कृती</th></tr>
@@ -1470,10 +1470,10 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="trash-cb"></td>
                 <td>{{ q.id }}</td>
                 <td><b>{{ q.question }}</b></td>
-                <td><a href="/admin/restore_item/question/{{ q.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर करा</a></td>
+                <td><a href="/admin/restore_item/question/{{ q.id }}" class="btn-sm" style="background:#16a34a; color:white;">♻️ रिस्टोर</a></td>
             </tr>
             {% else %}
-            <tr><td colspan="4" style="text-align:center; color:#94a3b8;">रिसायकल बिन रिकामी आहे.</td></tr>
+            <tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:20px;">रिसायकल बिन रिकामी आहे.</td></tr>
             {% endfor %}
         </table>
     </form>
@@ -1481,23 +1481,12 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 10. SETTINGS TAB -->
     {% elif active_tab == 'settings' %}
     <h3>🔐 ॲडमिन पासवर्ड, हेल्प डेस्क, मेंटेनन्स मोड व टॅब व्यवस्थापन</h3>
-
-    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px; text-align:center;">
-        <h4 style="margin:0 0 8px; color:#065f46;">📱 डायनॅमिक टेस्ट व होम पेज QR कोड</h4>
-        <div style="background:white; display:inline-block; padding:10px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:10px;">
-            <img id="adminPortalQR" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ request.host_url }}" alt="Portal QR" style="display:block; max-width:200px; height:auto;">
-        </div><br>
-        <a id="downloadQrBtn" href="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={{ request.host_url }}" download="Police_Bharti_Portal_QR.png" class="btn" style="background:#059669; color:white; text-decoration:none; display:inline-block; padding:10px 20px;">
-            📥 QR कोड इमेज डाऊनलोड करा (HD)
-        </a>
-    </div>
     <form method="POST" action="/admin/update_password">
-        
         <div style="background:#fef3c7; border:1.5px solid #f59e0b; padding:15px; border-radius:8px; margin-bottom:20px;">
-            <label style="font-weight:bold; color:#b45309; font-size:14px;">🚧 संपूर्ण वेबसाईट चालू/बंद स्थिती (पॉवर बटण):</label>
+            <label style="font-weight:bold; color:#b45309; font-size:14px;">🚧 संपूर्ण वेबसाईट चालू/बंद स्थिती:</label>
             <select name="site_status" style="margin-top:6px; font-weight:bold;">
-                <option value="active" {% if site_status == 'active' %}selected{% endif %}>🟢 वेबसाईट पूर्णपणे चालू ठेवा (Active)</option>
-                <option value="maintenance" {% if site_status == 'maintenance' %}selected{% endif %}>🔴 वेबसाईट मेंटेनन्स मोडवर टाका (Under Maintenance)</option>
+                <option value="active" {% if site_status == 'active' %}selected{% endif %}>🟢 वेबसाईट चालू ठेवा (Active)</option>
+                <option value="maintenance" {% if site_status == 'maintenance' %}selected{% endif %}>🔴 वेबसाईट मेंटेनन्स मोडवर टाका (Maintenance)</option>
             </select>
         </div>
 
@@ -1725,7 +1714,7 @@ def home_tests_list():
 
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY id ASC")
+            cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY sequence_order ASC, id ASC")
             raw_tests = cur.fetchall()
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='recruitment_pdf'")
             r_row = cur.fetchone()
@@ -1755,11 +1744,20 @@ def home_tests_list():
             """)
             live_district_battles = cur.fetchall()
 
+            # विद्यार्थ्याच्या सोडवलेल्या टेस्ट्सची माहिती
+            completed_test_ids = set()
+            last_rapid_completed_at = None
+            if user_phone:
+                cur.execute("SELECT test_id, test_date FROM mock_test_leads WHERE phone=%s AND is_deleted=0", (user_phone,))
+                for row in cur.fetchall():
+                    completed_test_ids.add(row['test_id'])
+
     ordered_tabs = [t.strip() for t in home_tab_order.split(',') if t.strip()]
 
     tests = []
     for t in raw_tests:
         t_dict = dict(t)
+        # रॅपिड फायर टेस्ट लॉजिक: जर पहिली टेस्ट असेल तर ओपन, पुढील टेस्ट्स आधीची सोडवल्यास दुसऱ्या दिवशी सकाळी १०:०० ला ओपन
         if t_dict.get('category') == 'rapid':
             seq = t_dict.get('sequence_order') or 1
             if seq == 1:
@@ -1920,7 +1918,6 @@ def request_paid_test(test_id):
 
     return "<h3 style='color:green; text-align:center; padding:40px;'>✅ मॅन्युअल पडताळणी प्रलंबित! २४ तासांत लिंक WhatsApp वर मिळेल.</h3>"
 
-# 100% Crash-Proof Submit Test Route
 @app.route('/submit_test/<int:test_id>', methods=['POST'])
 def submit_test(test_id):
     try:
@@ -2128,6 +2125,9 @@ def admin_dashboard():
     if not session.get('admin_logged'): return redirect('/admin/login')
 
     active_tab = request.args.get('tab', 'leads')
+    q_subtab = request.args.get('q_subtab', 'manual')
+    cat_tab = request.args.get('cat_tab', 'all')
+    sort_by = request.args.get('sort_by', 'seq')
     filter_test_id = request.args.get('filter_test_id', '')
     lead_dist = request.args.get('lead_dist', '')
     lead_test_id = request.args.get('lead_test_id', '')
@@ -2149,12 +2149,27 @@ def admin_dashboard():
             cur.execute("SELECT DISTINCT district FROM mock_test_leads WHERE district != '' AND is_deleted=0")
             all_districts = [r['district'] for r in cur.fetchall()]
 
-            cur.execute("SELECT * FROM test_papers WHERE is_deleted=0 ORDER BY id ASC")
+            # टेस्ट सॉर्टिंग व कॅटेगरी फिल्टर
+            test_order_sql = "sequence_order ASC, id ASC"
+            if sort_by == 'name':
+                test_order_sql = "test_title ASC"
+            elif sort_by == 'id':
+                test_order_sql = "id DESC"
+
+            test_query = f"SELECT * FROM test_papers WHERE is_deleted=0"
+            test_params = []
+            if cat_tab != 'all':
+                test_query += " AND category = %s"
+                test_params.append(cat_tab)
+            test_query += f" ORDER BY {test_order_sql}"
+            cur.execute(test_query, tuple(test_params))
             tests = cur.fetchall()
 
-            # जर filter_test_id नसेल, तर पहिली उपलब्ध टेस्ट आपोआप निवडा (जेणेकरून सर्व प्रश्न एकत्र न येता एकाच टेस्टचे दिसतील)
-            if not filter_test_id and tests:
-                filter_test_id = str(tests[0]['id'])
+            cur.execute("SELECT * FROM test_papers WHERE is_deleted=0 ORDER BY sequence_order ASC, id ASC")
+            all_available_tests = cur.fetchall()
+
+            if not filter_test_id and all_available_tests:
+                filter_test_id = str(all_available_tests[0]['id'])
 
             if filter_test_id:
                 cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id DESC", (filter_test_id,))
@@ -2163,7 +2178,7 @@ def admin_dashboard():
             all_questions = cur.fetchall()
 
             selected_test_title = "निवडलेली टेस्ट"
-            for t in tests:
+            for t in all_available_tests:
                 if str(t['id']) == str(filter_test_id):
                     selected_test_title = t['test_title']
                     break
@@ -2241,6 +2256,9 @@ def admin_dashboard():
     return render_template_string(
         ADMIN_TEMPLATE,
         active_tab=active_tab,
+        q_subtab=q_subtab,
+        cat_tab=cat_tab,
+        sort_by=sort_by,
         leads=leads,
         tests=tests,
         all_questions=all_questions,
@@ -2273,7 +2291,6 @@ def admin_dashboard():
         deleted_leads_list=deleted_leads_list
     )
 
-# मॅन्युअली प्रश्न ॲड करणे
 @app.route('/admin/add_manual_question', methods=['POST'])
 def admin_add_manual_question():
     if not session.get('admin_logged'): 
@@ -2297,9 +2314,8 @@ def admin_add_manual_question():
                 """, (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation))
                 conn.commit()
 
-    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
+    return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={test_id}')
 
-# रोबस्ट CSV अपलोड (७ कॉलम किंवा ९ कॉलम दोन्हीसाठी)
 @app.route('/admin/upload_csv_questions', methods=['POST'])
 def admin_upload_csv_questions():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -2356,7 +2372,7 @@ def admin_upload_csv_questions():
                 """, questions_to_insert)
                 conn.commit()
 
-    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
+    return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={test_id}')
 
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
@@ -2364,14 +2380,17 @@ def admin_ai_generate_advanced():
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     
     if genai is None:
-        return jsonify({"success": False, "error": "Google GenAI library लोड झालेली नाही!"}), 500
+        return jsonify({"success": False, "error": "Google GenAI library इन्स्टॉल केलेली नाही!"}), 500
 
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
     subject_counts = data.get('subject_counts', {})
     test_id = data.get('test_id')
 
-    api_key = "AQ.Ab8RN6LDVf9ZOn4wiAmlbFVONp6aCiq8XU7gTJyR0rgr73crgA"
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return jsonify({"success": False, "error": "GEMINI_API_KEY Environment Variable मध्ये सेट केलेली नाही!"}), 400
+
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-2.5-flash')
@@ -2389,7 +2408,6 @@ def admin_ai_generate_advanced():
             )
 
             response = model.generate_content(prompt)
-            
             lines = response.text.strip().split('\n')
             for line in lines:
                 parts = [p.strip() for p in line.split('|')]
@@ -2402,8 +2420,7 @@ def admin_ai_generate_advanced():
                     corr = parts[5].upper()
                     if corr not in ['A', 'B', 'C', 'D']:
                         corr = 'A'
-                    exp = parts[6] if len(parts) > 6 else 'Spashtikaran uplabdh nahi.'
-                    
+                    exp = parts[6] if len(parts) > 6 else 'स्पष्टीकरण उपलब्ध नाही.'
                     generated_list.append((test_id, q, oa, ob, oc, od, corr, exp))
 
         if generated_list:
@@ -2444,6 +2461,19 @@ def admin_restore_item(item_type, item_id):
             conn.commit()
     return redirect('/admin/dashboard?tab=trash')
 
+@app.route('/admin/bulk_restore_trash', methods=['POST'])
+def admin_bulk_restore_trash():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    ids = request.form.getlist('question_ids')
+    if ids:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                int_ids = [int(i) for i in ids if str(i).isdigit()]
+                if int_ids:
+                    cur.execute("UPDATE questions SET is_deleted=0 WHERE id = ANY(%s)", (int_ids,))
+                    conn.commit()
+    return redirect('/admin/dashboard?tab=trash')
+
 @app.route('/admin/bulk_delete_feedback', methods=['POST'])
 def admin_bulk_delete_feedback():
     if not session.get('admin_logged'): return redirect('/admin/login')
@@ -2479,7 +2509,7 @@ def admin_manual_schedule_rapid():
                     VALUES (%s, 'Free', 0, %s, 'Active', 'rapid', %s, %s)
                 ''', (title, duration, publish_dt, next_seq))
                 conn.commit()
-    return redirect('/admin/dashboard?tab=launch')
+    return redirect('/admin/dashboard?tab=launch&cat_tab=rapid')
 
 @app.route('/admin/update_razorpay_settings', methods=['POST'])
 def admin_update_razorpay_settings():
@@ -2540,7 +2570,7 @@ def admin_edit_question(q_id):
                 cur.execute("SELECT test_id FROM questions WHERE id=%s", (q_id,))
                 q_row = cur.fetchone()
                 test_id = q_row['test_id'] if q_row else ''
-                return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
+                return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={test_id}')
 
             cur.execute("SELECT * FROM questions WHERE id=%s AND is_deleted=0", (q_id,))
             question = cur.fetchone()
@@ -2554,9 +2584,9 @@ def admin_ai_scan_hardcopy():
     test_id = request.form.get('test_id')
     
     simulated_scanned_questions = [
-        ("हार्डकॉपी स्कॅन प्रश्न १: महाराष्ट्राची राजधानी कोणती? | मुंबई | पुणे | नागपूर | औरंगाबाद | A | मुंबई ही महाराष्ट्राची आर्थिक राजधानी व राजधानी आहे."),
-        ("हार्डकॉपी स्कॅन प्रश्न २: भारताचे सध्याचे राष्ट्रीय गीत कोणते? | जन गण मन | वंदे मातरम् | सारे जहाँ से अच्छा | जय हिंद | B | बकीमचंद्र चटर्जी यांनी वंदे मातरम् लिहिले."),
-        ("हार्डकॉपी स्कॅन प्रश्न ३: क्षेत्रफळानुसार जगातील सर्वात मोठा देश कोणता? | रशिया | कॅनडा | चीन | अमेरिका | A | रशिया हा जगातील क्षेत्रफलानुसार सर्वात मोठा देश आहे.")
+        ("हार्डकॉपी स्कॅन प्रश्न १: महाराष्ट्राची राजधानी कोणती? | मुंबई | पुणे | नागपूर | औरंगाबाद | A | मुंबई ही महाराष्ट्राची राजधानी आहे."),
+        ("हार्डकॉपी स्कॅन प्रश्न २: भारताचे सध्याचे राष्ट्रीय गीत कोणते? | जन गण मन | वंदे मातरम् | सारे जहाँ से अच्छा | जय हिंद | B | बंकिमचंद्र चटर्जी यांनी वंदे मातरम् लिहिले."),
+        ("हार्डकॉपी स्कॅन प्रश्न ३: क्षेत्रफळानुसार जगातील सर्वात मोठा देश कोणता? | रशिया | कॅनडा | चीन | अमेरिका | A | रशिया हा जगातील सर्वात मोठा देश आहे.")
     ]
 
     questions_to_insert = []
@@ -2601,7 +2631,7 @@ def admin_bulk_delete_questions():
                 if int_ids:
                     cur.execute("UPDATE questions SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
                     conn.commit()
-    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
+    return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={test_id}')
 
 @app.route('/admin/bulk_delete_trash', methods=['POST'])
 def admin_bulk_delete_trash():
@@ -2626,7 +2656,7 @@ def admin_delete_question(q_id):
             t_id = q_row['test_id'] if q_row else ''
             cur.execute("UPDATE questions SET is_deleted=1 WHERE id=%s", (q_id,))
             conn.commit()
-    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={t_id}')
+    return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={t_id}')
 
 @app.route('/admin/delete_test/<int:test_id>')
 def admin_delete_test(test_id):
@@ -2654,7 +2684,7 @@ def admin_add_test():
                 VALUES (%s, %s, %s, %s, 'Active', %s, %s)
             """, (title, ttype, fee, duration, category, seq))
             conn.commit()
-    return redirect('/admin/dashboard?tab=launch')
+    return redirect(f'/admin/dashboard?tab=launch&cat_tab={category}')
 
 @app.route('/admin/update_test/<int:test_id>', methods=['POST'])
 def admin_update_test(test_id):
@@ -2666,6 +2696,7 @@ def admin_update_test(test_id):
     fee = float(request.form.get('test_fee', 0) or 0)
     duration = int(request.form.get('duration_minutes', 60) or 60)
     status = request.form.get('status', 'Active').strip()
+    return_cat_tab = request.form.get('return_cat_tab', 'all')
 
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -2675,7 +2706,7 @@ def admin_update_test(test_id):
                 WHERE id=%s
             """, (title, ttype, fee, duration, category, seq, status, test_id))
             conn.commit()
-    return redirect('/admin/dashboard?tab=launch')
+    return redirect(f'/admin/dashboard?tab=launch&cat_tab={return_cat_tab}')
 
 @app.route('/admin/print_test/<int:test_id>')
 def admin_print_test(test_id):
