@@ -3,6 +3,6 @@ psycopg2-binary>=2.9.9
 gunicorn>=21.2.0
 gevent>=24.2.1
 werkzeug>=3.0.1
-razorpay
-google-genai
-google-generativeai
+razorpay>=1.4.1
+google-generativeai>=0.8.0
+requests>=2.31.0
