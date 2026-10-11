@@ -600,7 +600,7 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
 <div id="waRulesModal" class="rules-modal">
     <div class="rules-content">
         <h3 style="color:#25D366; margin-top:0; text-align:center;">🚨 अधिकृत सराव ग्रुप नियम व अटी</h3>
-        <p style="font-size:13px; color:#cbd5e1; line-left:1.5;">या ग्रुपचा उद्देश केवळ पोलीस भरती परीक्षेचा सराव, मोफत टेस्ट्स आणि अभ्यासाची माहिती देणे हा आहे. ग्रुपमध्ये सहभागी होण्यापूर्वी खालील नियमांचे पालन करणे बंधनकारक आहे:</p>
+        <p style="font-size:13px; color:#cbd5e1; line-height:1.5;">या ग्रुपचा उद्देश केवळ पोलीस भरती परीक्षेचा सराव, मोफत टेस्ट्स आणि अभ्यासाची माहिती देणे हा आहे. ग्रुपमध्ये सहभागी होण्यापूर्वी खालील नियमांचे पालन करणे बंधनकारक आहे:</p>
         
         <div style="background:#0f172a; padding:12px; border-radius:8px; border-left:4px solid #ef4444; margin-bottom:10px;">
             <b style="color:#fca5a5; font-size:13px;">१. प्रायव्हसी व महिलांचा सन्मान (Privacy Rules):</b>
@@ -631,6 +631,7 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
     <div style="background:#0f172a; border:1px solid #334155; border-radius:12px; padding:18px; margin:15px 0; text-align:center;">
         <p style="font-size:16px; margin:4px 0; color:#cbd5e1;">परीक्षार्थी: <b>{{ lead.student_name }}</b> (जिल्हा: <b>{{ lead.district }}</b>)</p>
         <p style="font-size:24px; color:#fbbf24; font-weight:bold; margin-top:8px;">🏆 संपूर्ण महाराष्ट्रातील रँक: <b style="color:#34d399; font-size:32px;">#{{ state_rank }}</b> 🌟</p>
+        <p style="font-size:16px; color:#38bdf8; margin: 4px 0;">📍 जिल्हा रँक ({{ lead.district }}): <b>#{{ district_rank }}</b></p>
         <p style="font-size:20px; font-weight:bold; color:#f8fafc; margin-top:4px;">प्राप्त गुण: <span style="color:#10b981;">{{ lead.score }}</span> / {{ lead.total_marks }}</p>
     </div>
 
@@ -912,6 +913,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         function toggleSelectAll(master, className) {
             document.querySelectorAll('.' + className).forEach(cb => cb.checked = master.checked);
         }
+        function switchTestView(testId) {
+            window.location.href = '/admin/dashboard?tab=questions&filter_test_id=' + testId;
+        }
         function generateAIQuestionsFromAdvancedForm() {
             const testId = document.getElementById('ai_target_test_id').value;
             const dept = document.getElementById('ai_department').value;
@@ -936,7 +940,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             }
 
             const btn = document.getElementById('advancedAiBtn');
-            btn.innerText = '⏳ AI प्रश्न तयार करत आहे (डुप्युटेशन तपासून)...';
+            btn.innerText = '⏳ AI प्रश्न तयार करत आहे...';
             btn.disabled = true;
 
             fetch('/admin/ai_generate_advanced', {
@@ -947,8 +951,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("✅ AI द्वारे " + data.inserted_count + " नवीन प्रश्न (डुप्युटेशन टाळून) यशस्वीपणे सेव्ह झाले!");
-                    location.reload();
+                    alert("✅ AI द्वारे " + data.inserted_count + " नवीन प्रश्न यशस्वीपणे सेव्ह झाले!");
+                    window.location.href = '/admin/dashboard?tab=questions&filter_test_id=' + testId;
                 } else {
                     alert("⚠️ एरर: " + (data.error || 'अज्ञात एरर'));
                 }
@@ -979,8 +983,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("✅ हार्डकॉपी स्कॅन करून " + data.inserted_count + " प्रश्न यशस्वीपणे CSV द्वारे टेस्टमध्ये ॲड केले गेले!");
-                    location.reload();
+                    alert("✅ हार्डकॉपी स्कॅन करून " + data.inserted_count + " प्रश्न यशस्वीपणे टेस्टमध्ये ॲड केले गेले!");
+                    window.location.href = '/admin/dashboard?tab=questions&filter_test_id=' + testId;
                 } else {
                     alert("⚠️ एरर: " + (data.error || 'स्कॅनिंग एरर'));
                 }
@@ -1011,7 +1015,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             {% if tab == 'leads' %}<a href="/admin/dashboard?tab=leads" class="{{ 'active' if active_tab == 'leads' else '' }}">📱 Leads (विद्यार्थी डेटा)</a>
             {% elif tab == 'payments' %}<a href="/admin/dashboard?tab=payments" class="{{ 'active' if active_tab == 'payments' else '' }}">💰 Payments & Razorpay</a>
             {% elif tab == 'special' %}<a href="/admin/dashboard?tab=special" class="{{ 'active' if active_tab == 'special' else '' }}">👑 Special Access</a>
-            {% elif tab == 'questions' %}<a href="/admin/dashboard?tab=questions" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (मॅन्युअल व AI)</a>
+            {% elif tab == 'questions' %}<a href="/admin/dashboard?tab=questions{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions (मॅन्युअल व AI)</a>
             {% elif tab == 'launch' %}<a href="/admin/dashboard?tab=launch" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Tests Management</a>
             {% elif tab == 'leaderboard' %}<a href="/admin/dashboard?tab=leaderboard" class="{{ 'active' if active_tab == 'leaderboard' else '' }}">🏆 Leaderboard</a>
             {% elif tab == 'feedback' %}<a href="/admin/dashboard?tab=feedback" class="{{ 'active' if active_tab == 'feedback' else '' }}">💬 Feedback</a>
@@ -1148,19 +1152,19 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- 4. QUESTIONS TAB (MANUAL ENTRY, AI GENERATOR, CSV & HARDCOPY) -->
+    <!-- 4. QUESTIONS TAB (मॅन्युअल, AI जनरेटर व CSV) -->
     {% elif active_tab == 'questions' %}
     <h3>📝 प्रश्न व्यवस्थापन (मॅन्युअल नोंद, AI प्रश्न जनरेटर व CSV)</h3>
-    
-    <!-- नवीन मॅन्युअल प्रश्न नोंदणी फॉर्म -->
+
+    <!-- मॅन्युअल प्रश्न नोंदणी फॉर्म -->
     <div style="background:#ffffff; border:2px solid #059669; padding:20px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
         <h4 style="margin:0 0 12px; color:#065f46; font-size:16px;">✍️ मॅन्युअल प्रश्न, पर्याय, अचूक उत्तर व स्पष्टीकरण जोडा</h4>
         <form method="POST" action="/admin/add_manual_question">
             <div style="margin-bottom:10px;">
-                <label style="font-weight:bold; font-size:12px;">टेस्ट निवडा:</label>
-                <select name="test_id" required>
+                <label style="font-weight:bold; font-size:12px;">कोणत्या टेस्टमध्ये प्रश्न जोडायचा आहे ती टेस्ट निवडा:</label>
+                <select name="test_id" required onchange="switchTestView(this.value)">
                     {% for t in tests %}
-                    <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                    <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }} (ID: {{ t.id }})</option>
                     {% endfor %}
                 </select>
             </div>
@@ -1188,7 +1192,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px; margin-bottom:10px;">
                 <div>
-                    <label style="font-weight:bold; font-size:12px;">अचूक पर्याय निवडा:</label>
+                    <label style="font-weight:bold; font-size:12px;">अचूक उत्तर निवडा:</label>
                     <select name="correct" required>
                         <option value="A">A</option>
                         <option value="B">B</option>
@@ -1198,21 +1202,23 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 </div>
                 <div>
                     <label style="font-weight:bold; font-size:12px;">सविस्तर स्पष्टीकरण (पर्यायी):</label>
-                    <input type="text" name="explanation" placeholder="या प्रश्नाचे अचूक स्पष्टीकरण येथे लिहा...">
+                    <input type="text" name="explanation" placeholder="या प्रश्नाचे स्पष्टीकरण लिहा...">
                 </div>
             </div>
-            <button type="submit" class="btn" style="width:100%; background:#059669; font-weight:800;">➕ हा प्रश्न टेस्टमध्ये जोडा</button>
+            <button type="submit" class="btn" style="width:100%; background:#059669; font-weight:800;">➕ हा प्रश्न निवडलेल्या टेस्टमध्ये जोडा</button>
         </form>
     </div>
 
-    <!-- Feature 6: Advanced AI Smart Mock Question Generator Form -->
+    <!-- AI स्मार्ट मॉक प्रश्न जनरेटर फॉर्म -->
     <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:25px;">
-        <h4 style="margin:0 0 10px; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर (विभाग व विषयनिहाय संख्या)</h4>
+        <h4 style="margin:0 0 10px; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर (विभाग व विषयनिहाय)</h4>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
             <div>
                 <label style="font-weight:bold; font-size:12px;">टेस्ट निवडा:</label>
                 <select id="ai_target_test_id">
-                    {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+                    {% for t in tests %}
+                    <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
@@ -1226,7 +1232,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             </div>
         </div>
         <div style="margin-bottom:12px;">
-            <label style="font-weight:bold; font-size:12px; display:block; margin-bottom:4px;">विषय निवडा व त्यासमोर हवी असलेली प्रश्नांची संख्या टाका:</label>
+            <label style="font-weight:bold; font-size:12px; display:block; margin-bottom:4px;">विषय निवडा व संख्या टाका:</label>
             <div style="background:white; padding:12px; border-radius:6px; border:1px solid #cbd5e1; display:flex; flex-direction:column; gap:8px;">
                 {% set subjects_list = ['मराठी व्याकरण', 'गणित', 'बुद्धिमत्ता', 'राज्यशास्त्र व नागरिक शास्त्र', 'भूगोल', 'विज्ञान', 'इतिहास', 'समाज सुधारक', 'सामान्य विज्ञान', 'अर्थशास्त्र', 'चालू घडामोडी', 'संगणक', 'माहिती अधिकार कायदा 2005', 'इंग्रजी व्याकरण'] %}
                 {% for subj in subjects_list %}
@@ -1238,17 +1244,18 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             </div>
         </div>
         <button id="advancedAiBtn" type="button" class="btn" onclick="generateAIQuestionsFromAdvancedForm()" style="background:#10b981; color:#022c22; font-weight:800; width:100%;">
-            🤖 AI स्मार्ट प्रश्न जनरेट करा व सेव्ह करा (डुप्युटेशन टाळून)
+            🤖 AI स्मार्ट प्रश्न जनरेट करा व सेव्ह करा
         </button>
     </div>
 
-    <!-- Feature 4: Hardcopy Scan AI Parser -->
+    <!-- हार्डकॉपी स्कॅनर -->
     <div style="background:#eff6ff; border:2px dashed #3b82f6; padding:18px; border-radius:8px; margin-bottom:25px;">
         <h4 style="margin:0 0 8px; color:#1e40af;">📄 प्रश्नपत्रिका हार्डकॉपी स्कॅनर व AI ऑटोमॅटिक CSV जनरेटर</h4>
-        <p style="font-size:12.5px; color:#1d4ed8; margin:0 0 10px;">प्रिंटर किंवा स्कॉनेरमध्ये हार्डकॉपी ठेवल्यानंतर स्कॅन झालेली फाईल/फोटो येथे अपलोड करा. AI ॲनालिसिस करून स्वयंचलित प्रश्न तयार करेल.</p>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
             <select id="scan_target_test_id">
-                {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+                {% for t in tests %}
+                <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                {% endfor %}
             </select>
             <input type="file" id="hardcopyScanFile" accept="image/*,.pdf,.txt" style="background:white; padding:6px;">
         </div>
@@ -1257,22 +1264,40 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </button>
     </div>
 
-    <!-- Feature 2: Robust CSV Upload -->
+    <!-- CSV अपलोड फॉर्म (रोबस्ट पार्सर) -->
     <div style="background:#fefce8; border:2px dashed #ca8a04; padding:18px; border-radius:8px; margin-bottom:25px;">
         <h4 style="margin:0 0 8px; color:#854d0e;">📥 १०० प्रश्नांची CSV फाईल अपलोड (रोबस्ट पार्सर)</h4>
         <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data">
             <select name="test_id" required style="margin-bottom:8px;">
-                {% for t in tests %}<option value="{{ t.id }}">{{ t.test_title }}</option>{% endfor %}
+                {% for t in tests %}
+                <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                {% endfor %}
             </select>
             <input type="file" name="csv_file" accept=".csv,.txt" required style="margin-bottom:8px; background:white; padding:6px;">
             <button type="submit" class="btn" style="background:#ca8a04; width:100%;">🚀 संपूर्ण प्रश्न CSV द्वारे अपलोड करा</button>
         </form>
     </div>
 
-    <!-- Feature 5: Bulk Delete & Edit Options -->
+    <!-- फक्त निवडलेल्या टेस्टचे प्रश्न पाहणे आणि मॅनेज करणे -->
+    <div style="background:#f8fafc; border:1.5px solid #cbd5e1; padding:15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+            <label style="font-weight:bold; font-size:13px; color:#0f172a;">🎯 खालील तक्त्यामध्ये कोणत्या टेस्टचे प्रश्न पाहायचे आहेत ते निवडा:</label>
+            <select style="width:300px; margin-bottom:0; font-weight:bold; color:#065f46;" onchange="switchTestView(this.value)">
+                {% for t in tests %}
+                <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="font-size:13px; color:#64748b; font-weight:bold;">
+            या टेस्टमध्ये एकूण प्रश्न: <span style="color:#059669; font-size:15px;">{{ all_questions|length }}</span>
+        </div>
+    </div>
+
     <form method="POST" action="/admin/bulk_delete_questions" onsubmit="return confirm('निवडलेले सर्व प्रश्न डिलीट करायचे का?');">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h4 style="margin:0;">सर्व प्रश्न यादी:</h4>
+            <h4 style="margin:0; color:#0f172a;">
+                📋 या टेस्टचे प्रश्न ({{ selected_test_title }}):
+            </h4>
             <button type="submit" class="btn" style="background:#dc2626; padding:5px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न डिलीट करा</button>
         </div>
         <table>
@@ -1286,6 +1311,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे?');">🗑️</a>
                 </td>
             </tr>
+            {% else %}
+            <tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">या टेस्टमध्ये अजून एकही प्रश्न जोडलेला नाही. वरून मॅन्युअली किंवा CSV द्वारे प्रश्न जोडा.</td></tr>
             {% endfor %}
         </table>
     </form>
@@ -1905,123 +1932,125 @@ def request_paid_test(test_id):
 
     return "<h3 style='color:green; text-align:center; padding:40px;'>✅ मॅन्युअल पडताळणी प्रलंबित! २४ तासांत लिंक WhatsApp वर मिळेल.</h3>"
 
+# 100% Crash-Proof Submit Test Route
 @app.route('/submit_test/<int:test_id>', methods=['POST'])
 def submit_test(test_id):
-    student_name = request.form.get('student_name', '').strip()
-    district = request.form.get('district', '').strip()
-    phone = request.form.get('phone', '').strip()
-    referred_by = session.get('referred_by', '')
+    try:
+        student_name = request.form.get('student_name', '').strip()
+        district = request.form.get('district', '').strip()
+        phone = request.form.get('phone', '').strip()
+        referred_by = session.get('referred_by', '')
 
-    if not re.match(r'^[6-9]\d{9}$', phone):
-        return "⚠️ अवैध मोबाईल नंबर!", 400
+        if not re.match(r'^[6-9]\d{9}$', phone):
+            return "<h3 style='color:red; text-align:center; padding:30px;'>⚠️ अवैध मोबाईल नंबर! कृपया १० अंकी योग्य नंबर टाका.</h3>", 400
 
-    session['user_phone'] = phone
+        session['user_phone'] = phone
 
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
-            test = cur.fetchone()
-            cur.execute("SELECT id, correct FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
-            questions = cur.fetchall()
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
+                test = cur.fetchone()
+                if not test: 
+                    return "Test not found", 404
 
-    if not test: return "Test not found", 404
+                cur.execute("SELECT id, correct FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
+                questions = cur.fetchall()
 
-    score = 0
-    total = len(questions)
-    user_answers = {}
+                score = 0
+                total = len(questions)
+                user_answers = {}
 
-    for q in questions:
-        ans = request.form.get(f"q_{q['id']}", "")
-        user_answers[str(q['id'])] = ans
-        if ans == q['correct']:
-            score += 1
+                for q in questions:
+                    ans = request.form.get(f"q_{q['id']}", "")
+                    user_answers[str(q['id'])] = ans
+                    if ans == q['correct']:
+                        score += 1
 
-    t_date = date.today().strftime("%Y-%m-%d")
-    ans_json_str = json.dumps(user_answers)
-    result_token = secrets.token_hex(10)
+                t_date = date.today().strftime("%Y-%m-%d")
+                ans_json_str = json.dumps(user_answers)
+                result_token = secrets.token_hex(10)
 
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                INSERT INTO mock_test_leads (test_id, test_date, student_name, district, phone, whatsapp_verified, payment_status, score, total_marks, test_name, answers_json, access_token, referred_by_phone)
-                VALUES (%s, %s, %s, %s, %s, 1, 'Approved', %s, %s, %s, %s, %s, %s) RETURNING id
-            """, (test_id, t_date, student_name, district, phone, score, total, test['test_title'], ans_json_str, result_token, referred_by))
-            
-            if referred_by and test.get('category') == 'free':
                 cur.execute("""
-                    SELECT COUNT(DISTINCT phone) as valid_friends 
+                    INSERT INTO mock_test_leads (test_id, test_date, student_name, district, phone, whatsapp_verified, payment_status, score, total_marks, test_name, answers_json, access_token, referred_by_phone)
+                    VALUES (%s, %s, %s, %s, %s, 1, 'Approved', %s, %s, %s, %s, %s, %s) RETURNING id
+                """, (test_id, t_date, student_name, district, phone, score, total, test['test_title'], ans_json_str, result_token, referred_by))
+
+                completed_friends_count = 0
+                if referred_by and test.get('category') == 'free':
+                    cur.execute("""
+                        SELECT COUNT(DISTINCT phone) as valid_friends 
+                        FROM mock_test_leads
+                        WHERE referred_by_phone=%s AND test_id=%s AND is_deleted=0
+                    """, (referred_by, test_id))
+                    f_res = cur.fetchone()
+                    if f_res and f_res['valid_friends'] >= 3:
+                        c_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+                        cur.execute("""
+                            INSERT INTO shared_free_passes (phone, unlocked_paid_count, created_at)
+                            VALUES (%s, 2, %s)
+                            ON CONFLICT (phone) DO UPDATE SET unlocked_paid_count=2
+                        """, (referred_by, c_time))
+
+                cur.execute("""
+                    SELECT COUNT(DISTINCT phone) as my_friends
                     FROM mock_test_leads
                     WHERE referred_by_phone=%s AND test_id=%s AND is_deleted=0
-                """, (referred_by, test_id))
-                friends_count = cur.fetchone()['valid_friends']
-                if friends_count >= 3:
-                    c_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-                    cur.execute("""
-                        INSERT INTO shared_free_passes (phone, unlocked_paid_count, created_at)
-                        VALUES (%s, 2, %s)
-                        ON CONFLICT (phone) DO UPDATE SET unlocked_paid_count=2
-                    """, (referred_by, c_time))
+                """, (phone, test_id))
+                f_row = cur.fetchone()
+                if f_row:
+                    completed_friends_count = f_row['my_friends']
 
-            cur.execute("""
-                SELECT COUNT(DISTINCT phone) as my_friends
-                FROM mock_test_leads
-                WHERE referred_by_phone=%s AND test_id=%s AND is_deleted=0
-            """, (phone, test_id))
-            f_row = cur.fetchone()
-            completed_friends_count = f_row['my_friends'] if f_row else 0
+                cur.execute("SELECT COUNT(*) as higher FROM mock_test_leads WHERE test_id=%s AND score > %s AND is_deleted=0", (test_id, score))
+                rank_res = cur.fetchone()
+                state_rank = (rank_res['higher'] + 1) if rank_res else 1
 
-            cur.execute("SELECT COUNT(*) as higher FROM mock_test_leads WHERE test_id=%s AND score > %s AND is_deleted=0", (test_id, score))
-            state_rank = cur.fetchone()['higher'] + 1
-            
-            cur.execute("SELECT COUNT(*) as higher_dist FROM mock_test_leads WHERE test_id=%s AND district ILIKE %s AND score > %s AND is_deleted=0", (test_id, district, score))
-            district_rank = cur.fetchone()['higher_dist'] + 1
-            
-            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='insta_link'")
-            insta_link = cur.fetchone()['setting_value'] if cur.fetchone() else ''
-            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='yt_link'")
-            yt_link = cur.fetchone()['setting_value'] if cur.fetchone() else ''
-            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='toppers_link'")
-            toppers_link = cur.fetchone()['setting_value'] if cur.fetchone() else ''
-            
-            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='wa_groups_multiline'")
-            wg_row = cur.fetchone()
-            wa_groups_str = wg_row['setting_value'] if wg_row else ''
-            group_list = [g.strip() for g in wa_groups_str.split('\n') if g.strip()]
+                cur.execute("SELECT COUNT(*) as higher_dist FROM mock_test_leads WHERE test_id=%s AND district ILIKE %s AND score > %s AND is_deleted=0", (test_id, district, score))
+                dist_res = cur.fetchone()
+                district_rank = (dist_res['higher_dist'] + 1) if dist_res else 1
 
-            cur.execute("SELECT COUNT(*) as cnt FROM mock_test_leads WHERE is_deleted=0")
-            total_students_count = cur.fetchone()['cnt']
-            
-            group_index = min(total_students_count // 1000, max(0, len(group_list) - 1)) if group_list else 0
-            wa_active_link = group_list[group_index] if group_list else ''
+                cur.execute("SELECT setting_key, setting_value FROM academy_settings WHERE setting_key IN ('insta_link', 'yt_link', 'toppers_link', 'wa_groups_multiline')")
+                settings_dict = {r['setting_key']: r['setting_value'] for r in cur.fetchall()}
 
-            conn.commit()
+                insta_link = settings_dict.get('insta_link', '')
+                yt_link = settings_dict.get('yt_link', '')
+                toppers_link = settings_dict.get('toppers_link', '')
+                wa_groups_str = settings_dict.get('wa_groups_multiline', '')
 
-    main_portal_url = request.host_url.rstrip('/')
-    result_url = main_portal_url + url_for('detailed_answers', token=result_token)
-    
-    sig = generate_tamper_signature(phone)
-    
-    ego_msg = f"महाराष्ट्र पोलीस भरती लेखी परीक्षा ओपन चॅलेंज मैदानावर खाकीची जिद्द दाखवली आता लेखी परीक्षेत तुमची तयारी किती आहे सिद्ध करा जिल्ह्यात आणि राज्यात तुझे लेखी तयारी किती आहे ती पाहायचे असेल तर खालील लिंक वर क्लिक करून मोफत पोलीस भरती सराव लेखी चाचणी दे {main_portal_url} तुझ्यासोबत तुझा मित्रही भरती झाला पाहिजे त्यालाही हा मेसेज पाठव आणि रोजचे रॅपिड फायर टेस्ट मोफत मिळव"
-    ego_share_encoded = urllib.parse.quote(ego_msg)
+                group_list = [g.strip() for g in wa_groups_str.split('\n') if g.strip()]
+                cur.execute("SELECT COUNT(*) as cnt FROM mock_test_leads WHERE is_deleted=0")
+                cnt_row = cur.fetchone()
+                total_students_count = cnt_row['cnt'] if cnt_row else 0
 
-    return render_template_string(
-        RESULT_SUMMARY_TEMPLATE.replace(
-            '🏆 संपूर्ण महाराष्ट्रातील रँक: <b style="color:#34d399; font-size:32px;">#{{ state_rank }}</b>',
-            '🏆 संपूर्ण महाराष्ट्रातील रँक: <b style="color:#34d399; font-size:32px;">#{{ state_rank }}</b><br><span style="font-size:16px; color:#38bdf8;">📍 जिल्हा रँक ({{ lead.district }}): <b>#{{ district_rank }}</b></span>'
-        ),
-        lead={'student_name': student_name, 'district': district, 'phone': phone, 'test_name': test['test_title'], 'score': score, 'total_marks': total, 'access_token': result_token},
-        state_rank=state_rank,
-        district_rank=district_rank,
-        result_url=result_url,
-        main_portal_url=main_portal_url,
-        ego_share_encoded=ego_share_encoded,
-        test_category=test.get('category', 'free'),
-        insta_link=insta_link,
-        yt_link=yt_link,
-        toppers_link=toppers_link,
-        wa_active_link=wa_active_link,
-        completed_friends_count=completed_friends_count
-    )
+                group_index = min(total_students_count // 1000, max(0, len(group_list) - 1)) if group_list else 0
+                wa_active_link = group_list[group_index] if group_list else ''
+
+                conn.commit()
+
+        main_portal_url = request.host_url.rstrip('/')
+        result_url = main_portal_url + url_for('detailed_answers', token=result_token)
+        
+        ego_msg = f"महाराष्ट्र पोलीस भरती लेखी परीक्षा ओपन चॅलेंज मैदानावर खाकीची जिद्द दाखवली आता लेखी परीक्षेत तुमची तयारी किती आहे सिद्ध करा {main_portal_url}"
+        ego_share_encoded = urllib.parse.quote(ego_msg)
+
+        return render_template_string(
+            RESULT_SUMMARY_TEMPLATE,
+            lead={'student_name': student_name, 'district': district, 'phone': phone, 'test_name': test['test_title'], 'score': score, 'total_marks': total, 'access_token': result_token},
+            state_rank=state_rank,
+            district_rank=district_rank,
+            result_url=result_url,
+            main_portal_url=main_portal_url,
+            ego_share_encoded=ego_share_encoded,
+            test_category=test.get('category', 'free'),
+            insta_link=insta_link,
+            yt_link=yt_link,
+            toppers_link=toppers_link,
+            wa_active_link=wa_active_link,
+            completed_friends_count=completed_friends_count
+        )
+
+    except Exception as e:
+        print(f"❌ Submit Test Error: {e}")
+        return f"<h3 style='color:red; text-align:center; padding:30px;'>सर्व्हर त्रुटी आली आहे: {str(e)}<br><br><a href='/'>मुख्य पानावर परत जा</a></h3>", 500
 
 @app.route('/verify_rapid_key/<token>', methods=['POST'])
 def verify_rapid_key(token):
@@ -2135,11 +2164,21 @@ def admin_dashboard():
             cur.execute("SELECT * FROM test_papers WHERE is_deleted=0 ORDER BY id ASC")
             tests = cur.fetchall()
 
+            # जर filter_test_id नसेल, तर पहिली उपलब्ध टेस्ट आपोआप निवडा (जेणेकरून सर्व प्रश्न एकत्र न येता एकाच टेस्टचे दिसतील)
+            if not filter_test_id and tests:
+                filter_test_id = str(tests[0]['id'])
+
             if filter_test_id:
                 cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id DESC", (filter_test_id,))
             else:
                 cur.execute("SELECT * FROM questions WHERE is_deleted=0 ORDER BY id DESC")
             all_questions = cur.fetchall()
+
+            selected_test_title = "निवडलेली टेस्ट"
+            for t in tests:
+                if str(t['id']) == str(filter_test_id):
+                    selected_test_title = t['test_title']
+                    break
 
             cur.execute("SELECT * FROM mock_test_leads WHERE payment_status != 'Not Required' AND is_deleted=0 ORDER BY id DESC")
             payments = cur.fetchall()
@@ -2226,6 +2265,7 @@ def admin_dashboard():
         lead_dist=lead_dist,
         lead_test_id=lead_test_id,
         filter_test_id=filter_test_id,
+        selected_test_title=selected_test_title,
         qr_url=qr_url,
         upi_mobile=upi_mobile,
         razorpay_key_id=razorpay_key_id,
@@ -2245,7 +2285,7 @@ def admin_dashboard():
         deleted_leads_list=deleted_leads_list
     )
 
-# नवीन मार्ग: मॅन्युअली प्रश्न ॲड करणे
+# मॅन्युअली प्रश्न ॲड करणे
 @app.route('/admin/add_manual_question', methods=['POST'])
 def admin_add_manual_question():
     if not session.get('admin_logged'): 
@@ -2267,6 +2307,65 @@ def admin_add_manual_question():
                     INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """, (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation))
+                conn.commit()
+
+    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
+
+# रोबस्ट CSV अपलोड (७ कॉलम किंवा ९ कॉलम दोन्हीसाठी)
+@app.route('/admin/upload_csv_questions', methods=['POST'])
+def admin_upload_csv_questions():
+    if not session.get('admin_logged'): return redirect('/admin/login')
+    test_id = request.form.get('test_id')
+    file = request.files.get('csv_file')
+    if not file: return "Failing: No file uploaded", 400
+
+    try:
+        content = file.stream.read().decode("utf-8-sig", errors="ignore")
+    except Exception:
+        content = file.stream.read().decode("latin1", errors="ignore")
+
+    stream = io.StringIO(content, newline=None)
+    csv_reader = csv.reader(stream)
+
+    questions_to_insert = []
+    for row in csv_reader:
+        if not row: continue
+        first_cell = row[0].strip().lower()
+        if any(h in first_cell for h in ['sr', 'अनुक्रमांक', 'question', 'प्रश्न']):
+            continue
+
+        if len(row) >= 9:
+            q = row[2].strip()
+            oa = row[3].strip()
+            ob = row[4].strip()
+            oc = row[5].strip()
+            od = row[6].strip()
+            corr = row[7].strip().upper()
+            exp = row[8].strip()
+        elif len(row) >= 6:
+            q = row[0].strip()
+            oa = row[1].strip()
+            ob = row[2].strip()
+            oc = row[3].strip()
+            od = row[4].strip()
+            corr = row[5].strip().upper() if len(row) > 5 else 'A'
+            exp = row[6].strip() if len(row) > 6 else ''
+        else:
+            continue
+
+        if corr not in ['A', 'B', 'C', 'D']:
+            corr = 'A'
+
+        if q:
+            questions_to_insert.append((test_id, q, oa, ob, oc, od, corr, exp))
+
+    if questions_to_insert:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.executemany("""
+                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, questions_to_insert)
                 conn.commit()
 
     return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
@@ -2461,47 +2560,6 @@ def admin_edit_question(q_id):
     if not question: return "प्रश्न सापडला नाही!", 404
     return render_template_string(EDIT_QUESTION_TEMPLATE, q=question)
 
-@app.route('/admin/upload_csv_questions', methods=['POST'])
-def admin_upload_csv_questions():
-    if not session.get('admin_logged'): return redirect('/admin/login')
-    test_id = request.form.get('test_id')
-    file = request.files.get('csv_file')
-    if not file: return "Failing: No file uploaded", 400
-
-    try:
-        content = file.stream.read().decode("utf-8-sig", errors="ignore")
-    except Exception:
-        content = file.stream.read().decode("latin1", errors="ignore")
-
-    stream = io.StringIO(content, newline=None)
-    csv_reader = csv.reader(stream)
-
-    questions_to_insert = []
-    for row in csv_reader:
-        if not row or len(row) < 5: continue
-        if row[0].strip().lower() in ['question_text', 'question', 'प्रश्न']: continue
-        q = row[0].strip()
-        oa = row[1].strip() if len(row) > 1 else ''
-        ob = row[2].strip() if len(row) > 2 else ''
-        oc = row[3].strip() if len(row) > 3 else ''
-        od = row[4].strip() if len(row) > 4 else ''
-        corr = row[5].strip().upper() if len(row) > 5 else 'A'
-        if corr not in ['A', 'B', 'C', 'D']: corr = 'A'
-        exp = row[6].strip() if len(row) > 6 else ''
-        if q:
-            questions_to_insert.append((test_id, q, oa, ob, oc, od, corr, exp))
-
-    if questions_to_insert:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.executemany("""
-                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, questions_to_insert)
-                conn.commit()
-
-    return redirect(f'/admin/dashboard?tab=questions')
-
 @app.route('/admin/ai_scan_hardcopy', methods=['POST'])
 def admin_ai_scan_hardcopy():
     if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
@@ -2547,6 +2605,7 @@ def admin_bulk_delete_leads():
 def admin_bulk_delete_questions():
     if not session.get('admin_logged'): return redirect('/admin/login')
     ids = request.form.getlist('question_ids')
+    test_id = request.args.get('filter_test_id', '')
     if ids:
         with get_db() as conn:
             with conn.cursor() as cur:
@@ -2554,7 +2613,7 @@ def admin_bulk_delete_questions():
                 if int_ids:
                     cur.execute("UPDATE questions SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
                     conn.commit()
-    return redirect('/admin/dashboard?tab=questions')
+    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={test_id}')
 
 @app.route('/admin/bulk_delete_trash', methods=['POST'])
 def admin_bulk_delete_trash():
@@ -2756,7 +2815,7 @@ def admin_update_password():
     top = request.form.get('toppers_link', '')
 
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             if new_pass:
                 cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_pass'", (new_pass,))
             if help_phone:
