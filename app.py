@@ -71,21 +71,9 @@ def verify_tamper_signature(data_str, sig):
 def get_razorpay_client():
     if not razorpay:
         return None, ""
-    key_id = os.environ.get("RAZORPAY_KEY_ID", "")
-    key_secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
-    try:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT setting_key, setting_value FROM academy_settings WHERE setting_key IN ('razorpay_key_id', 'razorpay_key_secret')")
-                rows = cur.fetchall()
-                for r in rows:
-                    if r['setting_key'] == 'razorpay_key_id' and r['setting_value']:
-                        key_id = r['setting_value']
-                    elif r['setting_key'] == 'razorpay_key_secret' and r['setting_value']:
-                        key_secret = r['setting_value']
-    except Exception:
-        pass
-    
+    if key_id = os.environ.get("RAZORPAY_KEY_ID") or "rzp_test_TmZeM28Io87AQj"
+    key_secret = os.environ.get("RAZORPAY_KEY_SECRET") or "ROU0G52FQUIEZsojiy6GOBvI"
+      
     if key_id and key_secret:
         try:
             return razorpay.Client(auth=(key_id, key_secret)), key_id
