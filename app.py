@@ -21,7 +21,7 @@ try:
 except ImportError:
     genai = None
 
-# --- SURAKSHIT RAZORPAY IMPORT (RENDER CRASH-PROOF) ---
+# --- सुरक्षित RAZORPAY इम्पोर्ट ---
 try:
     import razorpay
 except ImportError:
@@ -71,18 +71,44 @@ def verify_tamper_signature(data_str, sig):
 def get_razorpay_client():
     if not razorpay:
         return None, ""
-    key_id = os.environ.get("RAZORPAY_KEY_ID") or "rzp_test_TmZeM28Io87AQj"
-    key_secret = os.environ.get("RAZORPAY_KEY_SECRET") or "ROU0G52FQUIEZsojiy6GOBvI"
+    
+    # १. आधी Render Environment मधील कीज तपासा
+    key_id = (os.environ.get("RAZORPAY_KEY_ID") or "").strip()
+    key_secret = (os.environ.get("RAZORPAY_KEY_SECRET") or "").strip()
+
+    # २. जर Render मध्ये रिकाम्या असतील, तर डेटाबेसमधून घ्या
+    if not key_id or not key_secret:
+        try:
+            with get_db() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT setting_key, setting_value FROM academy_settings WHERE setting_key IN ('razorpay_key_id', 'razorpay_key_secret')")
+                    for row in cur.fetchall():
+                        val = (row['setting_value'] or "").strip()
+                        if row['setting_key'] == 'razorpay_key_id' and val:
+                            key_id = val
+                        elif row['setting_key'] == 'razorpay_key_secret' and val:
+                            key_secret = val
+        except Exception:
+            pass
+
+    # ३. दोन्हीकडे नसल्यास थेट वैध टेस्ट कीज वापरा (Fallback)
+    if not key_id:
+        key_id = "rzp_test_TmenVmrQI8nTRA"
+    if not key_secret:
+        key_secret = "FfaDgcHGbqNKGd15kiI2TP7v"
       
     if key_id and key_secret:
         try:
-            return razorpay.Client(auth=(key_id, key_secret)), key_id
-        except Exception:
+            client = razorpay.Client(auth=(key_id, key_secret))
+            return client, key_id
+        except Exception as e:
+            print(f"Razorpay Client Init Error: {e}")
             return None, key_id
-    return None, key_id
+            
+    return None, ""
 
 # =============================================================================
-# TEMPLATES SECTION (TERMS, MAINTENANCE, HOME, EXAM, RESULT, ADMIN)
+# TEMPLATES SECTION (TERMS, MAINTENANCE, HOME, EXAM, RESULT, ACCESS, ADMIN)
 # =============================================================================
 
 TERMS_TEMPLATE = '''<!DOCTYPE html>
@@ -560,7 +586,7 @@ RESULT_SUMMARY_TEMPLATE = '''<!DOCTYPE html>
         .btn-wa { display: inline-block; background: #25D366; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px; margin: 8px 4px; cursor: pointer; border: none; }
         .btn-group { display: block; background: linear-gradient(135deg, #25D366, #128C7E); color: white; padding: 14px 20px; border-radius: 10px; text-decoration: none; font-weight: 800; font-size: 15px; text-align: center; margin: 20px 0; box-shadow: 0 6px 18px rgba(37,211,102,0.3); border: 1.5px solid #86efac; cursor: pointer; }
         .promo-box { background: #0f172a; border: 1.5px solid #334155; padding: 15px; border-radius: 10px; margin-top: 20px; text-align: center; }
-        .btn-link { display: inline-block; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; cursor: border: none; }
+        .btn-link { display: inline-block; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; margin: 4px; cursor: pointer; border: none; }
         input[type="tel"] { width: 100%; max-width: 280px; padding: 11px; background: #0f172a; border: 1.5px solid #334155; border-radius: 8px; color: white; font-size: 14px; text-align: center; margin-bottom: 10px; }
         .rules-modal { display: none; position: fixed; inset: 0; background: rgba(11,19,41,0.95); z-index: 10000; justify-content: center; align-items: center; padding: 15px; }
         .rules-content { background: #162036; border: 2px solid #25D366; border-radius: 14px; padding: 25px; max-width: 580px; max-height: 90vh; overflow-y: auto; text-align: left; }
@@ -690,10 +716,16 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
         <button id="rzp-button" class="btn-rzp">⚡ GooglePay / PhonePe द्वारे पेमेंट करा (₹{{ test.test_fee }})</button>
     </div>
 
+    {% if upi_mobile or qr_url %}
     <div style="background:#0f172a; padding:14px; border-radius:8px; border:1px solid #f59e0b; text-align:center; margin-bottom:15px;">
+        {% if upi_mobile %}
         <p style="margin:0 0 6px; font-weight:bold; color:#fbbf24; font-size:12px;">किंवा QR स्कॅन करून <b>{{ upi_mobile }}</b> वर पे करा:</p>
-        <img src="{{ qr_url }}" alt="QR" style="max-width:130px; max-height:130px; border-radius:6px;">
+        {% endif %}
+        {% if qr_url %}
+        <img src="{{ qr_url }}" alt="QR" style="max-width:130px; max-height:130px; border-radius:6px; display:inline-block;">
+        {% endif %}
     </div>
+    {% endif %}
 
     <form method="POST" action="/request_paid_test/{{ test.id }}">
         <input type="text" name="student_name" placeholder="पूर्ण नाव" required>
@@ -726,6 +758,9 @@ document.getElementById('rzp-button').onclick = function(e){
         };
         var rzp1 = new Razorpay(options);
         rzp1.open();
+    })
+    .catch(err => {
+        alert("पेमेंट गेटवे सुरू करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.");
     });
     e.preventDefault();
 }
@@ -928,37 +963,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 }
                 btn.innerText = '🤖 AI स्मार्ट प्रश्न जनरेट करा व सेव्ह करा';
                 btn.disabled = false;
-            });
-        }
-
-        function scanHardcopyToAI() {
-            const fileInput = document.getElementById('hardcopyScanFile');
-            const testId = document.getElementById('scan_target_test_id').value;
-            if (!fileInput.files || fileInput.files.length === 0) {
-                alert("⚠️ कृपया स्कॅन केलेली फाईल किंवा फोटो अपलोड करा!");
-                return;
-            }
-            const formData = new FormData();
-            formData.append('scan_file', fileInput.files[0]);
-            formData.append('test_id', testId);
-
-            const btn = document.getElementById('scanAiBtn');
-            btn.innerText = '⏳ AI स्कॅनिंग व ॲनालिसिस सुरू आहे...';
-            btn.disabled = true;
-
-            fetch('/admin/ai_scan_hardcopy', {
-                method: 'POST',
-                body: formData
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("✅ हार्डकॉपी स्कॅन करून " + data.inserted_count + " प्रश्न यशस्वीपणे टेस्टमध्ये ॲड केले गेले!");
-                    window.location.href = '/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id=' + testId;
-                } else {
-                    alert("⚠️ एरर: " + (data.error || 'स्कॅनिंग एरर'));
-                }
-                btn.innerText = '🚀 हार्डकॉपी स्कॅन करून AI द्वारे CSV बनवा व अपलोड करा';
+            .catch(err => {
+                alert("सर्व्हर एरर आला!");
                 btn.disabled = false;
             });
         }
@@ -1043,9 +1050,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <h4 style="margin:0 0 10px; color:#1e40af;">⚡ Razorpay गेटवे सेटिंग्स:</h4>
             <form method="POST" action="/admin/update_razorpay_settings">
                 <label style="font-weight:bold; font-size:12px;">Razorpay Key ID:</label>
-                <input type="text" name="razorpay_key_id" value="{{ razorpay_key_id }}" placeholder="उदा. rzp_live_xxxxxxxx">
+                <input type="text" name="razorpay_key_id" value="{{ razorpay_key_id }}" placeholder="उदा. rzp_test_xxxxxxxx किंवा rzp_live_xxxxxxxx">
                 <label style="font-weight:bold; font-size:12px;">Razorpay Key Secret:</label>
-                <input type="text" name="razorpay_key_secret" value="{{ razorpay_key_secret }}" placeholder="उदा. abc123xyz...">
+                <input type="text" name="razorpay_key_secret" value="{{ razorpay_key_secret }}" placeholder="Secret Key...">
                 <button type="submit" class="btn" style="background:#2563eb; width:100%;">💾 Razorpay Keys सेव्ह करा</button>
             </form>
         </div>
@@ -1054,7 +1061,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <h4 style="margin:0 0 10px; color:#065f46;">📱 मॅन्युअल UPI / QR कोड सेटिंग्स:</h4>
             <form method="POST" action="/admin/update_payment_settings" enctype="multipart/form-data">
                 <label style="font-weight:bold; font-size:12px;">UPI मोबाईल नंबर:</label>
-                <input type="text" name="upi_mobile" value="{{ upi_mobile }}" required>
+                <input type="text" name="upi_mobile" value="{{ upi_mobile }}">
                 <label style="font-weight:bold; font-size:12px;">QR कोड URL किंवा नवीन इमेज:</label>
                 <input type="text" name="qr_url" value="{{ qr_url }}">
                 <input type="file" name="qr_file" accept="image/*" style="margin-bottom:10px;">
@@ -1121,18 +1128,16 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- 4. QUESTIONS TAB (४ स्वतंत्र सब-टॅब्स) -->
+    <!-- 4. QUESTIONS TAB -->
     {% elif active_tab == 'questions' %}
     <h3>📝 प्रश्न व्यवस्थापन</h3>
     <div class="sub-nav-tabs">
         <a href="/admin/dashboard?tab=questions&q_subtab=manual{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'manual' else '' }}">✍️ प्रश्न व्यवस्थापन मॅन्युअल नोंद</a>
         <a href="/admin/dashboard?tab=questions&q_subtab=ai{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'ai' else '' }}">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर</a>
-        <a href="/admin/dashboard?tab=questions&q_subtab=scanner{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'scanner' else '' }}">📄 प्रश्नपत्रिका हार्डकॉपी स्कॅनर व CSV</a>
         <a href="/admin/dashboard?tab=questions&q_subtab=csv{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'csv' else '' }}">📥 १०० प्रश्नांची CSV फाईल अपलोड</a>
     </div>
 
     {% if q_subtab == 'manual' %}
-    <!-- मॅन्युअल प्रश्न नोंदणी -->
     <div style="background:#ffffff; border:2px solid #059669; padding:20px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
         <h4 style="margin:0 0 12px; color:#065f46; font-size:16px;">✍️ मॅन्युअल प्रश्न, पर्याय, अचूक उत्तर व स्पष्टीकरण जोडा</h4>
         <form method="POST" action="/admin/add_manual_question">
@@ -1171,7 +1176,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     </div>
 
     {% elif q_subtab == 'ai' %}
-    <!-- AI स्मार्ट मॉक प्रश्न जनरेटर फॉर्म -->
     <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:25px;">
         <h4 style="margin:0 0 10px; color:#065f46;">🤖 AI स्मार्ट मॉक प्रश्न जनरेटर (विभाग व विषयनिहाय)</h4>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
@@ -1210,25 +1214,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </button>
     </div>
 
-    {% elif q_subtab == 'scanner' %}
-    <!-- हार्डकॉपी स्कॅनर -->
-    <div style="background:#eff6ff; border:2px dashed #3b82f6; padding:18px; border-radius:8px; margin-bottom:25px;">
-        <h4 style="margin:0 0 8px; color:#1e40af;">📄 प्रश्नपत्रिका हार्डकॉपी स्कॅनर व AI ऑटोमॅटिक CSV जनरेटर</h4>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
-            <select id="scan_target_test_id">
-                {% for t in tests %}
-                <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
-                {% endfor %}
-            </select>
-            <input type="file" id="hardcopyScanFile" accept="image/*,.pdf,.txt" style="background:white; padding:6px;">
-        </div>
-        <button id="scanAiBtn" type="button" class="btn" onclick="scanHardcopyToAI()" style="background:#2563eb; width:100%;">
-            🚀 हार्डकॉपी स्कॅन करून AI द्वारे CSV बनवा व अपलोड करा
-        </button>
-    </div>
-
     {% elif q_subtab == 'csv' %}
-    <!-- CSV अपलोड फॉर्म -->
     <div style="background:#fefce8; border:2px dashed #ca8a04; padding:18px; border-radius:8px; margin-bottom:25px;">
         <h4 style="margin:0 0 8px; color:#854d0e;">📥 १०० प्रश्नांची CSV फाईल अपलोड (रोबस्ट पार्सर)</h4>
         <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data">
@@ -1243,7 +1229,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     </div>
     {% endif %}
 
-    <!-- निवडलेल्या टेस्टचे प्रश्न व्यवस्थापन -->
     <div style="background:#f8fafc; border:1.5px solid #cbd5e1; padding:15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
             <label style="font-weight:bold; font-size:13px; color:#0f172a;">🎯 खालील तक्त्यामध्ये कोणत्या टेस्टचे प्रश्न पाहायचे आहेत ते निवडा:</label>
@@ -1282,7 +1267,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </table>
     </form>
 
-    <!-- 5. TEST MANAGEMENT TAB (वर्गवारीनुसार सब-टॅब्स) -->
+    <!-- 5. TEST MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
     <div class="sub-nav-tabs">
@@ -1292,7 +1277,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <a href="/admin/dashboard?tab=launch&cat_tab=live" class="{{ 'active' if cat_tab == 'live' else '' }}">🔴 मिशन खाकी महासंग्राम</a>
     </div>
 
-    <!-- सिक्वेन्स व सॉर्टिंग बार -->
     <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:10px 15px; border-radius:6px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
         <span style="font-size:12.5px; font-weight:bold; color:#334155;">सध्याचा विभाग: <span style="color:#059669;">{{ cat_tab|upper }}</span> (एकूण: {{ tests|length }} टेस्ट्स)</span>
         <div style="display:flex; gap:10px; align-items:center;">
@@ -1455,7 +1439,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" class="btn">सेव्ह करा</button>
     </form>
 
-    <!-- 9. TRASH / RECYCLE BIN TAB (बल्क रिस्टोर व बल्क डिलीट पर्याय) -->
+    <!-- 9. TRASH / RECYCLE BIN TAB -->
     {% elif active_tab == 'trash' %}
     <h3>🗑️ रिसायकल बिन</h3>
     <form method="POST" id="trashForm">
@@ -1649,7 +1633,7 @@ def init_master_db():
 
                 defaults = [
                     ('site_status', 'active'),
-                    ('qr_code_url', 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PoliceBhartiTestPayment'),
+                    ('qr_code_url', ''),
                     ('upi_mobile', '9921111960'),
                     ('admin_pass', 'admin2026'),
                     ('admin_phone', '9921111960'),
@@ -1663,8 +1647,8 @@ def init_master_db():
                     ('admin_tab_order', 'leads,payments,special,questions,launch,leaderboard,feedback,notices,trash,settings'),
                     ('recruitment_pdf', ''),
                     ('eligibility_pdf', ''),
-                    ('razorpay_key_id', ''),
-                    ('razorpay_key_secret', '')
+                    ('razorpay_key_id', 'rzp_test_TmenVmrQI8nTRA'),
+                    ('razorpay_key_secret', 'FfaDgcHGbqNKGd15kiI2TP7v')
                 ]
                 for k, v in defaults:
                     cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES (%s, %s) ON CONFLICT (setting_key) DO NOTHING", (k, v))
@@ -1744,20 +1728,11 @@ def home_tests_list():
             """)
             live_district_battles = cur.fetchall()
 
-            # विद्यार्थ्याच्या सोडवलेल्या टेस्ट्सची माहिती
-            completed_test_ids = set()
-            last_rapid_completed_at = None
-            if user_phone:
-                cur.execute("SELECT test_id, test_date FROM mock_test_leads WHERE phone=%s AND is_deleted=0", (user_phone,))
-                for row in cur.fetchall():
-                    completed_test_ids.add(row['test_id'])
-
     ordered_tabs = [t.strip() for t in home_tab_order.split(',') if t.strip()]
 
     tests = []
     for t in raw_tests:
         t_dict = dict(t)
-        # रॅपिड फायर टेस्ट लॉजिक: जर पहिली टेस्ट असेल तर ओपन, पुढील टेस्ट्स आधीची सोडवल्यास दुसऱ्या दिवशी सकाळी १०:०० ला ओपन
         if t_dict.get('category') == 'rapid':
             seq = t_dict.get('sequence_order') or 1
             if seq == 1:
@@ -1812,7 +1787,7 @@ def take_test(test_id):
             qr_url = qr_row['setting_value'] if qr_row else ''
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='upi_mobile'")
             upi_row = cur.fetchone()
-            upi_mobile = upi_row['setting_value'] if upi_row else '9921111960'
+            upi_mobile = upi_row['setting_value'] if upi_row else ''
 
     if not test or test['status'] != 'Active': return "Test not found or closed", 404
 
@@ -1866,13 +1841,20 @@ def create_razorpay_order(test_id):
         return jsonify({"error": "Razorpay Keys सेट केलेल्या नाहीत!"}), 400
 
     try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT test_fee FROM test_papers WHERE id=%s", (test_id,))
+                t_row = cur.fetchone()
+                fee = t_row['test_fee'] if t_row else 99.0
+
+        amount_paise = int(fee * 100) if fee > 0 else 9900
         order = client.order.create({
-            "amount": 9900,
+            "amount": amount_paise,
             "currency": "INR",
             "receipt": f"rcpt_test_{test_id}_{int(datetime.now().timestamp())}",
             "payment_capture": 1
         })
-        return jsonify({"order_id": order['id'], "amount": 9900, "key_id": key_id})
+        return jsonify({"order_id": order['id'], "amount": amount_paise, "key_id": key_id})
     except Exception as e:
         return jsonify({"error": f"Razorpay एरर: {str(e)}"}), 500
 
@@ -2149,7 +2131,6 @@ def admin_dashboard():
             cur.execute("SELECT DISTINCT district FROM mock_test_leads WHERE district != '' AND is_deleted=0")
             all_districts = [r['district'] for r in cur.fetchall()]
 
-            # टेस्ट सॉर्टिंग व कॅटेगरी फिल्टर
             test_order_sql = "sequence_order ASC, id ASC"
             if sort_by == 'name':
                 test_order_sql = "test_title ASC"
@@ -2197,12 +2178,17 @@ def admin_dashboard():
             free_pass_list = cur.fetchall()
 
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='qr_code_url'")
-            qr_url = cur.fetchone()['setting_value']
+            qr_row = cur.fetchone()
+            qr_url = qr_row['setting_value'] if qr_row else ''
+
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='upi_mobile'")
-            upi_mobile = cur.fetchone()['setting_value']
+            upi_row = cur.fetchone()
+            upi_mobile = upi_row['setting_value'] if upi_row else ''
+
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='razorpay_key_id'")
             r_kid = cur.fetchone()
             razorpay_key_id = r_kid['setting_value'] if r_kid else ''
+
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='razorpay_key_secret'")
             r_ksec = cur.fetchone()
             razorpay_key_secret = r_ksec['setting_value'] if r_ksec else ''
@@ -2380,7 +2366,7 @@ def admin_ai_generate_advanced():
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     
     if genai is None:
-        return jsonify({"success": False, "error": "Google GenAI library इन्स्टॉल केलेली नाही!"}), 500
+        return jsonify({"success": False, "error": "Google GenAI library लोड होऊ शकली नाही!"}), 500
 
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
@@ -2389,7 +2375,7 @@ def admin_ai_generate_advanced():
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        return jsonify({"success": False, "error": "GEMINI_API_KEY Environment Variable मध्ये सेट केलेली नाही!"}), 400
+        return jsonify({"success": False, "error": "GEMINI_API_KEY Environment Variable मध्ये उपलब्ध नाही!"}), 400
 
     try:
         genai.configure(api_key=api_key)
@@ -2539,10 +2525,8 @@ def admin_update_payment_settings():
 
     with get_db() as conn:
         with conn.cursor() as cur:
-            if final_qr_url:
-                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='qr_code_url'", (final_qr_url,))
-            if new_mobile:
-                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='upi_mobile'", (new_mobile,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='qr_code_url'", (final_qr_url,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='upi_mobile'", (new_mobile,))
             conn.commit()
     return redirect('/admin/dashboard?tab=payments')
 
@@ -2577,34 +2561,6 @@ def admin_edit_question(q_id):
 
     if not question: return "प्रश्न सापडला नाही!", 404
     return render_template_string(EDIT_QUESTION_TEMPLATE, q=question)
-
-@app.route('/admin/ai_scan_hardcopy', methods=['POST'])
-def admin_ai_scan_hardcopy():
-    if not session.get('admin_logged'): return jsonify({"success": False, "error": "Unauthorized"}), 401
-    test_id = request.form.get('test_id')
-    
-    simulated_scanned_questions = [
-        ("हार्डकॉपी स्कॅन प्रश्न १: महाराष्ट्राची राजधानी कोणती? | मुंबई | पुणे | नागपूर | औरंगाबाद | A | मुंबई ही महाराष्ट्राची राजधानी आहे."),
-        ("हार्डकॉपी स्कॅन प्रश्न २: भारताचे सध्याचे राष्ट्रीय गीत कोणते? | जन गण मन | वंदे मातरम् | सारे जहाँ से अच्छा | जय हिंद | B | बंकिमचंद्र चटर्जी यांनी वंदे मातरम् लिहिले."),
-        ("हार्डकॉपी स्कॅन प्रश्न ३: क्षेत्रफळानुसार जगातील सर्वात मोठा देश कोणता? | रशिया | कॅनडा | चीन | अमेरिका | A | रशिया हा जगातील सर्वात मोठा देश आहे.")
-    ]
-
-    questions_to_insert = []
-    for item in simulated_scanned_questions:
-        parts = [p.strip() for p in item.split('|')]
-        if len(parts) >= 6:
-            questions_to_insert.append((test_id, parts[0], parts[1], parts[2], parts[3], parts[4], parts[5].upper(), parts[6] if len(parts) > 6 else ''))
-
-    if questions_to_insert:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.executemany("""
-                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, questions_to_insert)
-                conn.commit()
-
-    return jsonify({"success": True, "inserted_count": len(questions_to_insert)})
 
 @app.route('/admin/bulk_delete_leads', methods=['POST'])
 def admin_bulk_delete_leads():
