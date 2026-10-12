@@ -196,214 +196,108 @@ MAINTENANCE_TEMPLATE = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-HOME_TEMPLATE = '''<!DOCTYPE html>
+HOME_TEMPLATE = """
+<!DOCTYPE html>
 <html lang="mr">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>महाराष्ट्र पोलीस भरती २०२६ - सराव प्रश्नसंच ऑनलाईन प्लॅटफॉर्म</title>
-    <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaina+2:wght@500;700;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>महाराष्ट्र पोलीस भरती २०२६ - सराव संच</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaina+2:wght@500;700;800&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Poppins', 'Baloo Bhaina 2', sans-serif; transition: all 0.2s ease; }
-        body { margin: 0; background: #0f172a; color: #f8fafc; padding: 12px; }
-        .top-bar { max-width: 950px; margin: 0 auto 15px; display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 12px 18px; border-radius: 12px; border: 1px solid #334155; }
-        .badge-live { background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .box { max-width: 950px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 25px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border-top: 5px solid #10b981; }
-        .hero-banner { text-align: center; margin-bottom: 22px; }
-        .hero-banner h1 { margin: 0 0 8px; color: #34d399; font-size: 27px; font-weight: 800; font-family: 'Baloo Bhaina 2', cursive; }
-        .quote-box { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,95,70,0.2)); border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 8px; font-size: 14.5px; color: #a7f3d0; font-weight: 600; margin-bottom: 15px; text-align: center; }
+        * { box-sizing: border-box; font-family: 'Poppins', 'Baloo Bhaina 2', sans-serif; transition: all 0.2s ease; margin: 0; padding: 0; }
+        body { background: #0f172a; color: #f8fafc; padding: 15px; }
+        .main-container { max-width: 950px; margin: 0 auto; }
+        .header { background: #1e293b; border-radius: 16px; padding: 25px 20px; text-align: center; margin-bottom: 20px; border: 1px solid #334155; }
+        .header h1 { color: #34d399; font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+        .header p { color: #94a3b8; font-size: 14px; }
+        .stats-badge { display: inline-block; background: rgba(52, 211, 153, 0.1); color: #34d399; border: 1px solid #34d399; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-top: 10px; }
         
-        /* वैशिष्ट्य १०: डायनॅमिक मार्गदर्शक माहिती बॉक्स (Info Banner) */
-        .tab-info-banner { background: #0b1329; border: 1.5px solid #10b981; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 13.5px; color: #cbd5e1; text-align: center; }
-        
-        .tabs-wrapper { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 15px; }
-        .tab-btn { background: #334155; color: #cbd5e1; border: 1.5px solid #475569; padding: 10px 16px; border-radius: 30px; font-size: 13px; font-weight: 700; cursor: pointer; }
-        .tab-btn:hover, .tab-btn.active { background: #10b981; color: #064e3b; border-color: #34d399; }
-        .test-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-        .test-card { background: #0f172a; border: 1.5px solid #334155; border-radius: 12px; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        .test-title { margin: 0 0 6px; color: #f1f5f9; font-size: 17px; font-weight: 700; }
-        .badge-free { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid #059669; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .badge-paid { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid #d97706; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .badge-rapid { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid #2563eb; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .btn-start { background: linear-gradient(135deg, #10b981, #059669); color: #022c22; padding: 10px 22px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 13.5px; }
-        .btn-locked { background: #334155; color: #94a3b8; padding: 10px 18px; border-radius: 8px; font-weight: bold; font-size: 12.5px; cursor: not-allowed; display: inline-block; }
-        .section-box { display: none; background: #0f172a; border: 1.5px solid #334155; border-radius: 12px; padding: 22px; text-align: center; }
-        .rank-table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; font-size: 13.5px; }
-        .rank-table th, .rank-table td { padding: 10px 12px; border-bottom: 1px solid #334155; }
-        .rank-table th { color: #34d399; }
-        .doc-link { display: inline-block; background: #1e293b; color: #38bdf8; border: 1.5px solid #0284c7; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; margin: 6px; }
-        .footer { text-align: center; font-size: 12px; color: #64748b; margin-top: 25px; border-top: 1px solid #334155; padding-top: 15px; }
-        
-        .loading-modal { display: none; position: fixed; inset: 0; background: rgba(11,19,41,0.94); z-index: 9999; justify-content: center; align-items: center; padding: 15px; }
-        .modal-content { background: #162036; border: 2px solid #10b981; border-radius: 16px; padding: 30px 20px; max-width: 480px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.6); }
+        .pdf-section { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .pdf-btn { background: #0284c7; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; }
+        .pdf-btn:hover { background: #0369a1; }
+
+        .tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+        .tab-btn { background: #1e293b; color: #cbd5e1; border: 1px solid #475569; padding: 8px 16px; border-radius: 8px; cursor: pointer; text-decoration: none; font-size: 14px; }
+        .tab-btn.active, .tab-btn:hover { background: #34d399; color: #064e3b; font-weight: bold; }
+
+        .test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .test-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; }
+        .test-title { font-size: 17px; font-weight: 700; color: #f8fafc; margin-bottom: 8px; }
+        .test-meta { font-size: 13px; color: #94a3b8; margin-bottom: 15px; }
+        .start-btn { display: block; text-align: center; background: #34d399; color: #064e3b; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: 700; }
+        .start-btn:hover { background: #10b981; color: white; }
+        .locked-btn { display: block; text-align: center; background: #475569; color: #94a3b8; padding: 10px; border-radius: 8px; font-weight: 600; text-decoration: none; }
+
+        .help-box { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 18px; margin-bottom: 25px; text-align: center; }
+        .help-box h3 { color: #34d399; margin-bottom: 6px; }
+        .help-box p { font-size: 14px; color: #cbd5e1; }
+
+        .footer { text-align: center; color: #64748b; font-size: 13px; padding: 20px 0; border-top: 1px solid #334155; }
+        .footer a { color: #38bdf8; text-decoration: none; }
     </style>
-    <script>
-        const tabGuides = {
-            'all': '🌐 <b>सर्व संच कक्ष:</b> येथे चालू असलेल्या सर्व मोफत, रॅपिड व सशुल्क टेस्ट्स एकाच ठिकाणी मिळतील.',
-            'live': '🔴 <b>मिशन खाकी महासंग्राम:</b> रविवार थेट महासराव चाचणी; राज्यभरातील विद्यार्थ्यांशी समोरासमोर स्पर्धा करा.',
-            'paid': '🎯 <b>अतिसंभाव्य १०० गुण संच:</b> चालू पोलीस भरती पॅटर्ननुसार १०० गुणांचे परिपूर्ण टेस्ट पेपर्स व सविस्तर स्पष्टीकरण.',
-            'free': '🟢 <b>मोफत टेस्ट्स:</b> आपल्या तयारीची पातळी मोफत तपासा व ३ मित्रांना शेअर करून पुढील टेस्ट्स अनलॉक करा.',
-            'rapid': '⚡ <b>२० गुण रॅपिड फायर:</b> दररोज सकाळी १०:०० वाजता ताज्या चालू घडामोडी व व्याकरणाचे जलद सराव प्रश्न.',
-            'battle': '⚔️ <b>जिल्हा मुकाबला व रँक:</b> तुमच्या जिल्ह्याचे सरासरी गुण व रँक तपासा आणि आपल्या जिल्ह्याला अव्वल आणा.',
-            'docs': '📄 <b>भरती PDF व PYQ:</b> अधिकृत पोलीस भरती जाहिरात, निकष व मागील वर्षांच्या प्रश्नपत्रिका मोफत डाउनलोड करा.',
-            'help': '📞 <b>हेल्प डेस्क:</b> परीक्षा किंवा पेमेंट संदर्भात थेट आमच्याशी संपर्क साधा.'
-        };
-
-        function filterTab(category, btn) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            const infoBox = document.getElementById('tabInfoBanner');
-            if (infoBox && tabGuides[category]) {
-                infoBox.innerHTML = tabGuides[category];
-            }
-
-            document.getElementById('testsContainer').style.display = 'none';
-            document.getElementById('battleContainer').style.display = 'none';
-            document.getElementById('docsContainer').style.display = 'none';
-            document.getElementById('helpContainer').style.display = 'none';
-
-            if (category === 'battle') {
-                document.getElementById('battleContainer').style.display = 'block';
-            } else if (category === 'docs') {
-                document.getElementById('docsContainer').style.display = 'block';
-            } else if (category === 'help') {
-                document.getElementById('helpContainer').style.display = 'block';
-            } else {
-                document.getElementById('testsContainer').style.display = 'grid';
-                let visibleCount = 0;
-                document.querySelectorAll('.test-card').forEach(card => {
-                    const cardCat = card.getAttribute('data-cat') || 'free';
-                    if (category === 'all' || cardCat === category) {
-                        card.style.display = 'flex';
-                        visibleCount++;
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-                const noTestMsg = document.getElementById('noTestMsg');
-                if (noTestMsg) noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
-            }
-        }
-
-        let pendingTestUrl = '';
-        function openLoadingNotice(url) {
-            pendingTestUrl = url;
-            document.getElementById('loadingNoticeModal').style.display = 'flex';
-        }
-        function proceedToTest() {
-            if (pendingTestUrl) window.location.href = pendingTestUrl;
-        }
-
-        // वैशिष्ट्य ८: थेट उपस्थित विद्यार्थी ट्रॅकर (Live Heartbeat)
-        setInterval(function() {<div class="top-bar">
-    <div style="font-weight:bold; font-size:13.5px; color:#a7f3d0; display:flex; align-items:center; gap:8px;">
-        <span class="badge-live">LIVE</span> 🕒 मिशन खाकी २०२६ सराव कक्ष
-    </div>
-    <!-- vaishishtya 8: thet upasthit vidyarthi sankhya -->
-    <div style="font-size:12.5px; color:#38bdf8; font-weight:bold;">
-        🟢 थेट उपस्थित विद्यार्थी: {{ active_students_count or '४५' }}
-    </div>
-</div>
-
-<div class="box">
-    <a href="/" style="position:fixed; bottom:20px; right:20px; background:#10b981; color:#022c22; padding:10px 18px; border-radius:30px; text-decoration:none; font-weight:800; font-size:13px; box-shadow:0 4px 15px rgba(0,0,0,0.4); z-index:9999; border:2px solid #34d399;">
-        🏠 मुख्य पानावर जा
-    </a>
-    <div class="hero-banner">
-        <h1>⚔️ महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल</h1>
-        <div class="quote-box">
-            🔥 "मैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा!" 🌟
-        </div>
-    </div>
-
-    <div class="tabs-wrapper">
-        {% for tab_key in ordered_tabs %}
-            {% if tab_key == 'all' %}<button class="tab-btn active" onclick="filterTab('all', this)">🌐 सर्व संच</button>
-            {% elif tab_key == 'live' %}<button class="tab-btn" onclick="filterTab('live', this)">🔴 मिशन खाकी महासंग्राम</button>
-            {% elif tab_key == 'paid' %}<button class="tab-btn" onclick="filterTab('paid', this)">🎯 अतिसंभाव्य १०० गुण संच (₹९९)</button>
-            {% elif tab_key == 'free' %}<button class="tab-btn" onclick="filterTab('free', this)">🟢 मोफत टेस्ट्स</button>
-            {% elif tab_key == 'rapid' %}<button class="tab-btn" onclick="filterTab('rapid', this)">⚡ २० गुण रॅपिड फायर</button>
-            {% elif tab_key == 'battle' %}<button class="tab-btn" onclick="filterTab('battle', this)">⚔️ जिल्हा मुकाबला व रँक</button>
-            {% elif tab_key == 'docs' %}<button class="tab-btn" onclick="filterTab('docs', this)">📄 भरती PDF व PYQ</button>
-            {% elif tab_key == 'help' %}<button class="tab-btn" onclick="filterTab('help', this)">📞 हेल्प डेस्क</button>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>महाराष्ट्र पोलीस भरती २०२६ सराव संच</h1>
+            <p>श्रीगुरु करिअर अकॅडमी, आडूर</p>
+            {% if active_students_count %}
+            <div class="stats-badge">विद्यार्थी उपस्थिती: {{ active_students_count }}</div>
             {% endif %}
-        {% endfor %}
-    </div>
+        </div>
 
-    <!-- vaishishtya 10: dynamic margadarshak mahiti box -->
-    <div id="tabInfoBanner" class="tab-info-banner">
-        🌐 <b>सर्व संच कक्ष:</b> येथे चालू असलेल्या सर्व मोफत, रॅपिड व सशुल्क टेस्ट्स एकाच ठिकाणी मिळतील.
-    </div>
+        <!-- PDF Links -->
+        <div class="pdf-section">
+            {% if recruitment_pdf %}
+            <a href="{{ recruitment_pdf }}" target="_blank" class="pdf-btn">📄 भरती जाहिरात PDF</a>
+            {% endif %}
+            {% if eligibility_pdf %}
+            <a href="{{ eligibility_pdf }}" target="_blank" class="pdf-btn">📄 पात्रता व नियम PDF</a>
+            {% endif %}
+        </div>
 
-    <div id="testsContainer" class="test-grid">
-        {% for t in tests %}
-        <div class="test-card" data-id="{{ t.id }}" data-type="{{ t.test_type }}" data-cat="{{ t.category or 'free' }}">
-            <div>
-                <h4 class="test-title">{{ t.test_title }}</h4>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                    <span class="{{ 'badge-free' if t.test_type == 'Free' else 'badge-paid' }}">
-                        {{ '🟢 मोफत महासराव' if t.test_type == 'Free' else '⭐ अतिसंभाव्य संच - ₹' ~ t.test_fee }}
-                    </span>
-                    <span class="badge-rapid">⏱️ {{ t.duration_minutes }} मिनिटे</span>
-                    {% if t.is_locked and t.category == 'rapid' %}
-                    <span style="font-size:12px; color:#fbbf24;">⏳ पुढील टेस्ट दुसऱ्या दिवशी सकाळी १०:०० वाजता अनलॉक होईल</span>
-                    {% endif %}
+        <!-- Tests List Grid -->
+        <div class="test-grid">
+            {% for t in tests %}
+            <div class="test-card">
+                <div>
+                    <div class="test-title">{{ t.title if t.title else t.get('title', 'सराव चाचणी') }}</div>
+                    <div class="test-meta">
+                        वेळ: {{ t.time_limit if t.time_limit else t.get('time_limit', '३०') }} मिनिटे | 
+                        गुण: {{ t.total_marks if t.total_marks else t.get('total_marks', '५०') }}
+                    </div>
                 </div>
+                {% if t.is_locked or t.get('is_locked') %}
+                <span class="locked-btn">🔒 चाचणी लॉक आहे</span>
+                {% else %}
+                <a href="/test/{{ t.id if t.id else t.get('id') }}" class="start-btn">सराव सुरू करा</a>
+                {% endif %}
             </div>
-            {% if t.is_locked %}
-                <span class="btn-locked">🔒 सकाळी १०:०० ला उघडेल</span>
             {% else %}
-                <button onclick="openLoadingNotice('/take_test/{{ t.id }}')" class="btn-start" style="border:none; cursor:pointer;">🚀 टेस्ट सोडवा</button>
-            {% endif %}
-        </div>
-        {% endfor %}
-        <div id="noTestMsg" style="display:none; text-align:center; padding:35px 20px; background:#0f172a; border-radius:12px; border:1px dashed #475569; color:#94a3b8; font-size:15px;">
-            🎯 <b>लवकरच या विभागात अतिसंभाव्य व दर्जेदार प्रश्नसंच उपलब्ध होतील!</b><br>
-            <span style="font-size:13px; color:#64748b;">आमचे तज्ज्ञ शिक्षक नवीन दर्जेदार प्रश्नांची रचना करत आहेत. खाकीची तयारी अखंड चालू ठेवा! ⚔️</span>
-        </div>
-    </div>
-
-    <div id="battleContainer" class="section-box">
-        <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा मुकाबला (लाईव्ह लीड्स व सरासरी गुण)</h3>
-        <p style="font-size:13px; color:#94a3b8; margin:0 0 15px;">विद्यार्थ्यांनी प्रत्यक्ष सोडवलेल्या टेस्ट्सवरून तयार झालेली लाईव्ह गुणवत्ता यादी:</p>
-        <table class="rank-table">
-            <tr><th>रँक</th><th>जिल्हा</th><th>टेस्ट देणारे विद्यार्थी</th><th>सरासरी गुण</th></tr>
-            {% for dist in live_district_battles %}
-            <tr>
-                <td><b>#{{ loop.index }}</b></td>
-                <td><b>{{ dist.district }}</b></td>
-                <td><span style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:3px 8px; border-radius:12px; font-weight:bold;">{{ dist.total_students }} विद्यार्थी</span></td>
-                <td style="color:#34d399; font-weight:bold;">{{ dist.avg_score }} गुण</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4" style="text-align:center; color:#94a3b8;">विद्यार्थ्यांनी टेस्ट सोडवल्यानंतर जिल्ह्यांची लाईव्ह क्रमवारी येथे दिसेल.</td></tr>
+            <div style="grid-column: 1/-1; text-align: center; padding: 30px; color: #94a3b8;">
+                सध्या कोणत्याही चाचण्या उपलब्ध नाहीत.
+            </div>
             {% endfor %}
-        </table>
-    </div>
+        </div>
 
-    <div id="docsContainer" class="section-box">
-        <h3 style="color:#38bdf8; margin-top:0;">📄 अधिकृत भरती कागदपत्रे व मागील प्रश्नपत्रिका</h3>
-        {% if recruitment_pdf %}<a href="{{ recruitment_pdf }}" target="_blank" class="doc-link">📑 पोलीस भरती अधिकृत जाहिरात (PDF)</a>{% endif %}
-        {% if eligibility_pdf %}<a href="{{ eligibility_pdf }}" target="_blank" class="doc-link">📋 शारीरिक व लेखी पात्रता निकष (PDF)</a>{% endif %}
-    </div>
+        <!-- Help Info Container -->
+        <div class="help-box" id="helpContainer">
+            <h3>संपर्क व मदत केंद्र</h3>
+            <p style="margin: 6px 0;">पत्ता: {{ help_address if help_address else 'श्रीगुरु करिअर अकॅडमी, आडूर' }}</p>
+            <p>फोन नंबर: {{ help_phone if help_phone else '9921111960' }}</p>
+        </div>
 
-    <div id="helpContainer" class="section-box">
-        <h3 style="color:#34d399; margin-top:0;">📞 मदत व मार्गदर्शन हेल्प डेस्क (Help Desk)</h3>
-        <p style="font-size:14px; color:#cbd5e1; margin-bottom:15px;">टेस्ट किंवा पेमेंट संदर्भात काही अडचण असल्यास खालील क्रमांकावर संपर्क साधा:</p>
-        <div style="background:#1e293b; padding:18px; border-radius:10px; border:1px solid #334155; display:inline-block; text-align:left; max-width:400px; width:100%;">
-            <p style="margin:6px 0; color:#f8fafc;">📱 <b>हेल्पलाईन नंबर:</b> <a href="https://wa.me/91{{ help_phone }}" target="_blank" style="color:#34d399; font-weight:bold;">{{ help_phone }}</a></p>
-            <p style="margin:6px 0; color:#f8fafc;">📍 <b>पत्ता / ऑफिस पत्ता:</b> {{ help_address }}</p>
+        <!-- Footer -->
+        <div class="footer">
+            <span>© २०२६ महाराष्ट्र पोलीस भरती सराव प्लॅटफॉर्म</span><br>
+            <a href="/terms-and-conditions">नियम व अटी (Terms & Conditions)</a>
         </div>
     </div>
-
-    <div class="footer">
-        <span>© 2026 महाराष्ट्र पोलीस भरती सराव प्रश्नसंच ऑनलाईन व्यासपीठ | </span>
-        <a href="/terms-and-conditions" target="_blank" style="color:#38bdf8;">Terms & Conditions (नियम व अटी)</a>
-    </div>
-</div>
 </body>
-</html>'''
+</html>
+"""
 
 EXAM_TEMPLATE = '''<!DOCTYPE html>
 <html lang="mr">
