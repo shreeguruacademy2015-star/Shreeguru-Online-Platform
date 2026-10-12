@@ -1318,6 +1318,13 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <div class="sub-nav-tabs">
         <a href="/admin/dashboard?tab=launch&cat_tab=all" class="{{ 'active' if cat_tab == 'all' else '' }}">🌐 सर्व टेस्ट्स</a>
         <a href="/admin/dashboard?tab=launch&cat_tab=rapid" class="{{ 'active' if cat_tab == 'rapid' else '' }}">⚡ रॅपिड फायर संच</a>
+        <div class="sub-nav-tabs">
+    <a href="/admin/dashboard?tab=launch&cat_tab=all" class="{{ 'active' if cat_tab == 'all' else '' }}">🌐 सर्व टेस्ट्स</a>
+    <a href="/admin/dashboard?tab=launch&cat_tab=free" class="{{ 'active' if cat_tab == 'free' else '' }}">🟢 मोफत टेस्ट्स</a>
+    <a href="/admin/dashboard?tab=launch&cat_tab=rapid" class="{{ 'active' if cat_tab == 'rapid' else '' }}">⚡ रॅपिड फायर संच</a>
+    <a href="/admin/dashboard?tab=launch&cat_tab=paid" class="{{ 'active' if cat_tab == 'paid' else '' }}">🎯 अतिसंभाव्य १०० गुण संच</a>
+    <a href="/admin/dashboard?tab=launch&cat_tab=live" class="{{ 'active' if cat_tab == 'live' else '' }}">🔴 मिशन खाकी महासंग्राम</a>
+</div>
         <a href="/admin/dashboard?tab=launch&cat_tab=paid" class="{{ 'active' if cat_tab == 'paid' else '' }}">🎯 अतिसंभाव्य १०० गुण संच</a>
         <a href="/admin/dashboard?tab=launch&cat_tab=live" class="{{ 'active' if cat_tab == 'live' else '' }}">🔴 मिशन खाकी महासंग्राम</a>
     </div>
@@ -1329,6 +1336,11 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <div>
                 <label style="font-weight:bold; font-size:12.5px;">कॅटेगरी:</label>
                 <select name="category" required>
+                <select name="category" required>
+    <option value="free" {% if cat_tab=='free' %}selected{% endif %}>🟢 मोफत टेस्ट्स</option>
+    <option value="paid" {% if cat_tab=='paid' %}selected{% endif %}>🎯 अतिसंभाव्य संच (₹९९)</option>
+    <option value="live" {% if cat_tab=='live' %}selected{% endif %}>🔴 मिशन खाकी महासंग्राम</option>
+    <option value="rapid" {% if cat_tab=='rapid' %}selected{% endif %}>⚡ २० गुण रॅपिड फायर</option>
                     <option value="free" {% if cat_tab=='free' %}selected{% endif %}>🟢 मोफत टेस्ट्स</option>
                     <option value="paid" {% if cat_tab=='paid' %}selected{% endif %}>🎯 अतिसंभाव्य संच (₹९९)</option>
                     <option value="live" {% if cat_tab=='live' %}selected{% endif %}>🔴 मिशन खाकी महासंग्राम</option>
