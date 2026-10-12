@@ -1,7 +1,7 @@
 """
 Enhanced AI Smart Mock Question Generator
 - Subject & Topic Mapping
-- Real AI Integration (Google Gemini / OpenAI)
+- Real AI Integration (Google Gemini / OpenAI / Anthropic)
 - Duplicate Prevention via History Tracking
 - Web-based MCQ Fetching
 """
@@ -12,7 +12,12 @@ import requests
 import hashlib
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
-import anthropic
+
+# Navin Google GenAI SDK import
+try:
+    from google import genai
+except ImportError:
+    genai = None
 
 # ============================================================================
 # SUBJECT-TOPIC HIERARCHY MAPPING (MARATHI)
@@ -114,10 +119,12 @@ class AIQuestionGenerator:
     
     def __init__(self, db_connection=None):
         self.db_connection = db_connection
+        # GEMINI_API_KEY kivha GOOGLE_API_KEY dohnahi check kele jati
+        gemini_key = (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or "").strip()
         self.api_keys = {
-            "anthropic": os.environ.get("ANTHROPIC_API_KEY", ""),
-            "openai": os.environ.get("OPENAI_API_KEY", ""),
-            "gemini": os.environ.get("GOOGLE_API_KEY", "")
+            "gemini": gemini_key,
+            "anthropic": os.environ.get("ANTHROPIC_API_KEY", "").strip(),
+            "openai": os.environ.get("OPENAI_API_KEY", "").strip()
         }
     
     def generate_questions(
@@ -141,9 +148,10 @@ class AIQuestionGenerator:
         max_attempts = 3
         
         while len(generated_questions) < count and attempt < max_attempts:
-            # Try Anthropic first, fallback to OpenAI, then to local generation
+            # First preference to Gemini, fallback to Anthropic/OpenAI/local
             questions = (
-                self._generate_via_anthropic(subject, topic, difficulty, department, count)
+                self._generate_via_gemini(subject, topic, difficulty, department, count)
+                or self._generate_via_anthropic(subject, topic, difficulty, department, count)
                 or self._generate_via_openai(subject, topic, difficulty, department, count)
                 or self._generate_local_fallback(subject, topic, difficulty, count)
             )
@@ -168,6 +176,65 @@ class AIQuestionGenerator:
         
         return generated_questions, len(generated_questions)
     
+    def _generate_via_gemini(
+        self,
+        subject: str,
+        topic: str,
+        difficulty: str,
+        department: str,
+        count: int
+    ) -> Optional[List[Dict]]:
+        """Generate questions using Google Gemini API (Supports AQ. and AIzaSy keys)"""
+        if not self.api_keys["gemini"] or not genai:
+            return None
+        
+        try:
+            client = genai.Client(api_key=self.api_keys["gemini"])
+            
+            prompt = f"""तुम्ही एक शिक्षण तज्ज्ञ आहात. कृपया खालील तपशिलानुसार {count} उच्च-दर्जाचे, अद्वितीय मराठी MCQ प्रश्न तयार करा:
+
+विषय: {subject}
+घटक/प्रकरण: {topic}
+काठिण्य पातळी: {difficulty}
+विभाग/परीक्षा: {department}
+
+नियम:
+1. प्रत्येक प्रश्नाला ४ पर्याय (opt_a, opt_b, opt_c, opt_d) असावेत.
+2. फक्त एकच अचूक उत्तर असावे (correct: "A", "B", "C", किंवा "D").
+3. स्पष्टीकरण (explanation) सोप्या भाषेत असावे.
+4. फक्त आणि फक्त वैध JSON array फॉरमॅटमध्येच आउटपुट द्या.
+
+JSON Format:
+[
+  {{
+    "question": "प्रश्न मजकूर",
+    "opt_a": "पर्याय A",
+    "opt_b": "पर्याय B",
+    "opt_c": "पर्याय C",
+    "opt_d": "पर्याय D",
+    "correct": "A",
+    "explanation": "स्पष्टीकरण"
+  }}
+]"""
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+            )
+            
+            response_text = response.text.strip()
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+            
+            questions = json.loads(response_text)
+            return questions if isinstance(questions, list) else None
+            
+        except Exception as e:
+            print(f"Gemini API Error: {e}")
+            return None
+
     def _generate_via_anthropic(
         self,
         subject: str,
@@ -181,21 +248,15 @@ class AIQuestionGenerator:
             return None
         
         try:
+            import anthropic
             client = anthropic.Anthropic(api_key=self.api_keys["anthropic"])
             
-            prompt = f"""तुम्ही एक शिक्षा तज्ञ आहात. कृपया खालील विशेष्यांचे अनुसार {count} उच्च-गुणवत्तेचे, अद्वितीय मराठी MCQ प्रश्न तयार करा:
+            prompt = f"""तुम्ही एक शिक्षण तज्ज्ञ आहात. कृपया खालील तपशिलानुसार {count} उच्च-दर्जाचे, अद्वितीय मराठी MCQ प्रश्न तयार करा:
 
 विषय: {subject}
 विषयवस्तु: {topic}
 कठिणता: {difficulty}
 विभाग: {department}
-
-प्रत्येक प्रश्नासाठी हे नक्की करा:
-1. प्रश्न स्पष्ट, संक्षिप्त आणि वास्तविक/प्रासंगिक असेल
-2. ४ विकल्प (A, B, C, D) असतील
-3. फक्त एकच अचूक उत्तर असेल
-4. स्पष्टीकरण {difficulty} स्तराच्या समजून घेण्यासाठी संपूर्ण आणि सहायक असेल
-5. प्रश्न {department} भरती परीक्षेसाठी अनुकूल असेल
 
 प्रतिसाद या JSON फॉरमॅटमध्ये द्या (फक्त JSON array, इतर मजकूर नाही):
 [
@@ -205,7 +266,7 @@ class AIQuestionGenerator:
     "opt_b": "...",
     "opt_c": "...",
     "opt_d": "...",
-    "correct": "A/B/C/D",
+    "correct": "A",
     "explanation": "..."
   }}
 ]"""
@@ -219,7 +280,6 @@ class AIQuestionGenerator:
             )
             
             response_text = message.content[0].text.strip()
-            # Extract JSON from response
             if "```json" in response_text:
                 response_text = response_text.split("```json")[1].split("```")[0].strip()
             elif "```" in response_text:
@@ -246,24 +306,17 @@ class AIQuestionGenerator:
         
         try:
             from openai import OpenAI
-            
             client = OpenAI(api_key=self.api_keys["openai"])
             
-            prompt = f"""तुम्ही एक शिक्षा तज्ञ आहात. कृपया खालील विशेष्यांचे अनुसार {count} उच्च-गुणवत्तेचे, अद्वितीय मराठी MCQ प्रश्न तयार करा:
+            prompt = f"""तुम्ही एक शिक्षण तज्ज्ञ आहात. कृपया खालील तपशिलानुसार {count} उच्च-दर्जाचे, अद्वितीय मराठी MCQ प्रश्न तयार करा:
 
 विषय: {subject}
 विषयवस्तु: {topic}
 कठिणता: {difficulty}
 विभाग: {department}
 
-प्रत्येक प्रश्नासाठी:
-1. प्रश्न स्पष्ट आणि {department} भरती परीक्षेसाठी अनुकूल असेल
-2. ४ विभिन्न विकल्प (A, B, C, D)
-3. केवळ एकच अचूक उत्तर
-4. विस्तृत स्पष्टीकरण
-
 JSON array फॉरमॅटमध्ये केवळ प्रतिसाद द्या:
-[{{"question": "...", "opt_a": "...", "opt_b": "...", "opt_c": "...", "opt_d": "...", "correct": "A/B/C/D", "explanation": "..."}}]"""
+[{{"question": "...", "opt_a": "...", "opt_b": "...", "opt_c": "...", "opt_d": "...", "correct": "A", "explanation": "..."}}]"""
             
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -329,7 +382,7 @@ JSON array फॉरमॅटमध्ये केवळ प्रतिसा�
                         f"{topic} संदर्भात सत्य विधान १",
                         f"{topic} संदर्भात सत्य विधान २",
                         f"{topic} संदर्भात सत्य विधान ३",
-                        f"{topic} संद��्भात सत्य विधान ४"
+                        f"{topic} संदर्भात सत्य विधान ४"
                     ]
                 }
             ]
@@ -346,7 +399,7 @@ JSON array फॉरमॅटमध्ये केवळ प्रतिसा�
                 "opt_c": template["options"][2],
                 "opt_d": template["options"][3],
                 "correct": ["A", "B", "C", "D"][i % 4],
-                "explanation": f"यह {topic} विषयातील {difficulty} स्तरीय प्रश्न आहे."
+                "explanation": f"हा {topic} विषयातील {difficulty} स्तराचा प्रश्न आहे."
             }
             questions.append(q)
         
@@ -431,18 +484,15 @@ class WebMCQFetcher:
         Supports: Open Trivia DB, QuizAPI, etc.
         """
         try:
-            # Example: Using Open Trivia Database
-            # Note: Requires internet access
-            
             subject_category_map = {
-                "सामान्य ज्ञान": 9,  # General Knowledge
-                "विज्ञान": 17,  # Science
-                "खेळ": 21,  # Sports
+                "सामान्य ज्ञान": 9,
+                "विज्ञान": 17,
+                "खेळ": 21,
             }
             
             category = subject_category_map.get(subject, 9)
             
-            url = "https://opentdb.com/api.php"
+            url = "[https://opentdb.com/api.php](https://opentdb.com/api.php)"
             params = {
                 "amount": count,
                 "category": category,
@@ -464,10 +514,10 @@ class WebMCQFetcher:
                 q = {
                     "question": html.unescape(item["question"]),
                     "opt_a": html.unescape(item["correct_answer"]),
-                    "opt_b": html.unescape(item["incorrect_answers"][0]) if len(item["incorrect_answers"]) > 0 else "विकल्प B",
-                    "opt_c": html.unescape(item["incorrect_answers"][1]) if len(item["incorrect_answers"]) > 1 else "विकल्प C",
-                    "opt_d": html.unescape(item["incorrect_answers"][2]) if len(item["incorrect_answers"]) > 2 else "विकल्प D",
-                    "correct": "A",  # opt_a is always correct_answer
+                    "opt_b": html.unescape(item["incorrect_answers"][0]) if len(item["incorrect_answers"]) > 0 else "पर्याय B",
+                    "opt_c": html.unescape(item["incorrect_answers"][1]) if len(item["incorrect_answers"]) > 1 else "पर्याय C",
+                    "opt_d": html.unescape(item["incorrect_answers"][2]) if len(item["incorrect_answers"]) > 2 else "पर्याय D",
+                    "correct": "A",
                     "explanation": f"स्रोत: Open Trivia Database - {topic}"
                 }
                 questions.append(q)
@@ -487,7 +537,6 @@ def init_ai_generation_tables(db_connection):
     """Create required tables for AI question generation tracking"""
     try:
         with db_connection.cursor() as cur:
-            # Table to track generated questions and prevent duplicates
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS ai_generation_history (
                     id SERIAL PRIMARY KEY,
@@ -501,7 +550,6 @@ def init_ai_generation_tables(db_connection):
                 )
             ''')
             
-            # Create index for faster lookups
             cur.execute('''
                 CREATE INDEX IF NOT EXISTS idx_ai_gen_subject_topic
                 ON ai_generation_history(subject, topic)
