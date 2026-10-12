@@ -1859,59 +1859,62 @@ def verify_share_phone(test_id):
 
 @app.route('/take_test/<int:test_id>')
 def take_test(test_id):
-    token = request.args.get('token', '')
-
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
-            test = cur.fetchone()
-            cur.execute("SELECT setting_key, setting_value FROM academy_settings")
-            st = {r['setting_key']: r['setting_value'] for r in cur.fetchall()}
-
-    if not test or test['status'] != 'Active': return "Test not found or closed", 404
-
-    if test.get('category') == 'rapid' and test.get('publish_at') and test['publish_at'] > datetime.now():
-        return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⏳ ही टेस्ट दररोज सकाळी १०:०० वाजता अनलॉक होईल!</h3>", 403
-
-    if test['test_type'] == 'Free':
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
-                questions = cur.fetchall()
-        return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
-
-    user_phone = session.get('user_phone', '')
-    is_share_unlocked = False
-    if user_phone and test_id in [3, 4]:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT unlocked_paid_count FROM shared_free_passes WHERE phone=%s", (user_phone,))
-                pass_row = cur.fetchone()
-                if pass_row and pass_row['unlocked_paid_count'] >= 2:
-                    is_share_unlocked = True
-
-    if is_share_unlocked:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
-                questions = cur.fetchall()
-        return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
+    token = request.args.get('token')
 
     if token:
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM mock_test_leads WHERE test_id=%s AND access_token=%s AND payment_status='Approved' AND is_deleted=0", (test_id, token))
+                # टेस्टची माहिती मिळवणे
+                cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
+                test = cur.fetchone()
+                if not test:
+                    return "<h3 style='color:#ef4444; text-align:center;'>टेस्ट सापडली नाही!</h3>", 404
+
+                # १. प्रथम टोकन तपासणे
+                cur.execute("SELECT * FROM mock_test_leads WHERE access_token=%s AND payment_status='Approved' AND is_deleted=0", (token,))
                 lead = cur.fetchone()
-        if lead and lead['token_expires_at']:
-            expires_at = datetime.strptime(lead['token_expires_at'], "%Y-%m-%d %H:%M:%S")
-            if datetime.now() <= expires_at and lead.get('is_used', 0) == 0:
-                with get_db() as conn:
-                    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+
+                # २. कॉम्बो पॅक तपासणी (५० संच अतिसंभाव्य साठी)
+                has_combo_access = False
+                if lead:
+                    cur.execute("""
+                        SELECT id FROM mock_test_leads 
+                        WHERE phone=%s AND payment_status='Approved' 
+                        AND (amount >= 99 OR test_id IN (SELECT id FROM test_papers WHERE category='combo'))
+                    """, (lead['phone'],))
+                    if cur.fetchone() and test.get('category') in ['combo', 'package', 'police']:
+                        has_combo_access = True
+
+                # ३. जर टोकन वैध असेल किंवा कॉम्बो पॅक असेल
+                if lead and (lead.get('test_id') == test_id or has_combo_access):
+                    cur.execute("SELECT id FROM special_unlimited_attempts WHERE phone=%s", (lead['phone'],))
+                    is_unlimited = cur.fetchone() is not None
+
+                    # डिव्हाइस बाइंडिंग (एका फोनवर उघडल्यानंतर लिंक दुसऱ्याला चालणार नाही)
+                    current_sid = session.get('session_id') or secrets.token_hex(8)
+                    session['session_id'] = current_sid
+
+                    if not is_unlimited:
+                        if not lead.get('device_fingerprint'):
+                            cur.execute("UPDATE mock_test_leads SET device_fingerprint=%s WHERE id=%s", (current_sid, lead['id']))
+                            conn.commit()
+                        elif lead.get('device_fingerprint') != current_sid:
+                            return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ ही टेस्ट लिंक आधीच दुसऱ्या मोबाईलवर सुरू झाली आहे. लिंक फॉरवर्ड करण्यास मनाई आहे!</h3>", 403
+
+                    is_valid_time = True
+                    if lead.get('token_expires_at'):
+                        expires_at = datetime.strptime(str(lead['token_expires_at']).split('.')[0], "%Y-%m-%d %H:%M:%S")
+                        if datetime.now() > expires_at:
+                            is_valid_time = False
+
+                    if is_valid_time:
                         cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
                         questions = cur.fetchall()
-                return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
+                        return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
+                    else:
+                        return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ या टेस्टची मुदत संपली आहे!</h3>", 403
 
-    return render_template_string(ACCESS_CHECK_TEMPLATE, test=test, qr_url=st.get('qr_code_url', ''), upi_mobile=st.get('upi_mobile', '9921111960'))
+    return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ टेस्ट सुरू करण्यासाठी वैध ॲक्सेस टोकन आवश्यक आहे!</h3>", 403
 
 @app.route('/create_razorpay_order/<int:test_id>', methods=['POST'])
 def create_razorpay_order(test_id):
