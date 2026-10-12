@@ -2458,58 +2458,64 @@ def admin_upload_csv_questions():
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
         return jsonify({"success": False, "error": "Unauthorized"}), 401
-    
-    if genai is None:
-        return jsonify({"success": False, "error": "GenAI लोड होऊ शकली नाही!"}), 500
 
     data = request.get_json() or {}
     department = data.get('department', 'पोलीस भरती')
     subject_counts = data.get('subject_counts', {})
     test_id = data.get('test_id')
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or "").strip()
     if not api_key:
-        return jsonify({"success": False, "error": "GEMINI_API_KEY उपलब्ध नाही!"}), 400
+        return jsonify({"success": False, "error": "Render Environment मध्ये GEMINI_API_KEY उपलब्ध नाही!"}), 400
 
-    try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        generated_list = []
+    generated_list = []
+    
+    # थेट REST API द्वारे प्रश्न निर्मिती (लायब्ररी क्रॅश-प्रूफ)
+    for subj, num in subject_counts.items():
+        count = int(num)
+        if count <= 0:
+            continue
+        
+        prompt = (
+            f"महाराष्ट्र {department} परीक्षेसाठी '{subj}' या विषयावर अचूक आणि नवीन {count} बहुपर्यायी प्रश्न तयार करा. "
+            f"उत्तर खालीलप्रमाणे प्रत्येक ओळीत पाईप (|) फॉरमॅटमध्ये द्या:\n"
+            f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक उत्तर (A/B/C/D) | स्पष्टीकरण"
+        )
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        
+        try:
+            import requests
+            res = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=60)
+            if res.status_code == 200:
+                data_resp = res.json()
+                raw_text = data_resp.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                lines = raw_text.strip().split('\n')
+                for line in lines:
+                    parts = [p.strip() for p in line.split('|')]
+                    if len(parts) >= 6:
+                        q = parts[0]
+                        oa, ob, oc, od = parts[1], parts[2], parts[3], parts[4]
+                        corr = parts[5].upper()
+                        if corr not in ['A', 'B', 'C', 'D']:
+                            corr = 'A'
+                        exp = parts[6] if len(parts) > 6 else 'स्पष्टीकरण उपलब्ध नाही.'
+                        generated_list.append((test_id, q, oa, ob, oc, od, corr, exp))
+        except Exception as err:
+            print(f"Fetch Error: {err}")
 
-        for subj, num in subject_counts.items():
-            count = int(num)
-            if count <= 0: continue
-            
-            prompt = (
-                f"Maharashtra {department} parikshethathi '{subj}' ya vishayavar achuk ani navin {count} bahuparyayi prashn tayar kar. "
-                f"Uttar khaliilpramane pipe (|) format madhe eka oliat ek prashn asava:\n"
-                f"Prashn | opt A | opt B | opt C | opt D | correct (A/B/C/D) | explanation"
-            )
-
-            response = model.generate_content(prompt)
-            lines = response.text.strip().split('\n')
-            for line in lines:
-                parts = [p.strip() for p in line.split('|')]
-                if len(parts) >= 6:
-                    q = parts[0]
-                    oa, ob, oc, od = parts[1], parts[2], parts[3], parts[4]
-                    corr = parts[5].upper()
-                    if corr not in ['A', 'B', 'C', 'D']: corr = 'A'
-                    exp = parts[6] if len(parts) > 6 else 'स्पष्टीकरण उपलब्ध नाही.'
-                    generated_list.append((test_id, q, oa, ob, oc, od, corr, exp))
-
-        if generated_list:
-            with get_db() as conn:
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.executemany("""
-                        INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    """, generated_list)
-                    conn.commit()
-
+    if generated_list:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.executemany("""
+                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, generated_list)
+                conn.commit()
         return jsonify({"success": True, "inserted_count": len(generated_list)})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+
+    return jsonify({"success": False, "error": "प्रश्न तयार करता आले नाहीत. कृपया API Key आणि इंटरनेट तपासा."}), 500
 
 @app.route('/admin/undo_delete/<item_type>/<int:item_id>')
 def admin_undo_delete(item_type, item_id):
