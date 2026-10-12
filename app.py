@@ -449,7 +449,13 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; transition: all 0.15s ease; }
-        body { margin: 0; background: #0b1329; color: #f1f5f9; padding: 10px; }
+        body { 
+            margin: 0; background: #0b1329; color: #f1f5f9; padding: 10px; 
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
         .exam-header { background: #1e293b; color: white; padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; max-width: 850px; margin: 0 auto 15px; position: sticky; top: 10px; z-index: 100; border: 1.5px solid #334155; }
         .timer-box { background: rgba(239,68,68,0.15); border: 1.5px solid #ef4444; color: #fca5a5; padding: 6px 14px; border-radius: 8px; font-weight: 800; font-size: 16px; }
         .progress-bar-container { max-width: 850px; margin: 0 auto 15px; background: #1e293b; height: 8px; border-radius: 10px; overflow: hidden; border: 1px solid #334155; }
@@ -470,6 +476,17 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
     </style>
     <script>
         let isFormSubmitted = false;
+        // 🔒 राईट-क्लिक आणि शॉर्टकट कॉपी बंदी
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 's' || e.key === 'p')) {
+                e.preventDefault();
+                alert("सुरक्षा कारणास्तव प्रश्न कॉपी करण्यास सक्त मनाई आहे!");
+            }
+        });
         const testStorageKey = 'police_saved_answers_{{ test.id }}';
         const timerStorageKey = 'police_saved_timer_{{ test.id }}';
 
