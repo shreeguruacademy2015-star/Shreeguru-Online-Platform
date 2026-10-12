@@ -1878,20 +1878,27 @@ def verify_share_phone(test_id):
 def take_test(test_id):
     token = request.args.get('token')
 
-    if token:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # टेस्टची माहिती मिळवणे
-                cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
-                test = cur.fetchone()
-                if not test:
-                    return "<h3 style='color:#ef4444; text-align:center;'>टेस्ट सापडली नाही!</h3>", 404
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # १. टेस्टची माहिती मिळवणे
+            cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
+            test = cur.fetchone()
+            if not test:
+                return "<h3 style='color:#ef4444; text-align:center;'>टेस्ट सापडली नाही!</h3>", 404
 
-                # १. प्रथम टोकन तपासणे
+            # २. जर टेस्ट मोफत किंवा रॅपिड फायर असेल तर थेट सुरू करणे (टोकनची गरज नाही)
+            is_free = (test.get('is_paid') == 0 or test.get('category') in ['free', 'rapid_fire'] or float(test.get('price') or 0) == 0)
+            if is_free:
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
+                questions = cur.fetchall()
+                return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
+
+            # ३. पेड (सशुल्क) टेस्ट असेल तर टोकन तपासणे
+            if token:
                 cur.execute("SELECT * FROM mock_test_leads WHERE access_token=%s AND payment_status='Approved' AND is_deleted=0", (token,))
                 lead = cur.fetchone()
 
-                # २. कॉम्बो पॅक तपासणी (५० संच अतिसंभाव्य साठी)
+                # कॉम्बो पॅक तपासणी
                 has_combo_access = False
                 if lead:
                     cur.execute("""
@@ -1902,12 +1909,11 @@ def take_test(test_id):
                     if cur.fetchone() and test.get('category') in ['combo', 'package', 'police']:
                         has_combo_access = True
 
-                # ३. जर टोकन वैध असेल किंवा कॉम्बो पॅक असेल
                 if lead and (lead.get('test_id') == test_id or has_combo_access):
                     cur.execute("SELECT id FROM special_unlimited_attempts WHERE phone=%s", (lead['phone'],))
                     is_unlimited = cur.fetchone() is not None
 
-                    # डिव्हाइस बाइंडिंग (एका फोनवर उघडल्यानंतर लिंक दुसऱ्याला चालणार नाही)
+                    # डिव्हाइस बाइंडिंग
                     current_sid = session.get('session_id') or secrets.token_hex(8)
                     session['session_id'] = current_sid
 
@@ -1916,7 +1922,7 @@ def take_test(test_id):
                             cur.execute("UPDATE mock_test_leads SET device_fingerprint=%s WHERE id=%s", (current_sid, lead['id']))
                             conn.commit()
                         elif lead.get('device_fingerprint') != current_sid:
-                            return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ ही टेस्ट लिंक आधीच दुसऱ्या मोबाईलवर सुरू झाली आहे. लिंक फॉरवर्ड करण्यास मनाई आहे!</h3>", 403
+                            return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ ही टेस्ट लिंक आधीच दुसऱ्या मोबाईलवर सुरू झाली आहे!</h3>", 403
 
                     is_valid_time = True
                     if lead.get('token_expires_at'):
@@ -1931,7 +1937,7 @@ def take_test(test_id):
                     else:
                         return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ या टेस्टची मुदत संपली आहे!</h3>", 403
 
-    return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ टेस्ट सुरू करण्यासाठी वैध ॲक्सेस टोकन आवश्यक आहे!</h3>", 403
+    return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ ही सशुल्क टेस्ट आहे, सुरू करण्यासाठी वैध ॲक्सेस टोकन आवश्यक आहे!</h3>", 403
 
 @app.route('/create_razorpay_order/<int:test_id>', methods=['POST'])
 def create_razorpay_order(test_id):
