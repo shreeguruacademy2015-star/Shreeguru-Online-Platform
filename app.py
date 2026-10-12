@@ -71,7 +71,28 @@ def get_db():
             db_pool.putconn(conn)
         elif conn:
             conn.close()
+# ==========================================
+# ⚡ ४. हाय-स्पीड कंपोझिट इंडेक्सिंग (Database Performance)
+# ==========================================
+def setup_indexes():
+    try:
+        with get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_results_test_student ON test_results (test_id, student_id);
+                CREATE INDEX IF NOT EXISTS idx_questions_test_id ON questions (test_id);
+                CREATE INDEX IF NOT EXISTS idx_tests_category_active ON tests (category, is_active);
+            """)
+            conn.commit()
+            cur.close()
+            print("✅ Database indexes created successfully!")
+    except Exception as e:
+        print(f"❌ Index error: {e}")
 
+try:
+    setup_indexes()
+except Exception:
+    pass
 # क्रिप्टोग्राफिक लिंक सिग्नेचर जनरेटर व व्हेरिफायर (HMAC-SHA256)
 def generate_tamper_signature(data_str):
     return hmac.new(SECURITY_SALT.encode(), str(data_str).encode(), hashlib.sha256).hexdigest()[:12]
