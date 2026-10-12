@@ -2046,18 +2046,30 @@ def submit_test(test_id):
                 if f_row:
                     completed_friends_count = f_row['my_friends']
 
-                cur.execute("SELECT COUNT(*) as higher FROM mock_test_leads WHERE test_id=%s AND score > %s AND is_deleted=0", (test_id, score))
+                # 🏆 ६. अचूक टाय-ब्रेकर रँकिंग लॉजिक
+                cur.execute("""
+                    SELECT COUNT(*) as higher FROM mock_test_leads 
+                    WHERE test_id=%s AND is_deleted=0 
+                    AND (score > %s OR (score = %s AND id < (SELECT MAX(id) FROM mock_test_leads WHERE phone=%s AND test_id=%s)))
+                """, (test_id, score, score, phone, test_id))
                 rank_res = cur.fetchone()
                 state_rank = (rank_res['higher'] + 1) if rank_res else 1
 
-                cur.execute("SELECT COUNT(*) as higher_dist FROM mock_test_leads WHERE test_id=%s AND district ILIKE %s AND score > %s AND is_deleted=0", (test_id, district, score))
+                cur.execute("""
+                    SELECT COUNT(*) as higher_dist FROM mock_test_leads 
+                    WHERE test_id=%s AND district ILIKE %s AND is_deleted=0 
+                    AND (score > %s OR (score = %s AND id < (SELECT MAX(id) FROM mock_test_leads WHERE phone=%s AND test_id=%s)))
+                """, (test_id, district, score, score, phone, test_id))
                 dist_res = cur.fetchone()
                 district_rank = (dist_res['higher_dist'] + 1) if dist_res else 1
 
-                cur.execute("SELECT COUNT(*) as higher_cat FROM mock_test_leads WHERE test_id=%s AND caste_category = %s AND score > %s AND is_deleted=0", (test_id, caste_category, score))
+                cur.execute("""
+                    SELECT COUNT(*) as higher_cat FROM mock_test_leads 
+                    WHERE test_id=%s AND caste_category = %s AND is_deleted=0 
+                    AND (score > %s OR (score = %s AND id < (SELECT MAX(id) FROM mock_test_leads WHERE phone=%s AND test_id=%s)))
+                """, (test_id, caste_category, score, score, phone, test_id))
                 cat_res = cur.fetchone()
                 category_rank = (cat_res['higher_cat'] + 1) if cat_res else 1
-
                 cur.execute("SELECT setting_key, setting_value FROM academy_settings WHERE setting_key IN ('insta_link', 'yt_link', 'toppers_link', 'wa_groups_multiline')")
                 settings_dict = {r['setting_key']: r['setting_value'] for r in cur.fetchall()}
 
