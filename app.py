@@ -817,7 +817,16 @@ ACCESS_CHECK_TEMPLATE = '''<!DOCTYPE html>
     <form method="POST" action="/request_paid_test/{{ test.id }}">
         <input type="text" name="student_name" placeholder="पूर्ण नाव" required>
         <input type="text" name="district" placeholder="जिल्हा" required>
-        <input type="tel" name="phone" placeholder="10 अंकी WhatsApp नंबर" maxlength="10" required>
+        <input type="tel" name="student_phone" id="student_phone" placeholder="परीक्षेचा 10 अंकी WhatsApp नंबर" required style="width:100%; margin-bottom:8px; padding:8px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff;">
+<div style="font-size:12px; color:#cbd5e1; margin-bottom:8px; text-align:left;">
+    <label style="cursor:pointer;">
+        <input type="checkbox" id="same_phone_check" checked onchange="document.getElementById('payer_phone_box').style.display = this.checked ? 'none' : 'block'"> 
+        पेमेंट याच नंबरवरून करत आहे
+    </label>
+</div>
+<div id="payer_phone_box" style="display:none; margin-bottom:8px;">
+    <input type="tel" name="payer_phone" id="payer_phone" placeholder="ज्या नंबरवरून पैसे पाठवले तो नंबर (पर्यायी)" style="width:100%; padding:8px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff;">
+</div>
         <div style="font-size:11.5px; color:#cbd5e1; margin-bottom:10px;">
             <label><input type="checkbox" required checked> मी सर्व नियम, अटी व नो-रिफंड पॉलिसी मान्य करतो.</label>
         </div>
