@@ -1399,6 +1399,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 <td style="white-space:nowrap;">
                     <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; cursor:pointer;">💾 सेव्ह</button>
                     <a href="/admin/clone_test/{{ t.id }}" class="btn-sm" style="background:#d97706; color:white;">📋 क्लोन</a>
+                    <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white; text-decoration:none;">🖨️ प्रिंट</a>
                     <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची?');">🗑</a>
                 </td>
             </form>
