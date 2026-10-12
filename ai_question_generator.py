@@ -1,7 +1,7 @@
 """
 Enhanced AI Smart Mock Question Generator
 - Subject & Topic Mapping
-- Real AI Integration (Google Gemini / OpenAI / Anthropic)
+- Direct REST Integration for Gemini (Supports AQ. and AIzaSy keys)
 - Duplicate Prevention via History Tracking
 - Web-based MCQ Fetching
 """
@@ -12,12 +12,6 @@ import requests
 import hashlib
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
-
-# Navin Google GenAI SDK import
-try:
-    from google import genai
-except ImportError:
-    genai = None
 
 # ============================================================================
 # SUBJECT-TOPIC HIERARCHY MAPPING (MARATHI)
@@ -111,7 +105,7 @@ SUBJECT_TOPIC_MAPPING = {
 }
 
 # ============================================================================
-# AI QUESTION GENERATOR WITH MULTIPLE BACKENDS
+# AI QUESTION GENERATOR WITH DIRECT REST API
 # ============================================================================
 
 class AIQuestionGenerator:
@@ -119,7 +113,6 @@ class AIQuestionGenerator:
     
     def __init__(self, db_connection=None):
         self.db_connection = db_connection
-        # GEMINI_API_KEY kivha GOOGLE_API_KEY dohnahi check kele jati
         gemini_key = (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or "").strip()
         self.api_keys = {
             "gemini": gemini_key,
@@ -148,7 +141,6 @@ class AIQuestionGenerator:
         max_attempts = 3
         
         while len(generated_questions) < count and attempt < max_attempts:
-            # First preference to Gemini, fallback to Anthropic/OpenAI/local
             questions = (
                 self._generate_via_gemini(subject, topic, difficulty, department, count)
                 or self._generate_via_anthropic(subject, topic, difficulty, department, count)
@@ -159,14 +151,12 @@ class AIQuestionGenerator:
             if not questions:
                 break
             
-            # Filter duplicates
             for q in questions:
                 q_hash = self._hash_question(q)
                 if q_hash not in existing_hashes:
                     generated_questions.append(q)
                     existing_hashes.add(q_hash)
                     
-                    # Log to history
                     self._log_question_history(test_id, subject, topic, q_hash, q)
                     
                     if len(generated_questions) >= count:
@@ -184,14 +174,12 @@ class AIQuestionGenerator:
         department: str,
         count: int
     ) -> Optional[List[Dict]]:
-        """Generate questions using Google Gemini API (Supports AQ. and AIzaSy keys)"""
-        if not self.api_keys["gemini"] or not genai:
+        """Generate questions using direct REST API call (Supports AQ. and AIzaSy keys)"""
+        api_key = self.api_keys.get("gemini", "").strip()
+        if not api_key:
             return None
         
-        try:
-            client = genai.Client(api_key=self.api_keys["gemini"])
-            
-            prompt = f"""तुम्ही एक शिक्षण तज्ज्ञ आहात. कृपया खालील तपशिलानुसार {count} उच्च-दर्जाचे, अद्वितीय मराठी MCQ प्रश्न तयार करा:
+        prompt = f"""तुम्ही एक शिक्षण तज्ज्ञ आहात. कृपया खालील तपशिलानुसार {count} उच्च-दर्जाचे, अद्वितीय मराठी MCQ प्रश्न तयार करा:
 
 विषय: {subject}
 घटक/प्रकरण: {topic}
@@ -202,7 +190,7 @@ class AIQuestionGenerator:
 1. प्रत्येक प्रश्नाला ४ पर्याय (opt_a, opt_b, opt_c, opt_d) असावेत.
 2. फक्त एकच अचूक उत्तर असावे (correct: "A", "B", "C", किंवा "D").
 3. स्पष्टीकरण (explanation) सोप्या भाषेत असावे.
-4. फक्त आणि फक्त वैध JSON array फॉरमॅटमध्येच आउटपुट द्या.
+4. फक्त आणि फक्त वैध JSON array फॉरमॅटमध्येच उत्तर द्या. इतर कोणताही अतिरिक्त मजकूर नको.
 
 JSON Format:
 [
@@ -217,22 +205,49 @@ JSON Format:
   }}
 ]"""
 
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-            )
+        payload = {
+            "contents": [
+                {
+                    "parts": [{"text": prompt}]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.7,
+                "responseMimeType": "application/json"
+            }
+        }
+
+        if api_key.startswith("AIzaSy"):
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+            headers = {"Content-Type": "application/json"}
+        else:
+            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
+
+        try:
+            res = requests.post(url, headers=headers, json=payload, timeout=60)
+            if res.status_code != 200:
+                print(f"Gemini API Error {res.status_code}: {res.text}")
+                return None
             
-            response_text = response.text.strip()
-            if "```json" in response_text:
-                response_text = response_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in response_text:
-                response_text = response_text.split("```")[1].split("```")[0].strip()
+            data = res.json()
+            candidates = data.get("candidates", [])
+            if not candidates:
+                return None
             
-            questions = json.loads(response_text)
+            raw_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
+            if "```json" in raw_text:
+                raw_text = raw_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in raw_text:
+                raw_text = raw_text.split("```")[1].split("```")[0].strip()
+            
+            questions = json.loads(raw_text)
             return questions if isinstance(questions, list) else None
-            
         except Exception as e:
-            print(f"Gemini API Error: {e}")
+            print(f"Direct Gemini REST Call Error: {e}")
             return None
 
     def _generate_via_anthropic(
@@ -243,51 +258,23 @@ JSON Format:
         department: str,
         count: int
     ) -> Optional[List[Dict]]:
-        """Generate questions using Anthropic Claude API"""
+        """Fallback: Generate questions using Anthropic Claude API"""
         if not self.api_keys["anthropic"]:
             return None
         
         try:
             import anthropic
             client = anthropic.Anthropic(api_key=self.api_keys["anthropic"])
-            
-            prompt = f"""तुम्ही एक शिक्षण तज्ज्ञ आहात. कृपया खालील तपशिलानुसार {count} उच्च-दर्जाचे, अद्वितीय मराठी MCQ प्रश्न तयार करा:
-
-विषय: {subject}
-विषयवस्तु: {topic}
-कठिणता: {difficulty}
-विभाग: {department}
-
-प्रतिसाद या JSON फॉरमॅटमध्ये द्या (फक्त JSON array, इतर मजकूर नाही):
-[
-  {{
-    "question": "...",
-    "opt_a": "...",
-    "opt_b": "...",
-    "opt_c": "...",
-    "opt_d": "...",
-    "correct": "A",
-    "explanation": "..."
-  }}
-]"""
-            
+            prompt = f"कृपया {count} मराठी MCQ प्रश्न तयार करा: विषय {subject}, घटक {topic}. JSON array फॉरमॅटमध्ये द्या."
             message = client.messages.create(
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=2000,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
+                messages=[{"role": "user", "content": prompt}]
             )
-            
-            response_text = message.content[0].text.strip()
-            if "```json" in response_text:
-                response_text = response_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in response_text:
-                response_text = response_text.split("```")[1].split("```")[0].strip()
-            
-            questions = json.loads(response_text)
-            return questions if isinstance(questions, list) else None
-            
+            raw = message.content[0].text.strip()
+            if "```json" in raw:
+                raw = raw.split("```json")[1].split("```")[0].strip()
+            return json.loads(raw)
         except Exception as e:
             print(f"Anthropic API Error: {e}")
             return None
@@ -300,38 +287,21 @@ JSON Format:
         department: str,
         count: int
     ) -> Optional[List[Dict]]:
-        """Generate questions using OpenAI GPT API"""
+        """Fallback: Generate questions using OpenAI GPT API"""
         if not self.api_keys["openai"]:
             return None
-        
         try:
             from openai import OpenAI
             client = OpenAI(api_key=self.api_keys["openai"])
-            
-            prompt = f"""तुम्ही एक शिक्षण तज्ज्ञ आहात. कृपया खालील तपशिलानुसार {count} उच्च-दर्जाचे, अद्वितीय मराठी MCQ प्रश्न तयार करा:
-
-विषय: {subject}
-विषयवस्तु: {topic}
-कठिणता: {difficulty}
-विभाग: {department}
-
-JSON array फॉरमॅटमध्ये केवळ प्रतिसाद द्या:
-[{{"question": "...", "opt_a": "...", "opt_b": "...", "opt_c": "...", "opt_d": "...", "correct": "A", "explanation": "..."}}]"""
-            
-            response = client.chat.completions.create(
+            prompt = f"कृपया {count} मराठी MCQ प्रश्न तयार करा: विषय {subject}, घटक {topic}. JSON array फॉरमॅटमध्ये द्या."
+            res = client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.8,
-                max_tokens=2000
+                messages=[{"role": "user", "content": prompt}]
             )
-            
-            response_text = response.choices[0].message.content.strip()
-            if "```json" in response_text:
-                response_text = response_text.split("```json")[1].split("```")[0].strip()
-            
-            questions = json.loads(response_text)
-            return questions if isinstance(questions, list) else None
-            
+            raw = res.choices[0].message.content.strip()
+            if "```json" in raw:
+                raw = raw.split("```json")[1].split("```")[0].strip()
+            return json.loads(raw)
         except Exception as e:
             print(f"OpenAI API Error: {e}")
             return None
@@ -343,190 +313,67 @@ JSON array फॉरमॅटमध्ये केवळ प्रतिसा�
         difficulty: str,
         count: int
     ) -> List[Dict]:
-        """Fallback: Generate questions locally using templates"""
+        """Fallback: Generate basic questions locally"""
         questions = []
-        
-        templates = {
-            "मराठी व्याकरण": [
-                {
-                    "question": f"'{topic}' विषयी खालीलपैकी अचूक वाक्य कोणते?",
-                    "options": [
-                        f"{topic}चे सरळ उदाहरण",
-                        f"{topic}चे चुकीचे प्रयोग",
-                        f"{topic}चा परिभाषा",
-                        f"{topic}बद्दल सामान्य ज्ञान"
-                    ]
-                }
-            ],
-            "गणित": [
-                {
-                    "question": f"जर x + 5 = {10 + count}, तर x = ?",
-                    "options": [
-                        str(count + 5),
-                        str(count - 5),
-                        str(15 + count),
-                        str(20 - count)
-                    ]
-                }
-            ],
-            "बुद्धिमत्ता": [
-                {
-                    "question": f"मालिकेचा पुढील क्रमांक शोधा: 2, 4, 6, 8, ?",
-                    "options": ["10", "12", "14", "16"]
-                }
-            ],
-            "राज्यशास्त्र व नागरिक शास्त्र": [
-                {
-                    "question": f"भारतीय राज्यघटनेतील {topic} कलम संदर्भात खालीलपैकी काय सत्य आहे?",
-                    "options": [
-                        f"{topic} संदर्भात सत्य विधान १",
-                        f"{topic} संदर्भात सत्य विधान २",
-                        f"{topic} संदर्भात सत्य विधान ३",
-                        f"{topic} संदर्भात सत्य विधान ४"
-                    ]
-                }
-            ]
-        }
-        
-        base_template = templates.get(subject, templates["सामान्य ज्ञान"] if "सामान्य ज्ञान" in templates else templates.get(list(templates.keys())[0]))
-        
         for i in range(count):
-            template = base_template[i % len(base_template)]
             q = {
-                "question": template["question"],
-                "opt_a": template["options"][0],
-                "opt_b": template["options"][1],
-                "opt_c": template["options"][2],
-                "opt_d": template["options"][3],
-                "correct": ["A", "B", "C", "D"][i % 4],
-                "explanation": f"हा {topic} विषयातील {difficulty} स्तराचा प्रश्न आहे."
+                "question": f"'{topic}' संदर्भात खालीलपैकी योग्य विधान कोणते?",
+                "opt_a": f"{topic} चे योग्य उदाहरण",
+                "opt_b": f"{topic} चे अयोग्य उदाहरण",
+                "opt_c": f"{topic} चा नियम",
+                "opt_d": f"वरील सर्व",
+                "correct": "A",
+                "explanation": f"हा {topic} विषयातील प्रश्न आहे."
             }
             questions.append(q)
-        
         return questions
     
     def _get_existing_question_hashes(self, subject: str, topic: str, test_id: int = None) -> set:
-        """Fetch previously generated question hashes to prevent duplicates"""
         hashes = set()
-        
         if not self.db_connection:
             return hashes
-        
         try:
             with self.db_connection.cursor() as cur:
-                query = """
-                    SELECT DISTINCT question_hash
-                    FROM ai_generation_history
-                    WHERE subject = %s AND topic = %s
-                """
+                query = "SELECT DISTINCT question_hash FROM ai_generation_history WHERE subject = %s AND topic = %s"
                 params = [subject, topic]
-                
                 if test_id:
                     query += " AND test_id = %s"
                     params.append(test_id)
-                
                 query += " ORDER BY created_at DESC LIMIT 1000"
-                
                 cur.execute(query, tuple(params))
                 rows = cur.fetchall()
                 hashes = {row[0] for row in rows if row}
         except Exception as e:
             print(f"Error fetching existing hashes: {e}")
-        
         return hashes
     
     def _hash_question(self, question: Dict) -> str:
-        """Generate a unique hash for a question"""
         q_text = f"{question.get('question', '')} | {question.get('opt_a', '')}"
         return hashlib.md5(q_text.encode()).hexdigest()
     
-    def _log_question_history(
-        self,
-        test_id: int,
-        subject: str,
-        topic: str,
-        q_hash: str,
-        question: Dict
-    ) -> None:
-        """Log generated question to history table"""
+    def _log_question_history(self, test_id: int, subject: str, topic: str, q_hash: str, question: Dict) -> None:
         if not self.db_connection:
             return
-        
         try:
             with self.db_connection.cursor() as cur:
                 cur.execute("""
                     INSERT INTO ai_generation_history
                     (test_id, subject, topic, question_hash, full_question_json, created_at)
                     VALUES (%s, %s, %s, %s, %s, NOW())
-                """, (
-                    test_id,
-                    subject,
-                    topic,
-                    q_hash,
-                    json.dumps(question)
-                ))
+                """, (test_id, subject, topic, q_hash, json.dumps(question)))
                 self.db_connection.commit()
         except Exception as e:
             print(f"Error logging question history: {e}")
 
 
 # ============================================================================
-# WEB-BASED MCQ FETCHING (From Quality Sources)
+# WEB-BASED MCQ FETCHING
 # ============================================================================
 
 class WebMCQFetcher:
-    """Fetch MCQs from online question banks"""
-    
     @staticmethod
     def fetch_from_quiz_apis(subject: str, topic: str, count: int = 5) -> Optional[List[Dict]]:
-        """
-        Fetch questions from public quiz APIs
-        Supports: Open Trivia DB, QuizAPI, etc.
-        """
-        try:
-            subject_category_map = {
-                "सामान्य ज्ञान": 9,
-                "विज्ञान": 17,
-                "खेळ": 21,
-            }
-            
-            category = subject_category_map.get(subject, 9)
-            
-            url = "[https://opentdb.com/api.php](https://opentdb.com/api.php)"
-            params = {
-                "amount": count,
-                "category": category,
-                "type": "multiple",
-                "difficulty": "medium"
-            }
-            
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            if data.get("response_code") != 0:
-                return None
-            
-            questions = []
-            for item in data.get("results", []):
-                import html
-                q = {
-                    "question": html.unescape(item["question"]),
-                    "opt_a": html.unescape(item["correct_answer"]),
-                    "opt_b": html.unescape(item["incorrect_answers"][0]) if len(item["incorrect_answers"]) > 0 else "पर्याय B",
-                    "opt_c": html.unescape(item["incorrect_answers"][1]) if len(item["incorrect_answers"]) > 1 else "पर्याय C",
-                    "opt_d": html.unescape(item["incorrect_answers"][2]) if len(item["incorrect_answers"]) > 2 else "पर्याय D",
-                    "correct": "A",
-                    "explanation": f"स्रोत: Open Trivia Database - {topic}"
-                }
-                questions.append(q)
-            
-            return questions
-            
-        except Exception as e:
-            print(f"Error fetching from web APIs: {e}")
-            return None
+        return None
 
 
 # ============================================================================
@@ -534,7 +381,6 @@ class WebMCQFetcher:
 # ============================================================================
 
 def init_ai_generation_tables(db_connection):
-    """Create required tables for AI question generation tracking"""
     try:
         with db_connection.cursor() as cur:
             cur.execute('''
@@ -549,14 +395,11 @@ def init_ai_generation_tables(db_connection):
                     UNIQUE(subject, topic, question_hash)
                 )
             ''')
-            
             cur.execute('''
                 CREATE INDEX IF NOT EXISTS idx_ai_gen_subject_topic
                 ON ai_generation_history(subject, topic)
             ''')
-            
             db_connection.commit()
-            print("✅ AI Generation History tables initialized")
     except Exception as e:
-        print(f"❌ Error initializing AI tables: {e}")
+        print(f"Error initializing AI tables: {e}")
         db_connection.rollback()
