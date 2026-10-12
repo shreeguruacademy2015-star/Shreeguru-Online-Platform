@@ -1850,7 +1850,7 @@ def home_tests_list():
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='site_status'")
             s_row = cur.fetchone()
-            if s_row and s_row['setting_value'] == 'maintenance' and not session.get('admin_logged'):
+            # if s_row and s_row['setting_value'] == 'maintenance' and not session.get('admin_logged'):
                 return render_template_string(MAINTENANCE_TEMPLATE)
 
     ref_phone = request.args.get('ref', '').strip()
