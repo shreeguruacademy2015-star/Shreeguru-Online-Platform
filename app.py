@@ -1979,7 +1979,9 @@ def verify_razorpay_payment():
 def request_paid_test(test_id):
     name = request.form.get('student_name', '').strip()
     district = request.form.get('district', '').strip()
-    phone = request.form.get('phone', '').strip()
+    student_phone = request.form.get('student_phone', '').strip() or request.form.get('phone', '').strip()
+    payer_phone = request.form.get('payer_phone', '').strip() or student_phone
+    phone = student_phone
     t_date = date.today().strftime("%Y-%m-%d")
 
     if not re.match(r'^[6-9]\d{9}$', phone):
