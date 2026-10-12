@@ -1896,8 +1896,19 @@ def take_test(test_id):
                 return "<h3 style='color:#ef4444; text-align:center;'>टेस्ट सापडली नाही!</h3>", 404
 
             # २. जर टेस्ट मोफत किंवा रॅपिड फायर असेल तर थेट सुरू करणे (टोकनची गरज नाही)
-            is_free = (test.get('is_paid') == 0 or test.get('category') in ['free', 'rapid_fire'] or float(test.get('price') or 0) == 0)
-            if is_free:
+            # टेस्ट पेड आहे की मोफत हे तपासणे:
+            # जर is_paid = 1 असेल किंवा price > 0 असेल, तर ती १००% पेड टेस्ट आहे
+            is_paid_test = (
+                test.get('is_paid') in [1, True, '1', 'true'] or 
+                float(test.get('price') or 0) > 0 or 
+                test.get('category') in ['paid', 'combo', 'package', 'police']
+            )
+
+            # जर टेस्ट पेड नसेल (म्हणजेच मोफत/रॅपिड फायर असेल), तरच थेट चालू करणे:
+            if not is_paid_test:
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
+                questions = cur.fetchall()
+                return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
                 cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
                 questions = cur.fetchall()
                 return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
