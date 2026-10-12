@@ -2002,7 +2002,8 @@ def take_test(test_id):
                 return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
 
     return render_template_string(ACCESS_CHECK_TEMPLATE, test=test, qr_url=st.get('qr_code_url', ''), upi_mobile=st.get('upi_mobile', '9921111960'))
-    @app.route('/create_razorpay_order/<int:test_id>', methods=['POST'])
+   
+@app.route('/create_razorpay_order/<int:test_id>', methods=['POST'])
 def create_razorpay_order(test_id):
     client, key_id = get_razorpay_client()
     if not client or not key_id:
