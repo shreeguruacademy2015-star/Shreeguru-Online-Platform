@@ -2845,6 +2845,97 @@ def admin_delete_payment(lead_id):
             conn.commit()
     return redirect('/admin/dashboard?tab=payments')
 
+# ==========================================
+# 🖨️ टेस्ट प्रश्नपत्रिका प्रिंट राऊट (A4 PDF/Print)
+# ==========================================
+@app.route('/admin/print_test/<int:test_id>')
+def print_test_route(test_id):
+    if not session.get('admin_logged_in'):
+        return redirect('/admin/login')
+    
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT id, name, category, time_limit, fee FROM tests WHERE id = %s", (test_id,))
+        test = cur.fetchone()
+        if not test:
+            return "टेस्ट सापडली नाही!", 404
+        
+        cur.execute("""
+            SELECT id, question, option_a, option_b, option_c, option_d, correct_option, explanation 
+            FROM questions 
+            WHERE test_id = %s 
+            ORDER BY id ASC
+        """, (test_id,))
+        questions = cur.fetchall()
+        
+        html_code = f"""
+        <!DOCTYPE html>
+        <html lang="mr">
+        <head>
+            <meta charset="UTF-8">
+            <title>प्रश्नपत्रिका - {test[1]}</title>
+            <style>
+                @page {{ size: A4; margin: 15mm; }}
+                body {{ font-family: 'Segoe UI', Tahoma, sans-serif; color: #1e293b; line-height: 1.5; padding: 10px; }}
+                .header {{ text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px; }}
+                .header h2 {{ margin: 0; font-size: 22px; color: #0f172a; }}
+                .header p {{ margin: 4px 0 0; font-size: 14px; font-weight: bold; color: #475569; }}
+                .meta-box {{ display: flex; justify-content: space-between; border-bottom: 1px dashed #94a3b8; padding-bottom: 8px; margin-bottom: 15px; font-size: 13px; font-weight: 600; }}
+                .q-block {{ margin-bottom: 18px; page-break-inside: avoid; }}
+                .q-text {{ font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #0f172a; }}
+                .options-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-left: 15px; font-size: 14px; }}
+                .print-bar {{ background: #f1f5f9; padding: 10px; text-align: center; margin-bottom: 20px; border-radius: 8px; }}
+                .btn-print {{ background: #059669; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }}
+                @media print {{
+                    .print-bar {{ display: none; }}
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="print-bar">
+                <button class="btn-print" onclick="window.print()">🖨️ ही प्रश्नपत्रिका प्रिंट / PDF सेव्ह करा</button>
+            </div>
+            
+            <div class="header">
+                <h2>श्रीगुरु करिअर अकॅडमी</h2>
+                <p>सराव परीक्षा: {test[1]}</p>
+            </div>
+            <div class="meta-box">
+                <span>एकूण प्रश्न: {len(questions)}</span>
+                <span>वेळ: {test[3]} मिनिटे</span>
+                <span>कॅटेगरी: {test[2].upper()}</span>
+            </div>
+            
+            <div class="questions-list">
+        """
+        
+        for idx, q in enumerate(questions, 1):
+            html_code += f"""
+                <div class="q-block">
+                    <div class="q-text">प्र. {idx}) {q[1]}</div>
+                    <div class="options-grid">
+                        <div>(A) {q[2]}</div>
+                        <div>(B) {q[3]}</div>
+                        <div>(C) {q[4]}</div>
+                        <div>(D) {q[5]}</div>
+                    </div>
+                </div>
+            """
+            
+        html_code += """
+            </div>
+        </body>
+        </html>
+        """
+        return html_code
+        
+    except Exception as e:
+        return f"एरर आला: {str(e)}", 500
+    finally:
+        cur.close()
+        conn.close()
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
 
