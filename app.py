@@ -1899,20 +1899,19 @@ def take_test(test_id):
             # टेस्ट पेड आहे की मोफत हे तपासणे:
             # जर is_paid = 1 असेल किंवा price > 0 असेल, तर ती १००% पेड टेस्ट आहे
             is_paid_test = (
-                test.get('is_paid') in [1, True, '1', 'true'] or 
+                test.get('is_paid') in [1, True, '1', 'true', 'Paid', 'paid'] or 
                 float(test.get('price') or 0) > 0 or 
-                test.get('category') in ['paid', 'combo', 'package', 'police']
+                str(test.get('category') or '').lower() in ['paid', 'combo', 'package', 'police', 'khaki', 'sangram', 'mahasangram', 'महासंग्राम'] or 
+                'महासंग्राम' in str(test.get('title') or '') or 
+                'संग्राम' in str(test.get('title') or '') or 
+                'खाकी' in str(test.get('title') or '')
             )
-
             # जर टेस्ट पेड नसेल (म्हणजेच मोफत/रॅपिड फायर असेल), तरच थेट चालू करणे:
             if not is_paid_test:
                 cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
                 questions = cur.fetchall()
                 return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
-                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
-                questions = cur.fetchall()
-                return render_template_string(EXAM_TEMPLATE, test=test, questions=questions)
-
+              
             # ३. पेड (सशुल्क) टेस्ट असेल तर टोकन तपासणे
             if token:
                 cur.execute("SELECT * FROM mock_test_leads WHERE access_token=%s AND payment_status='Approved' AND is_deleted=0", (token,))
