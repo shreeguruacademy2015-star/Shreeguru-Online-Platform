@@ -1907,6 +1907,11 @@ def take_test(test_id):
                 'खाकी' in str(test.get('title') or '')
             )
             # जर टेस्ट पेड नसेल (म्हणजेच मोफत/रॅपिड फायर असेल), तरच थेट चालू करणे:
+            # सशुल्क टेस्ट नावाने थेट ब्लॉक करणे
+            t_nm = str(test.get('title') or '').lower()
+            t_ct = str(test.get('category') or '').lower()
+            if any(k in t_nm for k in ['संग्राम', 'खाकी', 'अतिसंभाव्य', 'sangram', 'khaki']) or any(k in t_ct for k in ['महासंग्राम', 'sangram', 'police']):
+                is_paid_test = True
             if not is_paid_test:
                 cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
                 questions = cur.fetchall()
