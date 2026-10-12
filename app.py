@@ -1628,22 +1628,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 </div>
 </body>
 </html>'''
-            fetch('/api/heartbeat', {method: 'POST'}).catch(e => {});
-        }, 60000);
-    </script>
-</head>
-<body>
-<div id="loadingNoticeModal" class="loading-modal">
-    <div class="modal-content">
-        <h3 style="color:#34d399; margin:0 0 10px; font-size:20px;">🛡️ परीक्षा कक्ष लोड होत आहे...</h3>
-        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0 0 20px;">
-            ⏳ <b>महाराष्ट्र पोलीस भरती टेस्ट पोर्टलवर आपले स्वागत आहे, आपली टेस्ट पेज सुरू होत आहे...</b> कृपया क्षणभर प्रतीक्षा करा!
-        </p>
-        <button onclick="proceedToTest()" style="background:linear-gradient(135deg, #10b981, #059669); color:#022c22; border:none; padding:12px 28px; border-radius:8px; font-weight:800; font-size:15px; cursor:pointer; width:100%;">
-            🚀 पुढे चला (कंटिन्यू) ➔
-        </button>
-    </div>
-</div>
+           
 def init_master_db():
     try:
         with get_db() as conn:
