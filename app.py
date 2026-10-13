@@ -2414,83 +2414,6 @@ def request_paid_test(test_id):
     return "<h3 style='color:green; text-align:center; padding:40px;'>✅ मॅन्युअल स्क्रीनशॉट तपासणी प्रलंबित! ॲडमिन मंजुरीनंतर २४ तासांत टेस्ट लिंक WhatsApp वर पाठवली जाईल.<br><br><a href='/' style='color:#0284c7;'>मुख्य पानावर परत जा</a></h3>"
 # =============================================================================
 # MAHARASHTRA POLICE BHARTI ONLINE TEST PORTAL 2026 - MASTER CORE (PART 6/7)
-# MODULE: TEST SUBMISSION, 1-VS-1 BATTLE MODE, WHATSAPP OTP VERIFICATION & KEYS
-# =============================================================================
-
-@app.route('/submit_test/<int:test_id>', methods=['POST'])
-def submit_test(test_id):
-    try:
-        student_name = request.form.get('student_name', '').strip()
-        district = request.form.get('district', '').strip()
-        caste_category = request.form.get('caste_category', 'OPEN').strip().upper()
-        phone = request.form.get('phone', '').strip()
-        time_taken = int(request.form.get('time_taken_seconds', 0) or 0)
-        battle_partner_id = int(request.form.get('battle_partner_id', 0) or 0)
-        referred_by = session.get('referred_by', '')
-
-        if not re.match(r'^[6-9]\d{9}$', phone):
-            return "<h3 style='color:red; text-align:center; padding:30px;'>अवैध मोबाईल नंबर! कृपया १० अंकी नंबर टाका.</h3>", 400
-
-        session['user_phone'] = phone
-
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # ब्लॉक तपासणी
-                cur.execute("SELECT phone FROM blocked_numbers WHERE phone=%s", (phone,))
-                if cur.fetchone():
-                    return "<h3 style='color:red; text-align:center; padding:30px;'>⚠️ तुमचा मोबाईल नंबर प्रशासकीय कारणास्तव ब्लॉक करण्यात आला आहे!</h3>", 403
-
-                cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
-                test = cur.fetchone()
-                if not test: 
-                    return "Test not found", 404
-
-                cur.execute("SELECT id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation, image_url FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
-                questions = cur.fetchall()
-
-                score = 0
-                total = len(questions)
-                user_answers = {}
-
-                # विषयनिहाय गुण मोजणी (महाराष्ट्र पोलीस भरती पॅटर्न)
-                sub_scores = {
-                    "मराठी व्याकरण व शब्दसंपदा": {"score": 0, "total": 0},
-                    "अंकगणित": {"score": 0, "total": 0},
-                    "बुद्धिमत्ता चाचणी": {"score": 0, "total": 0},
-                    "सामान्य अध्ययन व चालू घडामोडी": {"score": 0, "total": 0}
-                }
-
-                for idx, q in enumerate(questions, 1):
-                    ans = request.form.get(f"q_{q['id']}", "")
-                    user_answers[str(q['id'])] = ans
-                    is_cr = (ans == q['correct'])
-                    if is_cr: 
-                        score += 1
-
-                    if idx <= 25: 
-                        s_key = "मराठी व्याकरण व शब्दसंपदा"
-                    elif idx <= 50: 
-                        s_key = "अंकगणित"
-                    elif idx <= 75: 
-                        s_key = "बुद्धिमत्ता चाचणी"
-                    else: 
-                        s_key = "सामान्य अध्ययन व चालू घडामोडी"
-
-                    sub_scores[s_key]["total"] += 1
-                    if is_cr: 
-                        sub_scores[s_key]["score"] += 1
-
-                t_date = date.today().strftime("%Y-%mखाली **भाग ६ (Part 6 / 7)** दिला आहे. यामध्ये टेस्ट सबमिशन, विषयनिहाय गुण मोजणी, २ मित्रांमधील थेट मुकाबला (1 vs 1 Battle Mode), ३ रेफरल्सवर पुढील २ महासंग्राम टेस्ट्स अनलॉक करण्याचे पेअर लॉजिक, 'माझे जुने निकाल' साठी WhatsApp OTP पडताळणी, विद्यार्थी अभिप्राय आणि हेल्प डेस्क सबमिशनचे सर्व बॅक-एंड राऊट्स समाविष्ट आहेत.
-
-हा भाग तुमच्या `app.py` फाईलमध्ये **भाग ५** च्या अगदी खाली जोडून घ्या:
-
----
-
-### **भाग ६ / ७: टेस्ट सबमिशन, १ वि १ बॅटल, रेफरल पेअर-अनलॉक व OTP निकाल राऊट्स**
-
-```python
-# =============================================================================
-# MAHARASHTRA POLICE BHARTI ONLINE TEST PORTAL 2026 - MASTER CORE (PART 6/7)
 # MODULE: TEST SUBMISSION, 1-VS-1 BATTLE LOGIC, PAIR UNLOCK, OTP & RESULTS
 # =============================================================================
 
@@ -2557,6 +2480,7 @@ def submit_test(test_id):
                     if is_cr:
                         sub_scores[s_key]["score"] += 1
 
+                # दुरुस्त केलेली तारीख ओळ (SyntaxError फिक्स):
                 t_date = date.today().strftime("%Y-%m-%d")
                 ans_json_str = json.dumps(user_answers)
                 result_token = secrets.token_hex(10)
@@ -2630,7 +2554,7 @@ def submit_test(test_id):
                 """, (test_id, caste_category, score))
                 category_rank = cur.fetchone()['higher_cat'] + 1
 
-                # २ मित्रांमधील थेट मुकाबला (1 vs 1 Battle) तुलना व निकाल
+                # २ मित्रांमधील थेट मुकाबला (1 vs 1 Battle)
                 battle_result_text = ""
                 if battle_partner_id > 0:
                     cur.execute("""
@@ -2741,7 +2665,7 @@ def student_my_results():
     <head>
         <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>माझे निकाल - सुरक्षित OTP पडताळणी</title>
-        <link href="[https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap](https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap)" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
         <style>
             body {{ margin:0; background:#0b1329; color:#f1f5f9; font-family:'Poppins', sans-serif; padding:15px; }}
             .box {{ max-width:850px; margin:0 auto; background:#162036; border-radius:16px; padding:25px; border-top:6px solid #38bdf8; }}
@@ -2872,6 +2796,7 @@ def submit_help_desk():
                 """, (name, phone, feedback, datetime.now().strftime("%Y-%m-%d %H:%M")))
                 conn.commit()
     return "<h3 style='color:green; text-align:center; padding:40px;'>✅ आपली तक्रार/अभिप्राय यशस्वीपणे नोंदवला गेला आहे!<br><br><a href='/' style='color:#0284c7;'>होम पेजवर परत जा</a></h3>"
+
                 # =============================================================================
 # MAHARASHTRA POLICE BHARTI ONLINE TEST PORTAL 2026 - MASTER CORE (PART 7/7)
 # MODULE: ADMIN MASTER ROUTES, POWER SEARCH 360, AI GENERATION, CSV & RUNNER
