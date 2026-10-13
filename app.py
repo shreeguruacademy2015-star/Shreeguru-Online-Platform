@@ -2613,13 +2613,23 @@ def submit_test(test_id):
         print(f"❌ Submit Test Error: {e}")
         return f"<h3 style='color:red; text-align:center;'>सर्व्हर त्रुटी: {str(e)}</h3>", 500
 
-# जुने निकाल पाहण्यासाठी WhatsApp OTP पडताळणी राऊट
+# =============================================================================
+# मोफत WhatsApp कनेक्टिव्हिटी - माझे निकाल राऊट
+# =============================================================================
+
 @app.route('/my_results', methods=['GET', 'POST'])
 def student_my_results():
     step = request.args.get('step', 'request_phone')
     phone = session.get('my_results_phone', '')
     results = []
     error = None
+    wa_verify_link = ""
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='admin_phone'")
+            row = cur.fetchone()
+            admin_phone = row['setting_value'] if row else '9921111960'
 
     if request.method == 'POST':
         action = request.form.get('action')
@@ -2631,6 +2641,7 @@ def student_my_results():
                 generated_otp = str(secrets.randbelow(900000) + 100000)
                 session['results_otp'] = generated_otp
                 session['my_results_phone'] = phone
+
                 with get_db() as conn:
                     with conn.cursor() as cur:
                         cur.execute("""
@@ -2638,14 +2649,20 @@ def student_my_results():
                             VALUES (%s, %s, 'view_results')
                         """, (phone, generated_otp))
                         conn.commit()
+
+                # मोफत थेट WhatsApp मेसेज लिंक तयार करणे
+                wa_msg = f"महाराष्ट्र पोलीस भरती सराव पोर्टल: माझा निकाल पाहण्यासाठी माझा OTP पडताळणी कोड [{generated_otp}] हा आहे. (मोबाईल: {phone})"
+                encoded_msg = urllib.parse.quote(wa_msg)
+                wa_verify_link = f"https://wa.me/91{admin_phone}?text={encoded_msg}"
                 step = 'verify_otp'
+
         elif action == 'verify_otp':
             entered_otp = request.form.get('otp', '').strip()
             if entered_otp == session.get('results_otp'):
                 step = 'show_results'
                 session['results_authenticated'] = True
             else:
-                error = "चुकीचा OTP! कृपया पुन्हा प्रयत्न करा."
+                error = "चुकीचा कोड! कृपया स्क्रीनवरील अचूक कोड टाका."
                 step = 'verify_otp'
 
     if step == 'show_results' and session.get('results_authenticated'):
@@ -2664,13 +2681,14 @@ def student_my_results():
     <html lang="mr">
     <head>
         <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>माझे निकाल - सुरक्षित OTP पडताळणी</title>
+        <title>माझे निकाल - मोफत सुरक्षित पडताळणी</title>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
         <style>
             body {{ margin:0; background:#0b1329; color:#f1f5f9; font-family:'Poppins', sans-serif; padding:15px; }}
-            .box {{ max-width:850px; margin:0 auto; background:#162036; border-radius:16px; padding:25px; border-top:6px solid #38bdf8; }}
+            .box {{ max-width:850px; margin:0 auto; background:#162036; border-radius:16px; padding:25px; border-top:6px solid #25D366; }}
             input {{ padding:10px; background:#0f172a; border:1px solid #334155; color:white; border-radius:6px; }}
             button {{ padding:10px 18px; background:#10b981; color:#022c22; font-weight:bold; border:none; border-radius:6px; cursor:pointer; }}
+            .btn-wa {{ background:#25D366; color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block; margin-top:10px; }}
             table {{ width:100%; border-collapse:collapse; margin-top:15px; }}
             th, td {{ padding:10px; border-bottom:1px solid #334155; text-align:left; font-size:13px; }}
             th {{ background:#1e293b; color:#38bdf8; }}
@@ -2679,33 +2697,41 @@ def student_my_results():
     <body>
     <div class="box">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 style="color:#38bdf8; margin:0;">👤 माझे जुने निकाल व प्रगती कक्ष</h2>
+            <h2 style="color:#25D366; margin:0;">👤 जुने निकाल व प्रगती कक्ष</h2>
             <a href="/" style="color:#cbd5e1; text-decoration:none; font-weight:bold;">🏠 मुख्य पानावर जा</a>
         </div>
         {f'<p style="color:#f87171; font-weight:bold;">{error}</p>' if error else ''}
         
         {f'''<form method="POST" style="margin-top:20px;">
             <input type="hidden" name="action" value="send_otp">
-            <label>नोंदणीकृत WhatsApp मोबाईल नंबर टाका:</label><br>
+            <label>नोंदणीकृत १० अंकी मोबाईल नंबर टाका:</label><br>
             <div style="display:flex; gap:10px; margin-top:8px;">
-                <input type="tel" name="phone" placeholder="१० अंकी मोबाईल नंबर" maxlength="10" required>
-                <button type="submit">📲 OTP मिळवा</button>
+                <input type="tel" name="phone" placeholder="१० अंकी नंबर" maxlength="10" required>
+                <button type="submit">📲 पडताळणी सुरू करा</button>
             </div>
         </form>''' if step == 'request_phone' else ''}
 
-        {f'''<div style="background:#0f172a; padding:15px; border-radius:8px; margin-top:20px; border:1px solid #f59e0b;">
-            <p style="color:#fbbf24; margin:0 0 10px;">⚡ तुमच्या WhatsApp वरील ६-अंकी OTP टाका (चाचणी कोड: <b>{otp_display}</b>):</p>
-            <form method="POST" style="display:flex; gap:10px;">
+        {f'''<div style="background:#0f172a; padding:18px; border-radius:10px; margin-top:20px; border:1.5px solid #25D366; text-align:center;">
+            <h4 style="color:#25D366; margin-top:0;">⚡ पडताळणी कोड (OTP)</h4>
+            <p style="font-size:14px; color:#cbd5e1; margin-bottom:12px;">तुमचा सुरक्षित पडताळणी कोड खालीलप्रमाणे आहे:</p>
+            <div style="font-size:26px; font-weight:bold; letter-spacing:4px; color:#fde047; background:#1e293b; display:inline-block; padding:8px 20px; border-radius:8px; border:1px dashed #fde047; margin-bottom:15px;">
+                {otp_display}
+            </div>
+
+            <p style="font-size:12.5px; color:#94a3b8; margin:0 0 10px;">किंवा WhatsApp वर थेट पुष्टी करण्यासाठी खालील बटण दाबा:</p>
+            <a href="{wa_verify_link}" target="_blank" class="btn-wa">💬 WhatsApp वर पाठवा व तपासा</a>
+
+            <form method="POST" style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
                 <input type="hidden" name="action" value="verify_otp">
-                <input type="text" name="otp" placeholder="६ अंकी OTP" maxlength="6" required>
-                <button type="submit">🔐 पडताळणी करा</button>
+                <input type="text" name="otp" value="{otp_display}" placeholder="हा ६ अंकी कोड टाका" maxlength="6" required style="text-align:center; font-size:16px; font-weight:bold; width:160px;">
+                <button type="submit">🔐 निकाल उघडा</button>
             </form>
         </div>''' if step == 'verify_otp' else ''}
 
-        {f'''<h4 style="margin:20px 0 8px; color:#34d399;">परीक्षेचा इतिहास व गुणपत्रिका:</h4>
+        {f'''<h4 style="margin:20px 0 8px; color:#34d399;">परीक्षेचा इतिहास व निकाल:</h4>
         <table>
             <tr><th>दिनांक</th><th>टेस्ट नाव</th><th>नाव</th><th>जिल्हा</th><th>गुण</th><th>कृती</th></tr>
-            {''.join([f"<tr><td>{r['test_date']}</td><td><b>{r['test_name']}</b></td><td>{r['student_name']}</td><td>{r['district']}</td><td style='color:#34d399; font-weight:bold;'>{r['score']} / {r['total_marks']}</td><td><a href='/detailed_answers/{r['access_token']}' style='color:#38bdf8; font-weight:bold;'>📖 उत्तरतालिका</a> | <a href='/student/admit_card/{r['id']}' target='_blank' style='color:#fbbf24; font-weight:bold;'>🖨️ आयडी</a></td></tr>" for r in results]) if results else "<tr><td colspan='6' style='text-align:center;'>या नंबरवर नोंदी आढळल्या नाहीत.</td></tr>"}
+            {''.join([f"<tr><td>{r['test_date']}</td><td><b>{r['test_name']}</b></td><td>{r['student_name']}</td><td>{r['district']}</td><td style='color:#34d399; font-weight:bold;'>{r['score']} / {r['total_marks']}</td><td><a href='/detailed_answers/{r['access_token']}' style='color:#38bdf8; font-weight:bold;'>📖 उत्तरतालिका</a> | <a href='/student/admit_card/{r['id']}' target='_blank' style='color:#fbbf24; font-weight:bold;'>🖨️ आयडी</a></td></tr>" for r in results]) if results else "<tr><td colspan='6' style='text-align:center;'>या नंबरवर निकाल सापडला नाही.</td></tr>"}
         </table>''' if step == 'show_results' else ''}
     </div>
     </body>
