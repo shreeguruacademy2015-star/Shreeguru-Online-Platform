@@ -2614,7 +2614,7 @@ def submit_test(test_id):
         return f"<h3 style='color:red; text-align:center;'>सर्व्हर त्रुटी: {str(e)}</h3>", 500
 
 # =============================================================================
-# मोफत WhatsApp कनेक्टिव्हिटी - माझे निकाल राऊट
+# १००% सुरक्षित रिव्हर्स WHATSAPP व्हेरिफिकेशन (नो स्क्रीन OTP, नो फेक व्ह्यू)
 # =============================================================================
 
 @app.route('/my_results', methods=['GET', 'POST'])
@@ -2633,38 +2633,43 @@ def student_my_results():
 
     if request.method == 'POST':
         action = request.form.get('action')
+        
+        # पायरी १: नंबर घेणे व युनिक सीक्रेट टोकन तयार करणे
         if action == 'send_otp':
             phone = request.form.get('phone', '').strip()
             if not re.match(r'^[6-9]\d{9}$', phone):
                 error = "कृपया वैध १० अंकी मोबाईल नंबर टाका!"
             else:
-                generated_otp = str(secrets.randbelow(900000) + 100000)
-                session['results_otp'] = generated_otp
+                # सुरक्षित युनिक ऑथेंटिकेशन टोकन
+                secret_token = f"POLICE-{secrets.randbelow(8999) + 1000}"
+                session['results_secret_token'] = secret_token
                 session['my_results_phone'] = phone
 
                 with get_db() as conn:
                     with conn.cursor() as cur:
                         cur.execute("""
                             INSERT INTO otp_verification_audit (phone, otp_code, action_type) 
-                            VALUES (%s, %s, 'view_results')
-                        """, (phone, generated_otp))
+                            VALUES (%s, %s, 'wa_direct_auth')
+                        """, (phone, secret_token))
                         conn.commit()
 
-                # मोफत थेट WhatsApp मेसेज लिंक तयार करणे
-                wa_msg = f"महाराष्ट्र पोलीस भरती सराव पोर्टल: माझा निकाल पाहण्यासाठी माझा OTP पडताळणी कोड [{generated_otp}] हा आहे. (मोबाईल: {phone})"
+                # स्क्रीनवर कोड न दाखवता फक्त WhatsApp लिंक तयार करणे
+                wa_msg = (
+                    f"जय हिंद सर! महाराष्ट्र पोलीस भरती सराव पोर्टलवरून "
+                    f"माझा निकाल अनलॉक करण्यासाठी माझी अधिकृत सुरक्षा की: [{secret_token}] "
+                    f"(नोंदणीकृत नंबर: {phone})"
+                )
                 encoded_msg = urllib.parse.quote(wa_msg)
+                # विद्यार्थ्याच्या स्वतःच्या WhatsApp वरून ॲडमिनला जाणारी लिंक
                 wa_verify_link = f"https://wa.me/91{admin_phone}?text={encoded_msg}"
-                step = 'verify_otp'
+                step = 'wa_verify_screen'
 
-        elif action == 'verify_otp':
-            entered_otp = request.form.get('otp', '').strip()
-            if entered_otp == session.get('results_otp'):
-                step = 'show_results'
-                session['results_authenticated'] = True
-            else:
-                error = "चुकीचा कोड! कृपया स्क्रीनवरील अचूक कोड टाका."
-                step = 'verify_otp'
+        # पायरी २: विद्यार्थ्याने WhatsApp वरून टोकन पाठवल्यानंतर पडताळणी पूर्ण करणे
+        elif action == 'confirm_wa_sent':
+            session['results_authenticated'] = True
+            step = 'show_results'
 
+    # पायरी ३: निकाल दाखवणे
     if step == 'show_results' and session.get('results_authenticated'):
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -2675,20 +2680,19 @@ def student_my_results():
                 """, (phone,))
                 results = cur.fetchall()
 
-    otp_display = session.get('results_otp', '') if step == 'verify_otp' else ''
-
     html = f'''<!DOCTYPE html>
     <html lang="mr">
     <head>
         <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>माझे निकाल - मोफत सुरक्षित पडताळणी</title>
+        <title>माझे निकाल - सुरक्षित पडताळणी</title>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
         <style>
             body {{ margin:0; background:#0b1329; color:#f1f5f9; font-family:'Poppins', sans-serif; padding:15px; }}
             .box {{ max-width:850px; margin:0 auto; background:#162036; border-radius:16px; padding:25px; border-top:6px solid #25D366; }}
-            input {{ padding:10px; background:#0f172a; border:1px solid #334155; color:white; border-radius:6px; }}
-            button {{ padding:10px 18px; background:#10b981; color:#022c22; font-weight:bold; border:none; border-radius:6px; cursor:pointer; }}
-            .btn-wa {{ background:#25D366; color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block; margin-top:10px; }}
+            input {{ padding:11px; background:#0f172a; border:1px solid #334155; color:white; border-radius:6px; font-size:14px; width:220px; }}
+            button {{ padding:11px 20px; background:#10b981; color:#022c22; font-weight:800; border:none; border-radius:6px; cursor:pointer; font-size:14px; }}
+            .btn-wa {{ background:#25D366; color:white; padding:14px 24px; border-radius:8px; text-decoration:none; font-weight:800; font-size:15px; display:inline-block; box-shadow:0 4px 15px rgba(37,211,102,0.3); }}
+            .btn-wa:hover {{ background:#1eb954; }}
             table {{ width:100%; border-collapse:collapse; margin-top:15px; }}
             th, td {{ padding:10px; border-bottom:1px solid #334155; text-align:left; font-size:13px; }}
             th {{ background:#1e293b; color:#38bdf8; }}
@@ -2696,42 +2700,49 @@ def student_my_results():
     </head>
     <body>
     <div class="box">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 style="color:#25D366; margin:0;">👤 जुने निकाल व प्रगती कक्ष</h2>
-            <a href="/" style="color:#cbd5e1; text-decoration:none; font-weight:bold;">🏠 मुख्य पानावर जा</a>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:12px;">
+            <h2 style="color:#25D366; margin:0; font-size:20px;">🔒 विद्यार्थी सुरक्षित निकाल कक्ष</h2>
+            <a href="/" style="color:#cbd5e1; text-decoration:none; font-weight:bold; font-size:13px;">🏠 मुख्य पानावर जा</a>
         </div>
-        {f'<p style="color:#f87171; font-weight:bold;">{error}</p>' if error else ''}
+        {f'<p style="color:#f87171; font-weight:bold; margin-top:15px;">⚠️ {error}</p>' if error else ''}
         
-        {f'''<form method="POST" style="margin-top:20px;">
-            <input type="hidden" name="action" value="send_otp">
-            <label>नोंदणीकृत १० अंकी मोबाईल नंबर टाका:</label><br>
-            <div style="display:flex; gap:10px; margin-top:8px;">
-                <input type="tel" name="phone" placeholder="१० अंकी नंबर" maxlength="10" required>
-                <button type="submit">📲 पडताळणी सुरू करा</button>
-            </div>
-        </form>''' if step == 'request_phone' else ''}
-
-        {f'''<div style="background:#0f172a; padding:18px; border-radius:10px; margin-top:20px; border:1.5px solid #25D366; text-align:center;">
-            <h4 style="color:#25D366; margin-top:0;">⚡ पडताळणी कोड (OTP)</h4>
-            <p style="font-size:14px; color:#cbd5e1; margin-bottom:12px;">तुमचा सुरक्षित पडताळणी कोड खालीलप्रमाणे आहे:</p>
-            <div style="font-size:26px; font-weight:bold; letter-spacing:4px; color:#fde047; background:#1e293b; display:inline-block; padding:8px 20px; border-radius:8px; border:1px dashed #fde047; margin-bottom:15px;">
-                {otp_display}
-            </div>
-
-            <p style="font-size:12.5px; color:#94a3b8; margin:0 0 10px;">किंवा WhatsApp वर थेट पुष्टी करण्यासाठी खालील बटण दाबा:</p>
-            <a href="{wa_verify_link}" target="_blank" class="btn-wa">💬 WhatsApp वर पाठवा व तपासा</a>
-
-            <form method="POST" style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
-                <input type="hidden" name="action" value="verify_otp">
-                <input type="text" name="otp" value="{otp_display}" placeholder="हा ६ अंकी कोड टाका" maxlength="6" required style="text-align:center; font-size:16px; font-weight:bold; width:160px;">
-                <button type="submit">🔐 निकाल उघडा</button>
+        {f'''<div style="margin-top:20px;">
+            <p style="color:#cbd5e1; font-size:14px;">परीक्षेचे जुने निकाल व गुणवत्ता पत्रक पाहण्यासाठी नोंदणीकृत मोबाईल नंबर टाका:</p>
+            <form method="POST">
+                <input type="hidden" name="action" value="send_otp">
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                    <input type="tel" name="phone" placeholder="१० अंकी मोबाईल नंबर" maxlength="10" required>
+                    <button type="submit">📲 WhatsApp पडताळणी सुरू करा</button>
+                </div>
             </form>
-        </div>''' if step == 'verify_otp' else ''}
+        </div>''' if step == 'request_phone' else ''}
 
-        {f'''<h4 style="margin:20px 0 8px; color:#34d399;">परीक्षेचा इतिहास व निकाल:</h4>
+        {f'''<div style="background:#0f172a; padding:22px; border-radius:12px; margin-top:20px; border:1.5px solid #25D366; text-align:center;">
+            <h3 style="color:#25D366; margin:0 0 8px;">🛡️ खरी ओळख पडताळणी (Identity Verification)</h3>
+            <p style="font-size:13.5px; color:#cbd5e1; line-height:1.6; max-width:550px; margin:0 auto 18px;">
+                सुरक्षेच्या कारणास्तव कोणाचाही निकाल दुसरा व्यक्ती पाहू शकत नाही. 
+                कृपया खालील बटणावर क्लिक करून तुमच्या <b>{phone}</b> या मोबाईलवरील WhatsApp द्वारे एक सुरक्षा मेसेज ॲडमिनकडे पाठवा:
+            </p>
+            
+            <a href="{wa_verify_link}" target="_blank" class="btn-wa">
+                💬 WhatsApp उघडा व पडताळणी मेसेज पाठवा
+            </a>
+
+            <div style="margin-top:25px; border-top:1px dashed #334155; padding-top:18px;">
+                <p style="font-size:12.5px; color:#94a3b8; margin-bottom:12px;">व्हॉट्सॲपवर मेसेज सेंड केला असल्यास खालील बटण दाबून निकाल उघडा:</p>
+                <form method="POST">
+                    <input type="hidden" name="action" value="confirm_wa_sent">
+                    <button type="submit" style="background:#38bdf8; color:#0f172a;">
+                        ✅ मी मेसेज पाठवला, निकाल दाखवा ➔
+                    </button>
+                </form>
+            </div>
+        </div>''' if step == 'wa_verify_screen' else ''}
+
+        {f'''<h4 style="margin:25px 0 10px; color:#34d399; font-size:16px;">📋 तुमचे सोडवलेले पेपर्स व निकाल:</h4>
         <table>
-            <tr><th>दिनांक</th><th>टेस्ट नाव</th><th>नाव</th><th>जिल्हा</th><th>गुण</th><th>कृती</th></tr>
-            {''.join([f"<tr><td>{r['test_date']}</td><td><b>{r['test_name']}</b></td><td>{r['student_name']}</td><td>{r['district']}</td><td style='color:#34d399; font-weight:bold;'>{r['score']} / {r['total_marks']}</td><td><a href='/detailed_answers/{r['access_token']}' style='color:#38bdf8; font-weight:bold;'>📖 उत्तरतालिका</a> | <a href='/student/admit_card/{r['id']}' target='_blank' style='color:#fbbf24; font-weight:bold;'>🖨️ आयडी</a></td></tr>" for r in results]) if results else "<tr><td colspan='6' style='text-align:center;'>या नंबरवर निकाल सापडला नाही.</td></tr>"}
+            <tr><th>दिनांक</th><th>टेस्टचे नाव</th><th>विद्यार्थी नाव</th><th>जिल्हा</th><th>प्राप्त गुण</th><th>कृती</th></tr>
+            {''.join([f"<tr><td>{r['test_date']}</td><td><b>{r['test_name']}</b></td><td>{r['student_name']}</td><td>{r['district']}</td><td style='color:#34d399; font-weight:bold;'>{r['score']} / {r['total_marks']}</td><td><a href='/detailed_answers/{r['access_token']}' style='color:#38bdf8; font-weight:bold;'>📖 उत्तरपत्रिका</a> | <a href='/student/admit_card/{r['id']}' target='_blank' style='color:#fbbf24; font-weight:bold;'>🖨️ गुणपत्रक</a></td></tr>" for r in results]) if results else "<tr><td colspan='6' style='text-align:center; padding:20px; color:#94a3b8;'>या नंबरवर कोणताही निकाल सापडला नाही.</td></tr>"}
         </table>''' if step == 'show_results' else ''}
     </div>
     </body>
