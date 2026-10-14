@@ -2877,7 +2877,7 @@ def admin_dashboard():
     utr_search = request.args.get('utr_search', '').strip()
     power_phone = request.args.get('power_phone', '').strip()
 
-    with get_db() as conn:
+with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             # १. पॉवर सर्च (विद्यार्थी ३६०° प्रोफाईल व संपूर्ण इतिहास)
             power_html = ""
@@ -3155,8 +3155,7 @@ if power_phone:
                 custom_tabs_list=custom_tabs_list,
                 undo_items=undo_items,
                 deleted_questions_list=deleted_questions_list
-            )
-
+            )  
 # नंबर ब्लॉक आणि अनब्लॉक व्यवस्था
 @app.route('/admin/block_number', methods=['POST'])
 def admin_block_number():
