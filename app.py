@@ -2882,40 +2882,82 @@ def admin_dashboard():
             # १. पॉवर सर्च (विद्यार्थी ३६०° प्रोफाईल व संपूर्ण इतिहास)
             power_html = ""
             if power_phone:
-                cur.execute("""
-                    SELECT * FROM mock_test_leads 
-                    WHERE phone=%s AND is_deleted=0 
-                    ORDER BY id DESC
-                """, (power_phone,))
-                student_tests = cur.fetchall()
-                if student_tests:
-                    p = student_tests[0]
-                    rows_html = ''.join([
-                        f"<tr><td>{t['test_date']}</td><td><b>{t['test_name']}</b></td>"
-                        f"<td style='color:#059669; font-weight:bold;'>{t['score']} / {t['total_marks']}</td>"
-                        f"<td><span style='color:green; font-weight:bold;'>{t['payment_status']}</span></td>"
-                        f"<td><a href='/student/admit_card/{t['id']}' target='_blank' class='btn-sm' style='background:#0284c7; color:white;'>🖨️ पावती</a></td></tr>"
-                        for t in student_tests
-                    ])
-                    power_html = f"""
-                    <div style="background:#eff6ff; border:2px solid #3b82f6; padding:20px; border-radius:10px; margin-top:15px; margin-bottom:20px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <h3 style="color:#1e40af; margin:0;">🎯 विद्यार्थी ३६०° प्रोफाईल: {p['student_name']}</h3>
-                            <button onclick="window.print()" class="btn" style="background:#2563eb;">🖨️ संपूर्ण प्रोफाईल प्रिंट करा</button>
-                        </div>
-                        <div style="background:white; padding:12px; border-radius:8px; border:1px solid #bfdbfe; margin-bottom:15px; font-size:14px;">
-                            <p style="margin:4px 0;">📍 जिल्हा: <b>{p['district']}</b> | प्रवर्ग: <b>{p['caste_category']}</b></p>
-                            <p style="margin:4px 0;">📱 WhatsApp नंबर: <b>{p['phone']}</b> | एकूण सोडवलेल्या टेस्ट्स: <b>{len(student_tests)}</b></p>
-                        </div>
-                        <h4 style="color:#1e40af; margin:0 0 8px;">📋 परीक्षेचा संपूर्ण इतिहास व शुल्काची नोंद:</h4>
-                        <table>
-                            <tr><th>दिनांक</th><th>टेस्टचे नाव</th><th>प्राप्त गुण</th><th>पेमेंट स्थिती</th><th>पावती</th></tr>
-                            {rows_html}
-                        </table>
-                    </div>
-                    """
-                else:
-                    power_html = "<div style='color:#dc2626; padding:15px; background:#fef2f2; border-radius:8px; margin-top:15px; font-weight:bold;'>⚠️ या नंबरवर कोणताही विद्यार्थी डेटा उपलब्ध नाही.</div>"
+        # १. टेस्ट इतिहास आणणे
+        cur.execute("""
+            SELECT * FROM mock_test_leads 
+            WHERE phone=%s AND is_deleted=0 
+            ORDER BY id DESC
+        """, (power_phone,))
+        student_tests = cur.fetchall()
+
+        # २. पॅकेज / पेमेंट माहिती तपासणे
+        pkg_status_html = ""
+        try:
+            cur.execute("""
+                SELECT * FROM payments 
+                WHERE (phone=%s OR customer_phone=%s) 
+                ORDER BY id DESC LIMIT 1
+            """, (power_phone, power_phone))
+            pkg_data = cur.fetchone()
+
+            if pkg_data:
+                p_name = pkg_data.get('plan_name') or pkg_data.get('package_name') or 'सक्रिय पॅकेज'
+                p_amt = pkg_data.get('amount', 0)
+                p_status = pkg_data.get('status', 'Active')
+                pkg_status_html = f"""
+                <div style="background: #ecfdf5; border-left: 5px solid #10b981; padding: 12px 16px; border-radius: 6px; margin: 15px 0;">
+                    <span style="color: #065f46; font-weight: bold; font-size: 15px;">📦 सक्रिय पॅकेज: {p_name}</span> | 
+                    <span style="color: #047857; font-weight: bold;">फी: ₹{p_amt}</span> | 
+                    <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">{p_status}</span>
+                </div>
+                """
+            else:
+                pkg_status_html = """
+                <div style="background: #fef2f2; border-left: 5px solid #ef4444; padding: 10px 15px; border-radius: 6px; margin: 15px 0; color: #991b1b; font-size: 14px;">
+                    ⚠️ या विद्यार्थ्याने कोणतेही सशुल्क पॅकेज घेतलेले नाही. (मोफत वापरकर्ता)
+                </div>
+                """
+        except Exception:
+            pkg_status_html = ""
+
+        # ३. संपूर्ण ३६०° प्रोफाईल HTML तयार करणे
+        if student_tests:
+            p = student_tests[0]
+            rows_html = ''.join([
+                f"<tr><td>{t.get('test_date', '-')}</td><td><b>{t.get('test_name', '-')}</b></td><td style='color:#059669; font-weight:bold;'>{t.get('score', 0)} / {t.get('total_marks', 0)}</td><td><span style='color:green;'>पूर्ण</span></td></tr>"
+                for t in student_tests
+            ])
+            power_html = f"""
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:20px; margin-top:15px;">
+                <h3 style="color:#1e3a8a; margin-top:0;">३६०° प्रोफाईल: {p.get('full_name', '-')}</h3>
+                <p style="margin:5px 0; color:#475569;">
+                    <b>प्रवर्ग:</b> {p.get('category', '-')} | 
+                    <b>मोबाईल:</b> {p.get('phone', '-')} | 
+                    <b>एकूण सोडवलेल्या टेस्ट्स:</b> {len(student_tests)}
+                </p>
+                {pkg_status_html}
+                <h4 style="color:#334155; margin-top:15px; margin-bottom:10px;">इतिहास व शुल्काची नोंद:</h4>
+                <table style="width:100%; border-collapse:collapse; background:white;">
+                    <thead>
+                        <tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid #cbd5e1;">
+                            <th style="padding:8px;">दिनांक</th>
+                            <th style="padding:8px;">टेस्टचे नाव</th>
+                            <th style="padding:8px;">प्राप्त गुण</th>
+                            <th style="padding:8px;">स्थिती</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows_html}
+                    </tbody>
+                </table>
+            </div>
+            """
+        else:
+            power_html = f"""
+            <div style="background:#fef2f2; border:1px solid #fecaca; padding:15px; border-radius:8px; margin-top:15px; color:#991b1b;">
+                या मोबाईल नंबरवर ({power_phone}) कोणताही टेस्ट डेटा सापडला नाही.
+            </div>
+            """
 
             # २. लीड्स क्वेरी (फिल्टरसह)
             query = "SELECT * FROM mock_test_leads WHERE is_deleted=0"
