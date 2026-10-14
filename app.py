@@ -3167,7 +3167,7 @@ def admin_edit_question(q_id):
             q = cur.fetchone()
             if not q: 
                 return "Question not found", 404
-    return render_template_string(EDIT_QUESTION_TEMPLATE, q=q
+    return render_template_string(EDIT_QUESTION_TEMPLATE, q=q)
                                   
 # 6. Digital Smart AI Question Generator
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
