@@ -3166,7 +3166,33 @@ def admin_edit_question(q_id):
             q = cur.fetchone()
             if not q: 
                 return "Question not found", 404
-    return render_template_string(EDIT_QUESTION_TEMPLATE, q=q)
+    return render_template_string(EDIT_QUESTION_TEMPLATE, q=q
+
+                                  <!-- ३६०° पॉवर सर्च इनपुट बॉक्स -->
+<input type="tel" name="power_phone" placeholder="🔍 ३६०° मोबाईल सर्च" 
+       value="{{ request.args.get('power_phone', '') }}" 
+       maxlength="10" 
+       style="padding: 6px 12px; border-radius: 6px; border: 1px solid #3b82f6; font-size: 13px; width: 180px; font-weight: bold; background: #eff6ff;">
+```[span_2](start_span)[span_2](end_span)
+
+---
+
+### २. 'सर्व लीड्स यादी' च्या वर ३६०° बॉक्स थेट दिसण्यासाठी
+
+त्याच फॉर्मच्या किंवा तक्त्याच्या अगदी वर ही ओळ ठेवा[span_3](start_span)[span_3](end_span):
+
+```jinja2
+<!-- पॉवर सर्च निकाल बॉक्स -->
+{{ power_html | safe }}
+```[span_4](start_span)[span_4](end_span)
+
+---
+
+### या बदलाने काय होईल?
+* `Leads (विद्यार्थी डेटा)` टॅब उघडताच समोर **"🔍 ३६०° मोबाईल सर्च"** असा ठळक बॉक्स दिसेल[span_5](start_span)[span_5](end_span).
+* URL मध्ये मॅन्युअली काहीही टाईप करावे लागणार नाही[span_6](start_span)[span_6](end_span)[span_7](start_span)[span_7](end_span).
+* नंबर टाकून बाजूचे 'Filter' बटण दाबताच त्या विद्यार्थ्याचा संपूर्ण ३६०° प्रोफाईल बॉक्स त्या यादीच्या अगदी वर उघडेल[span_8](start_span)[span_8](end_span)[span_9](start_span)[span_9](end_span).
+*
 
 # ६. डिजिटल स्मार्ट AI प्रश्न जनरेटर (अचूक व बहुपर्यायी)[span_1](start_span)[span_1](end_span)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
