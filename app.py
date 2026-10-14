@@ -2877,127 +2877,128 @@ def admin_dashboard():
     utr_search = request.args.get('utr_search', '').strip()
     power_phone = request.args.get('power_phone', '').strip()
 
-with get_db() as conn:
+    with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             # १. पॉवर सर्च (विद्यार्थी ३६०° प्रोफाईल व संपूर्ण इतिहास)
             power_html = ""
-if power_phone:
-        # १. टेस्ट इतिहास आणणे
-        cur.execute("""
-            SELECT * FROM mock_test_leads 
-            WHERE phone=%s AND is_deleted=0 
-            ORDER BY id DESC
-        """, (power_phone,))
-        student_tests = cur.fetchall()
+            if power_phone:
+                # १. टेस्ट इतिहास आणणे
+                cur.execute("""
+                    SELECT * FROM mock_test_leads 
+                    WHERE phone=%s AND is_deleted=0 
+                    ORDER BY id DESC
+                """, (power_phone,))
+                student_tests = cur.fetchall()
 
-        # २. ब्लॉक स्थिती तपासणे
-        is_blocked = False
-        try:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS blocked_users (
-                    id SERIAL PRIMARY KEY,
-                    phone VARCHAR(20) UNIQUE,
-                    blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            cur.execute("SELECT id FROM blocked_users WHERE phone=%s", (power_phone,))
-            if cur.fetchone():
-                is_blocked = True
-        except Exception:
-            is_blocked = False
+                # २. ब्लॉक स्थिती तपासणे
+                is_blocked = False
+                try:
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS blocked_users (
+                            id SERIAL PRIMARY KEY,
+                            phone VARCHAR(20) UNIQUE,
+                            blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    cur.execute("SELECT id FROM blocked_users WHERE phone=%s", (power_phone,))
+                    if cur.fetchone():
+                        is_blocked = True
+                except Exception:
+                    is_blocked = False
 
-        if is_blocked:
-            block_btn_html = f"""
-            <form method="POST" action="/admin/toggle_block_user" style="display:inline; margin-left:15px;">
-                <input type="hidden" name="phone" value="{power_phone}">
-                <input type="hidden" name="action" value="unblock">
-                <button type="submit" style="background:#16a34a; color:white; border:none; padding:6px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">
-                    ✅ अनब्लॉक करा
-                </button>
-            </form>
-            """
-        else:
-            block_btn_html = f"""
-            <form method="POST" action="/admin/toggle_block_user" style="display:inline; margin-left:15px;">
-                <input type="hidden" name="phone" value="{power_phone}">
-                <input type="hidden" name="action" value="block">
-                <button type="submit" onclick="return confirm('खरोखर या नंबरला ब्लॉक करायचे आहे का?');" style="background:#dc2626; color:white; border:none; padding:6px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">
-                    🚫 नंबर ब्लॉक करा
-                </button>
-            </form>
-            """
+                if is_blocked:
+                    block_btn_html = f"""
+                    <form method="POST" action="/admin/toggle_block_user" style="display:inline; margin-left:15px;">
+                        <input type="hidden" name="phone" value="{power_phone}">
+                        <input type="hidden" name="action" value="unblock">
+                        <button type="submit" style="background:#16a34a; color:white; border:none; padding:6px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">
+                            ✅ अनब्लॉक करा
+                        </button>
+                    </form>
+                    """
+                else:
+                    block_btn_html = f"""
+                    <form method="POST" action="/admin/toggle_block_user" style="display:inline; margin-left:15px;">
+                        <input type="hidden" name="phone" value="{power_phone}">
+                        <input type="hidden" name="action" value="block">
+                        <button type="submit" onclick="return confirm('खरोखर या नंबरला ब्लॉक करायचे आहे का?');" style="background:#dc2626; color:white; border:none; padding:6px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">
+                            🚫 नंबर ब्लॉक करा
+                        </button>
+                    </form>
+                    """
 
-        # ३. पॅकेज / पेमेंट माहिती तपासणे
-        pkg_status_html = ""
-        try:
-            cur.execute("""
-                SELECT * FROM payments 
-                WHERE (phone=%s OR customer_phone=%s) 
-                ORDER BY id DESC LIMIT 1
-            """, (power_phone, power_phone))
-            pkg_data = cur.fetchone()
+                # ३. पॅकेज / पेमेंट माहिती तपासणे
+                pkg_status_html = ""
+                try:
+                    cur.execute("""
+                        SELECT * FROM payments 
+                        WHERE (phone=%s OR customer_phone=%s) 
+                        ORDER BY id DESC LIMIT 1
+                    """, (power_phone, power_phone))
+                    pkg_data = cur.fetchone()
 
-            if pkg_data:
-                p_name = pkg_data.get('plan_name') or pkg_data.get('package_name') or 'सक्रिय पॅकेज'
-                p_amt = pkg_data.get('amount', 0)
-                p_status = pkg_data.get('status', 'Active')
-                pkg_status_html = f"""
-                <div style="background: #ecfdf5; border-left: 5px solid #10b981; padding: 12px 16px; border-radius: 6px; margin: 15px 0;">
-                    <span style="color: #065f46; font-weight: bold; font-size: 15px;">📦 सक्रिय पॅकेज: {p_name}</span> | 
-                    <span style="color: #047857; font-weight: bold;">फी: ₹{p_amt}</span> | 
-                    <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">{p_status}</span>
-                </div>
-                """
-            else:
-                pkg_status_html = """
-                <div style="background: #fef2f2; border-left: 5px solid #ef4444; padding: 10px 15px; border-radius: 6px; margin: 15px 0; color: #991b1b; font-size: 14px;">
-                    ⚠️ या विद्यार्थ्याने कोणतेही सशुल्क पॅकेज घेतलेले नाही. (मोफत वापरकर्ता)
-                </div>
-                """
-        except Exception:
-            pkg_status_html = ""
+                    if pkg_data:
+                        p_name = pkg_data.get('plan_name') or pkg_data.get('package_name') or 'सक्रिय पॅकेज'
+                        p_amt = pkg_data.get('amount', 0)
+                        p_status = pkg_data.get('status', 'Active')
+                        pkg_status_html = f"""
+                        <div style="background: #ecfdf5; border-left: 5px solid #10b981; padding: 12px 16px; border-radius: 6px; margin: 15px 0;">
+                            <span style="color: #065f46; font-weight: bold; font-size: 15px;">📦 सक्रिय पॅकेज: {p_name}</span> | 
+                            <span style="color: #047857; font-weight: bold;">फी: ₹{p_amt}</span> | 
+                            <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">{p_status}</span>
+                        </div>
+                        """
+                    else:
+                        pkg_status_html = """
+                        <div style="background: #fef2f2; border-left: 5px solid #ef4444; padding: 10px 15px; border-radius: 6px; margin: 15px 0; color: #991b1b; font-size: 14px;">
+                            ⚠️ या विद्यार्थ्याने कोणतेही सशुल्क पॅकेज घेतलेले नाही. (मोफत वापरकर्ता)
+                        </div>
+                        """
+                except Exception:
+                    pkg_status_html = ""
 
-        # ४. संपूर्ण ३६०° प्रोफाईल HTML तयार करणे
-        if student_tests:
-            p = student_tests[0]
-            rows_html = ''.join([
-                f"<tr><td>{t.get('test_date', '-')}</td><td><b>{t.get('test_name', '-')}</b></td><td style='color:#059669; font-weight:bold;'>{t.get('score', 0)} / {t.get('total_marks', 0)}</td><td><span style='color:green;'>पूर्ण</span></td></tr>"
-                for t in student_tests
-            ])
-            power_html = f"""
-            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:20px; margin-top:15px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-                    <h3 style="color:#1e3a8a; margin:0;">३६०° प्रोफाईल: {p.get('full_name', '-')}</h3>
-                    <div>{block_btn_html}</div>
-                </div>
-                <p style="margin:10px 0 5px 0; color:#475569;">
-                    <b>प्रवर्ग:</b> {p.get('category', '-')} | 
-                    <b>मोबाईल:</b> {p.get('phone', '-')} | 
-                    <b>एकूण सोडवलेल्या टेस्ट्स:</b> {len(student_tests)}
-                </p>
-                {pkg_status_html}
-                <h4 style="color:#334155; margin-top:15px; margin-bottom:10px;">इतिहास व शुल्काची नोंद:</h4>
-                <table style="width:100%; border-collapse:collapse; background:white;">
-                    <thead>
-                        <tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid #cbd5e1;">
-                            <th style="padding:8px;">दिनांक</th>
-                            <th style="padding:8px;">टेस्टचे नाव</th>
-                            <th style="padding:8px;">प्राप्त गुण</th>
-                            <th style="padding:8px;">स्थिती</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows_html}
-                    </tbody>
-                </table>
-            </div>
-            """
-        else:
-            power_html = f"""
-            <div style="background:#fef2f2; border:1px solid #fecaca; padding:15px; border-radius:8px; margin-top:15px; color:#991b1b;">
-                या मोबाईल नंबरवर ({power_phone}) कोणताही टेस्ट डेटा सापडला नाही. {block_btn_html}
-            </div>
-            """
+                # ४. संपूर्ण ३६०° प्रोफाईल HTML तयार करणे
+                if student_tests:
+                    p = student_tests[0]
+                    rows_html = ''.join([
+                        f"<tr><td>{t.get('test_date', '-')}</td><td><b>{t.get('test_name', '-')}</b></td><td style='color:#059669; font-weight:bold;'>{t.get('score', 0)} / {t.get('total_marks', 0)}</td><td><span style='color:green;'>पूर्ण</span></td></tr>"
+                        for t in student_tests
+                    ])
+                    power_html = f"""
+                    <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:20px; margin-top:15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                            <h3 style="color:#1e3a8a; margin:0;">३६०° प्रोफाईल: {p.get('full_name', '-')}</h3>
+                            <div>{block_btn_html}</div>
+                        </div>
+                        <p style="margin:10px 0 5px 0; color:#475569;">
+                            <b>प्रवर्ग:</b> {p.get('category', '-')} | 
+                            <b>मोबाईल:</b> {p.get('phone', '-')} | 
+                            <b>एकूण सोडवलेल्या टेस्ट्स:</b> {len(student_tests)}
+                        </p>
+                        {pkg_status_html}
+                        <h4 style="color:#334155; margin-top:15px; margin-bottom:10px;">इतिहास व शुल्काची नोंद:</h4>
+                        <table style="width:100%; border-collapse:collapse; background:white;">
+                            <thead>
+                                <tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid #cbd5e1;">
+                                    <th style="padding:8px;">दिनांक</th>
+                                    <th style="padding:8px;">टेस्टचे नाव</th>
+                                    <th style="padding:8px;">प्राप्त गुण</th>
+                                    <th style="padding:8px;">स्थिती</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows_html}
+                            </tbody>
+                        </table>
+                    </div>
+                    """
+                else:
+                    power_html = f"""
+                    <div style="background:#fef2f2; border:1px solid #fecaca; padding:15px; border-radius:8px; margin-top:15px; color:#991b1b;">
+                        या मोबाईल नंबरवर ({power_phone}) कोणताही टेस्ट डेटा सापडला नाही. {block_btn_html}
+                    </div>
+                    """
+
             # २. लीड्स क्वेरी (फिल्टरसह)
             query = "SELECT * FROM mock_test_leads WHERE is_deleted=0"
             params = []
@@ -3155,34 +3156,7 @@ if power_phone:
                 custom_tabs_list=custom_tabs_list,
                 undo_items=undo_items,
                 deleted_questions_list=deleted_questions_list
-            )  
-# नंबर ब्लॉक आणि अनब्लॉक व्यवस्था
-@app.route('/admin/block_number', methods=['POST'])
-def admin_block_number():
-    if not session.get('admin_logged'): 
-        return redirect('/admin/login')
-    phone = request.form.get('phone', '').strip()
-    reason = request.form.get('reason', '').strip()
-    if phone:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO blocked_numbers (phone, reason) 
-                    VALUES (%s, %s) 
-                    ON CONFLICT (phone) DO UPDATE SET reason=EXCLUDED.reason
-                """, (phone, reason))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=blocked')
-
-@app.route('/admin/unblock_number/<phone>')
-def admin_unblock_number(phone):
-    if not session.get('admin_logged'): 
-        return redirect('/admin/login')
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM blocked_numbers WHERE phone=%s", (phone,))
-            conn.commit()
-    return redirect('/admin/dashboard?tab=blocked')
+            )
 
 # मॅन्युअल प्रश्न नोंद (इमेज अपलोडसह)
 @app.route('/admin/add_manual_question', methods=['POST'])
