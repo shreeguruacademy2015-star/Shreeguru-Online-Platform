@@ -3111,7 +3111,7 @@ if power_phone:
             
             admin_tab_order = settings_map.get('admin_tab_order','leads,power,payments,special,questions,launch,analytics,audit,blocked,leaderboard,feedback,notices,trash,settings')
             ordered_admin_tabs = [t.strip() for t in admin_tab_order.split(',') if t.strip()]
-
+            
             return render_template_string(
                 ADMIN_TEMPLATE,
                 active_tab=active_tab,
