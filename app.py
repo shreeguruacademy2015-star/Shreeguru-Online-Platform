@@ -2278,7 +2278,44 @@ def take_test(test_id):
                 cur.execute("SELECT phone FROM blocked_numbers WHERE phone=%s", (current_phone,))
                 if cur.fetchone():
                     return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ तुमचा मोबाईल नंबर प्रशासकीय कारणास्तव ब्लॉक करण्यात आला आहे!</h3>", 403
-
+                    # १-बाय-१ ऑटो-लॉक: पेपर आधीच सोडवला असल्यास पुन्हा सोडवण्यास बंदी
+            if current_phone:
+                cur.execute("""
+                    SELECT id, access_token, test_name FROM mock_test_leads 
+                    WHERE phone = %s AND test_id = %s AND is_used = 1 AND is_deleted = 0
+                    ORDER BY id DESC LIMIT 1
+                """, (current_phone, test_id))
+                already_submitted = cur.fetchone()
+                if already_submitted:
+                    token = already_submitted.get('access_token', '')
+                    return f"""
+                    <!DOCTYPE html>
+                    <html lang="mr">
+                    <head>
+                        <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>पेपर लॉक आहे</title>
+                        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+                        <style>
+                            body {{ margin:0; background:#0b1329; color:#f1f5f9; font-family:'Poppins', sans-serif; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:15px; }}
+                            .lock-card {{ max-width:480px; width:100%; background:#162036; border:2px solid #ef4444; border-radius:14px; padding:30px 20px; text-align:center; box-shadow:0 15px 35px rgba(0,0,0,0.5); }}
+                            .btn-res {{ display:inline-block; background:#10b981; color:#022c22; font-weight:800; padding:12px 24px; border-radius:8px; text-decoration:none; margin-top:15px; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="lock-card">
+                            <div style="font-size:45px; margin-bottom:10px;">🔒</div>
+                            <h2 style="color:#f87171; margin-top:0;">हा पेपर आधीच सबमिट केला आहे!</h2>
+                            <p style="color:#cbd5e1; font-size:14px; line-height:1.6;">
+                                नियम १-बाय-१ ऑटो-लॉकनुसार आपण ही चाचणी आधीच सोडवली असून एका नंबरवरून फक्त एकदाच परीक्षा देता येते.
+                            </p>
+                            <a href="/detailed_answers/{token}" class="btn-res">📋 जुना निकाल व सविस्तर स्पष्टीकरण पहा</a>
+                            <div style="margin-top:20px;">
+                                <a href="/" style="color:#38bdf8; text-decoration:none; font-size:13px;">🏠 मुख्य पोर्टलवर परत जा</a>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                    """, 403
             cur.execute("SELECT * FROM test_papers WHERE id=%s AND is_deleted=0", (test_id,))
             test = cur.fetchone()
             if not test:
