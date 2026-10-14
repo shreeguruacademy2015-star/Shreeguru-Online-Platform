@@ -2418,6 +2418,47 @@ def request_paid_test(test_id):
 # MODULE: TEST SUBMISSION, 1-VS-1 BATTLE LOGIC, PAIR UNLOCK, OTP & RESULTS
 # =============================================================================
 
+RESULT_SUMMARY_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>चाचणी निकाल सारांश</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; margin: 0; padding: 20px; }
+        .card { max-width: 480px; margin: 30px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: center; border-top: 5px solid #2563eb; }
+        .success-icon { font-size: 45px; color: #16a34a; margin-bottom: 10px; }
+        h2 { color: #1e3a8a; margin: 0 0 15px 0; font-size: 22px; }
+        .score-box { background: #eff6ff; border: 2px dashed #3b82f6; border-radius: 10px; padding: 15px; margin: 20px 0; }
+        .score { font-size: 32px; font-weight: bold; color: #1d4ed8; }
+        .details { text-align: left; margin: 20px 0; font-size: 15px; color: #334155; }
+        .details p { margin: 10px 0; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }
+        .btn { display: inline-block; background: #2563eb; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 15px; }
+        .btn:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="success-icon">✓</div>
+        <h2>चाचणी यशस्वीरित्या सबमिट झाली!</h2>
+        
+        <div class="score-box">
+            <div style="color: #64748b; font-size: 14px;">तुमचे एकूण गुण</div>
+            <div class="score">{{ score }} / {{ total_marks }}</div>
+        </div>
+
+        <div class="details">
+            <p><strong>विद्यार्थ्याचे नाव:</strong> {{ full_name }}</p>
+            <p><strong>मोबाईल नंबर:</strong> {{ phone }}</p>
+            <p><strong>चाचणी:</strong> {{ test_name }}</p>
+        </div>
+
+        <a href="/" class="btn">मुख्य पानावर जा</a>
+    </div>
+</body>
+</html>
+"""
 @app.route('/submit_test/<int:test_id>', methods=['POST'])
 def submit_test(test_id):
     try:
