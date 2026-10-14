@@ -2904,6 +2904,7 @@ def admin_dashboard():
                     if cur.fetchone():
                         is_blocked = True
                 except Exception:
+                    conn.rollback()
                     is_blocked = False
 
                 if is_blocked:
@@ -2955,6 +2956,7 @@ def admin_dashboard():
                         </div>
                         """
                 except Exception:
+                    conn.rollback()
                     pkg_status_html = ""
 
                 # ४. संपूर्ण ३६०° प्रोफाईल HTML तयार करणे
