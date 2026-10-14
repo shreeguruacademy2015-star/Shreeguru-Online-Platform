@@ -87,14 +87,13 @@ except Exception as pool_err:
 
 @contextmanager
 def get_db():
-    """
-    Context manager yielding a thread-safe connection from Neon connection pool.
-    Auto-rolls back on exception and guarantees connection return to pool.
-    """
     conn = None
     try:
         if db_pool:
             conn = db_pool.getconn()
+            # कनेक्शन जिवंत आहे का तपासणी (SSL ड्रॉप टाळण्यासाठी)
+            if conn.closed:
+                conn = psycopg2.connect(DATABASE_URL)
         elif DATABASE_URL:
             conn = psycopg2.connect(DATABASE_URL)
         else:
@@ -109,9 +108,15 @@ def get_db():
         raise err
     finally:
         if conn and db_pool:
-            db_pool.putconn(conn)
+            try:
+                db_pool.putconn(conn)
+            except Exception:
+                pass
         elif conn:
-            conn.close()
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 # -----------------------------------------------------------------------------
 # 4. HIGH-SPEED COMPOSITE INDEXES SETUP (Zero Latency Execution)
@@ -2426,40 +2431,31 @@ RESULT_SUMMARY_TEMPLATE = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>चाचणी निकाल सारांश</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; margin: 0; padding: 20px; }
-        .card { max-width: 480px; margin: 30px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: center; border-top: 5px solid #2563eb; }
-        .success-icon { font-size: 45px; color: #16a34a; margin-bottom: 10px; }
-        h2 { color: #1e3a8a; margin: 0 0 15px 0; font-size: 22px; }
-        .score-box { background: #eff6ff; border: 2px dashed #3b82f6; border-radius: 10px; padding: 15px; margin: 20px 0; }
-        .score { font-size: 32px; font-weight: bold; color: #1d4ed8; }
-        .details { text-align: left; margin: 20px 0; font-size: 15px; color: #334155; }
-        .details p { margin: 10px 0; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }
-        .btn { display: inline-block; background: #2563eb; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 15px; }
-        .btn:hover { background: #1d4ed8; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b1329; color: #f1f5f9; margin: 0; padding: 20px; }
+        .card { max-width: 500px; margin: 30px auto; background: #162036; padding: 30px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; border-top: 5px solid #10b981; }
+        .score-box { background: #0f172a; border: 2px dashed #3b82f6; border-radius: 10px; padding: 15px; margin: 20px 0; }
+        .score { font-size: 34px; font-weight: bold; color: #34d399; }
+        .btn { display: inline-block; background: #10b981; color: #022c22; padding: 10px 22px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 15px; }
     </style>
 </head>
 <body>
     <div class="card">
-        <div class="success-icon">✓</div>
-        <h2>चाचणी यशस्वीरित्या सबमिट झाली!</h2>
-        
+        <h2 style="color:#34d399; margin-top:0;">🎯 चाचणी यशस्वीरित्या सबमिट झाली!</h2>
         <div class="score-box">
-            <div style="color: #64748b; font-size: 14px;">तुमचे एकूण गुण</div>
-            <div class="score">{{ score }} / {{ total_marks }}</div>
+            <div style="color:#94a3b8; font-size:14px;">तुमचे एकूण गुण</div>
+            <div class="score">{{ lead.score }} / {{ lead.total_marks }}</div>
         </div>
-
-        <div class="details">
-            <p><strong>विद्यार्थ्याचे नाव:</strong> {{ full_name }}</p>
-            <p><strong>मोबाईल नंबर:</strong> {{ phone }}</p>
-            <p><strong>चाचणी:</strong> {{ test_name }}</p>
-        </div>
-
-        <a href="/" class="btn">मुख्य पानावर जा</a>
+        <p><b>नाव:</b> {{ lead.student_name }} | <b>जिल्हा:</b> {{ lead.district }}</p>
+        <p><b>राज्य रँक:</b> #{{ state_rank }} | <b>संवर्ग रँक:</b> #{{ category_rank }}</p>
+        <a href="{{ result_url }}" class="btn">📋 सविस्तर उत्तरतालिका पहा</a>
+        <br><br>
+        <a href="/" style="color:#38bdf8; font-size:13px; text-decoration:none;">🏠 मुख्य पानावर जा</a>
     </div>
 </body>
 </html>
 """
 @app.route('/submit_test/<int:test_id>', methods=['POST'])
+
 def submit_test(test_id):
     try:
         student_name = request.form.get('student_name', '').strip()
@@ -3935,6 +3931,39 @@ def print_test_route(test_id):
             </html>
             """
             return html_code
+            @app.route('/admin/toggle_block_user', methods=['POST'])
+def admin_toggle_block_user():
+    if not session.get('admin_logged'):
+        return redirect('/admin/login')
+    
+    phone = request.form.get('phone', '').strip()
+    action = request.form.get('action', '').strip()
+
+    if phone:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                if action == 'block':
+                    cur.execute("""
+                        INSERT INTO blocked_numbers (phone, reason, blocked_at)
+                        VALUES (%s, '360 पॉवर सर्चमधून ब्लॉक केले', NOW())
+                        ON CONFLICT (phone) DO NOTHING
+                    """, (phone,))
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS blocked_users (
+                            id SERIAL PRIMARY KEY,
+                            phone VARCHAR(20) UNIQUE,
+                            blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        );
+                        INSERT INTO blocked_users (phone)
+                        VALUES (%s)
+                        ON CONFLICT (phone) DO NOTHING;
+                    """, (phone,))
+                elif action == 'unblock':
+                    cur.execute("DELETE FROM blocked_numbers WHERE phone=%s", (phone,))
+                    cur.execute("DELETE FROM blocked_users WHERE phone=%s", (phone,))
+                conn.commit()
+                
+    return redirect(f"/admin/dashboard?tab=power&power_phone={phone}")
 
 # -----------------------------------------------------------------------------
 # 8. APPLICATION ENTRYPOINT
