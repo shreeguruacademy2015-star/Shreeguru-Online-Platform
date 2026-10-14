@@ -2881,7 +2881,7 @@ def admin_dashboard():
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             # १. पॉवर सर्च (विद्यार्थी ३६०° प्रोफाईल व संपूर्ण इतिहास)
             power_html = ""
-            if power_phone:
+if power_phone:
         # १. टेस्ट इतिहास आणणे
         cur.execute("""
             SELECT * FROM mock_test_leads 
@@ -2890,7 +2890,44 @@ def admin_dashboard():
         """, (power_phone,))
         student_tests = cur.fetchall()
 
-        # २. पॅकेज / पेमेंट माहिती तपासणे
+        # २. ब्लॉक स्थिती तपासणे
+        is_blocked = False
+        try:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS blocked_users (
+                    id SERIAL PRIMARY KEY,
+                    phone VARCHAR(20) UNIQUE,
+                    blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cur.execute("SELECT id FROM blocked_users WHERE phone=%s", (power_phone,))
+            if cur.fetchone():
+                is_blocked = True
+        except Exception:
+            is_blocked = False
+
+        if is_blocked:
+            block_btn_html = f"""
+            <form method="POST" action="/admin/toggle_block_user" style="display:inline; margin-left:15px;">
+                <input type="hidden" name="phone" value="{power_phone}">
+                <input type="hidden" name="action" value="unblock">
+                <button type="submit" style="background:#16a34a; color:white; border:none; padding:6px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">
+                    ✅ अनब्लॉक करा
+                </button>
+            </form>
+            """
+        else:
+            block_btn_html = f"""
+            <form method="POST" action="/admin/toggle_block_user" style="display:inline; margin-left:15px;">
+                <input type="hidden" name="phone" value="{power_phone}">
+                <input type="hidden" name="action" value="block">
+                <button type="submit" onclick="return confirm('खरोखर या नंबरला ब्लॉक करायचे आहे का?');" style="background:#dc2626; color:white; border:none; padding:6px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">
+                    🚫 नंबर ब्लॉक करा
+                </button>
+            </form>
+            """
+
+        # ३. पॅकेज / पेमेंट माहिती तपासणे
         pkg_status_html = ""
         try:
             cur.execute("""
@@ -2920,7 +2957,7 @@ def admin_dashboard():
         except Exception:
             pkg_status_html = ""
 
-        # ३. संपूर्ण ३६०° प्रोफाईल HTML तयार करणे
+        # ४. संपूर्ण ३६०° प्रोफाईल HTML तयार करणे
         if student_tests:
             p = student_tests[0]
             rows_html = ''.join([
@@ -2929,8 +2966,11 @@ def admin_dashboard():
             ])
             power_html = f"""
             <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:20px; margin-top:15px;">
-                <h3 style="color:#1e3a8a; margin-top:0;">३६०° प्रोफाईल: {p.get('full_name', '-')}</h3>
-                <p style="margin:5px 0; color:#475569;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                    <h3 style="color:#1e3a8a; margin:0;">३६०° प्रोफाईल: {p.get('full_name', '-')}</h3>
+                    <div>{block_btn_html}</div>
+                </div>
+                <p style="margin:10px 0 5px 0; color:#475569;">
                     <b>प्रवर्ग:</b> {p.get('category', '-')} | 
                     <b>मोबाईल:</b> {p.get('phone', '-')} | 
                     <b>एकूण सोडवलेल्या टेस्ट्स:</b> {len(student_tests)}
@@ -2955,10 +2995,9 @@ def admin_dashboard():
         else:
             power_html = f"""
             <div style="background:#fef2f2; border:1px solid #fecaca; padding:15px; border-radius:8px; margin-top:15px; color:#991b1b;">
-                या मोबाईल नंबरवर ({power_phone}) कोणताही टेस्ट डेटा सापडला नाही.
+                या मोबाईल नंबरवर ({power_phone}) कोणताही टेस्ट डेटा सापडला नाही. {block_btn_html}
             </div>
             """
-
             # २. लीड्स क्वेरी (फिल्टरसह)
             query = "SELECT * FROM mock_test_leads WHERE is_deleted=0"
             params = []
