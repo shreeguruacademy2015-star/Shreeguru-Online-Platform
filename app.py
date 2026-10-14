@@ -3108,10 +3108,10 @@ if power_phone:
             cur.execute("SELECT id, student_name as title, 'lead' as type FROM mock_test_leads WHERE is_deleted=1 ORDER BY id DESC LIMIT 5")
             deleted_l = cur.fetchall()
             undo_items = deleted_q + deleted_l
-            
-            admin_tab_order = settings_map.get('admin_tab_order','leads,power,payments,special,questions,launch,analytics,audit,blocked,leaderboard,feedback,notices,trash,settings')
+
+            admin_tab_order = settings_map.get('admin_tab_order', 'leads,power,payments,special,questions,launch,analytics,audit,blocked,leaderboard,feedback,notices,trash,settings')
             ordered_admin_tabs = [t.strip() for t in admin_tab_order.split(',') if t.strip()]
-            
+
             return render_template_string(
                 ADMIN_TEMPLATE,
                 active_tab=active_tab,
