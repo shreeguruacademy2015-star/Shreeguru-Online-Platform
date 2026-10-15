@@ -1115,6 +1115,35 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             opacity: 0.05 !important;
             pointer-events: none !important;
         }
+        /* काळा सुरक्षा पडदा */
+        #security-shield {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(11, 19, 41, 0.98);
+            z-index: 999999;
+            color: white;
+            text-align: center;
+            padding-top: 18%;
+            font-family: sans-serif;
+        }
+
+        /* फिकट सुरक्षित वॉटरमार्क */
+        .exam-watermark {
+            position: fixed;
+            top: 40%;
+            left: 15%;
+            font-size: 34px;
+            color: rgba(255, 255, 255, 0.04);
+            transform: rotate(-25deg);
+            pointer-events: none;
+            z-index: 999;
+            font-weight: 800;
+            user-select: none;
+        }
     </style>
 
     <script>
@@ -1152,9 +1181,57 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         window.addEventListener("focus", function() {
             document.body.classList.remove("screen-protected");
         });
+```[span_3](start_span)[span_3](end_span)
+
+हा वरचा भाग सिलेक्ट करून काढून टाका (Delete करा) आणि त्याच्या जागी खालील कोड पेस्ट करा[span_4](start_span)[span_4](end_span):
+
+```javascript
+        function triggerProtection(enable) {
+            const shield = document.getElementById("security-shield");
+            if (enable) {
+                document.body.classList.add("screen-protected");
+                if (shield) shield.style.display = "block";
+            } else {
+                document.body.classList.remove("screen-protected");
+                if (shield) shield.style.display = "none";
+            }
+        }
+
+        // विंडोवरून लक्ष हटताच स्क्रीन ब्लर व काळी करणे
+        document.addEventListener("visibilitychange", function() {
+            triggerProtection(document.hidden);
+        });
+
+        window.addEventListener("blur", function() {
+            triggerProtection(true);
+        });
+
+        window.addEventListener("focus", function() {
+            triggerProtection(false);
+        });
     </script>
 </head>
 <body>
+</head>
+<body>
+
+<!-- काळा सुरक्षा पडदा -->
+<div id="security-shield">
+    <div style="background: #1e293b; display: inline-block; padding: 25px 35px; border-radius: 12px; border: 2px solid #ef4444; max-width: 90%;">
+        <h2 style="color: #ef4444; margin: 0; font-size: 22px;">⚠️ सुरक्षा इशारा: स्क्रीन सुरक्षित केली आहे!</h2>
+        <p style="font-size: 15px; margin: 12px 0 8px 0; color: #f1f5f9;">स्क्रीन रेकॉर्डिंग, स्क्रीनशॉट किंवा विंडो बदलण्यास सक्त मनाई आहे.</p>
+        <p style="color: #94a3b8; font-size: 13px; margin: 0;">चालू टेस्टवर परत जाण्यासाठी येथे क्लिक करा.</p>
+    </div>
+</div>
+
+<!-- फिकट वॉटरमार्क (विद्यार्थ्याचा मोबाईल नंबर) -->
+<div class="exam-watermark">
+    {{ session.get('user_phone', '') }} - SGA MOCK TEST
+</div>
+
+<div class="exam-header">
+    <div>
+        <h3 style="margin:0; font-size:16.5px; color:#34d399;">⚔️ {{ test.test_title }}</h3>
 <div class="exam-header">
     <div>
         <h3 style="margin:0; font-size:16.5px; color:#34d399;">⚔️ {{ test.test_title }}</h3>
