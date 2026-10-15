@@ -1614,6 +1614,29 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 <body>
 <div class="container">
     <h2>⚙️ महाराष्ट्र पोलीस भरती संभाव्य टेस्ट पोर्टल - ॲडमिन डॅशबोर्ड</h2>
+    <!-- ================= लाईव्ह आणि एकूण व्हिजिट्स बॅजेस ================= -->
+<div style="display: flex; gap: 12px; margin: 15px 0 20px 0; flex-wrap: wrap;">
+  
+  <!-- लाईव्ह विद्यार्थी कार्ड -->
+  <div style="background: #1e293b; border: 1px solid #334155; padding: 10px 16px; border-radius: 8px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+    <span style="display: inline-block; width: 10px; height: 10px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e;"></span>
+    <div>
+      <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold;">सध्या ऑनलाईन</div>
+      <div style="font-size: 18px; color: #22c55e; font-weight: bold; line-height: 1.2;">{{ live_now_count }} विद्यार्थी</div>
+    </div>
+  </div>
+
+  <!-- एकूण व्हिजिट्स कार्ड -->
+  <div style="background: #1e293b; border: 1px solid #334155; padding: 10px 16px; border-radius: 8px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+    <span style="font-size: 20px;">👥</span>
+    <div>
+      <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold;">एकूण व्हिजिट्स</div>
+      <div style="font-size: 18px; color: #38bdf8; font-weight: bold; line-height: 1.2;">{{ total_visits_count }} वेळा</div>
+    </div>
+  </div>
+
+</div>
+<!-- ================================================================= -->
     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
         <a href="/" style="font-weight:bold; color:#0284c7; text-decoration:none;">⬅️ मुख्य वेबसाईटवर जा</a>
         <a href="/admin/logout" style="font-weight:bold; color:#dc2626; text-decoration:none;">🚪 लॉगआऊट</a>
@@ -3078,6 +3101,16 @@ def admin_dashboard():
 
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स मोजणे ---
+        import time
+        now_ts = int(time.time())
+        cur.execute("SELECT COUNT(*) AS c FROM active_sessions WHERE last_seen > %s;", (now_ts - 120,))
+        row_live = cur.fetchone()
+        live_now_count = row_live['c'] if row_live else 0
+
+        cur.execute("SELECT total_visits FROM site_stats WHERE id = 1;")
+        row_v = cur.fetchone()
+        total_visits_count = row_v['total_visits'] if row_v else 0
             # १. पॉवर सर्च (विद्यार्थी ३६०° प्रोफाईल व संपूर्ण इतिहास)
             power_html = ""
             if power_phone:
@@ -3316,6 +3349,8 @@ def admin_dashboard():
 
             return render_template_string(
                 ADMIN_TEMPLATE,
+                live_now_count=live_now_count,
+                total_visits_count=total_visits_count,
                 active_tab=active_tab,
                 q_subtab=q_subtab,
                 cat_tab=cat_tab,
