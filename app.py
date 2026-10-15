@@ -471,7 +471,7 @@ TERMS_TEMPLATE = '''<!DOCTYPE html>
         <p>Welcome to <strong>Maharashtra Police Bharti Online Test Portal</strong>. By accessing or using our practice tests and platform services, you agree to comply with and be bound by the following terms and conditions:</p>
 
         <h2>1. Non-Government Affiliation Disclaimer</h2>
-        <p>This platform is an independent educational training service operated by <strong>Shreeguru Career Academy</strong>. It is <strong>NOT affiliated with, authorized by, or endorsed by</strong> the Maharashtra State Police Department, Maharashtra State Police Recruitment Board, or any government authority. All mock tests and study sets are developed strictly for educational preparation and practice.</p>
+        <p>This platform is an independent educational training service operated by <strong>Maharashtra Police Bharati Atisambhavya Test Portal</strong>. It is <strong>NOT affiliated with, authorized by, or endorsed by</strong> the Maharashtra State Police Department, Maharashtra State Police Recruitment Board, or any government authority. All mock tests and study sets are developed strictly for educational preparation and practice.</p>
 
         <h2>2. Single User Access & Device Policy</h2>
         <p>Exam access tokens and study passes are registered strictly for individual student use. Sharing login tokens, URLs, or access keys across unauthorized devices or third parties is prohibited and may result in immediate access termination.</p>
@@ -480,7 +480,7 @@ TERMS_TEMPLATE = '''<!DOCTYPE html>
         <p>As all test series, question banks, and mock exams are digital products with immediate online access upon activation, <strong>all payments and fees paid on this portal are 100% non-refundable and non-transferable</strong> under any circumstances.</p>
 
         <h2>4. Intellectual Property Rights</h2>
-        <p>All test questions, answers, explanations, graphics, software, and study materials provided on this platform are the exclusive intellectual property of <strong>Shreeguru Career Academy</strong>. Any unauthorized copying, distribution, video recording, or commercial resale of the content is strictly prohibited by law.</p>
+        <p>All test questions, answers, explanations, graphics, software, and study materials provided on this platform are the exclusive intellectual property of <strong>Maharashtra Police Bharti Atisambhavya Test Portal</strong>. Any unauthorized copying, distribution, video recording, or commercial resale of the content is strictly prohibited by law.</p>
 
         <h2>5. Limitation of Liability</h2>
         <p>While every reasonable effort is made to maintain high accuracy and quality in questions and explanations, the academy makes no guarantee of appointment, selection, or specific examination results. The platform is not liable for network latency or internet disruptions on the user's end.</p>
@@ -840,7 +840,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     <!-- ========================================== -->
     <div style="text-align:center; margin: 25px 0;">
         <button id="pwaInstallBtn" style="display:none; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 14px 28px; border-radius: 30px; font-weight: bold; font-size: 15px; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.4); transition: transform 0.2s;">
-            📲 श्रीगुरु पोर्टल ॲप इन्स्टॉल करा
+            📲 महाराष्ट्र पोलीस भरती अतिसंभाव्य पोलीस भरती पोर्टल ॲप इन्स्टॉल करा
         </button>
     </div>
 
@@ -849,7 +849,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     <!-- ========================================== -->
     <div style="max-width:850px; margin:30px auto; background:#162036; border:1px solid #1e293b; border-radius:16px; padding:25px; color:#f1f5f9; font-family:'Segoe UI', sans-serif;">
         <h3 style="color:#f59e0b; text-align:center; margin-top:0; font-size:22px;">
-            📖 श्रीगुरु करिअर अकॅडमी टेस्ट पोर्टल - मार्गदर्शक नियमावली
+            📖 महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल - मार्गदर्शक नियमावली
         </h3>
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:15px; margin-top:20px;">
             <div style="background:#0f172a; padding:15px; border-radius:10px; border-left:4px solid #3b82f6;">
