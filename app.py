@@ -901,6 +901,13 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         });
     }
     </script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+    }
+    </script>
 </html>'''
 # =============================================================================
 # MAHARASHTRA POLICE BHARTI ONLINE TEST PORTAL 2026 - MASTER CORE (PART 3/7)
@@ -4268,6 +4275,14 @@ def admin_toggle_block_user():
 # -----------------------------------------------------------------------------
 # 8. APPLICATION ENTRYPOINT
 # -----------------------------------------------------------------------------
+# PWA Service Worker Route
+@app.route('/sw.js')
+def service_worker():
+    response = Response(
+        "self.addEventListener('fetch', function(e) {});",
+        mimetype='application/javascript'
+    )
+    return response
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
