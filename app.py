@@ -827,6 +827,72 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     </div>
 </div>
 </body>
+<!-- ========================================== -->
+    <!-- १. ॲप इन्स्टॉल बटण (PWA Download) -->
+    <!-- ========================================== -->
+    <div style="text-align:center; margin: 25px 0;">
+        <button id="pwaInstallBtn" style="display:none; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 14px 28px; border-radius: 30px; font-weight: bold; font-size: 15px; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.4); transition: transform 0.2s;">
+            📲 श्रीगुरु पोर्टल ॲप इन्स्टॉल करा
+        </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- २. मार्गदर्शक नियमावली विभाग -->
+    <!-- ========================================== -->
+    <div style="max-width:850px; margin:30px auto; background:#162036; border:1px solid #1e293b; border-radius:16px; padding:25px; color:#f1f5f9; font-family:'Segoe UI', sans-serif;">
+        <h3 style="color:#f59e0b; text-align:center; margin-top:0; font-size:22px;">
+            📖 श्रीगुरु करिअर अकॅडमी टेस्ट पोर्टल - मार्गदर्शक नियमावली
+        </h3>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:15px; margin-top:20px;">
+            <div style="background:#0f172a; padding:15px; border-radius:10px; border-left:4px solid #3b82f6;">
+                <h4 style="color:#38bdf8; margin:0 0 8px 0;">🎯 १. मोफत व सराव टेस्ट्स</h4>
+                <p style="font-size:13px; color:#cbd5e1; margin:0; line-height:1.5;">विषयनिहाय व घटकानुसार प्रश्नपत्रिका. सबमिट करताच अचूक विश्लेषण व उत्तरतालिका लगेच दिसते.</p>
+            </div>
+            <div style="background:#0f172a; padding:15px; border-radius:10px; border-left:4px solid #ef4444;">
+                <h4 style="color:#f87171; margin:0 0 8px 0;">⚔️ २. 1-vs-1 बॅटल मोड</h4>
+                <p style="font-size:13px; color:#cbd5e1; margin:0; line-height:1.5;">मित्रासोबत थेट स्पर्धा! एकाच वेळी दोघांनी पेपर सोडवून लाईव्ह गुण व रँक तपासा.</p>
+            </div>
+            <div style="background:#0f172a; padding:15px; border-radius:10px; border-left:4px solid #10b981;">
+                <h4 style="color:#34d399; margin:0 0 8px 0;">🏆 ३. रविवार थेट महासंग्राम</h4>
+                <p style="font-size:13px; color:#cbd5e1; margin:0; line-height:1.5;">राज्यस्तरीय १०० गुणांची परीक्षा. निकाल दर रविवारी सायंकाळी ठीक ७:०० वाजता रँकसह जाहीर होतो.</p>
+            </div>
+        </div>
+        <div style="background:rgba(239,68,68,0.1); border:1px dashed #ef4444; border-radius:8px; padding:12px; margin-top:20px; font-size:13px; color:#fca5a5; text-align:center;">
+            <b>⚠️ महत्त्वाचे नियम:</b> १-बाय-१ ऑटो-लॉक नियमानुसार एका मोबाईल नंबरवरून एक टेस्ट फक्त एकदाच सोडवता येते. स्क्रीन रेकॉर्डिंग किंवा गैरप्रकार केल्यास नंबर तात्काळ ब्लॉक केला जाईल.
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ३. मोबाईलवर स्कॅन करण्यासाठी क्यूआर कोड -->
+    <!-- ========================================== -->
+    <div style="background:#162036; border:1px solid #334155; border-radius:12px; padding:15px; max-width:320px; margin:25px auto; text-align:center;">
+        <h4 style="color:#38bdf8; margin:0 0 10px 0;">📱 मोबाईलवर सोडवण्यासाठी स्कॅन करा</h4>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://shreeguru-online-platform.onrender.com" alt="Portal QR Code" style="border-radius:8px; border:2px solid #38bdf8; background:white; padding:5px;">
+        <p style="color:#94a3b8; font-size:12px; margin:8px 0 0 0;">कॅमेऱ्याने स्कॅन करा आणि थेट चाचणी सुरू करा</p>
+    </div>
+
+    <!-- PWA Install Script -->
+    <script>
+    let deferredPrompt;
+    const installBtn = document.getElementById('pwaInstallBtn');
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (installBtn) installBtn.style.display = 'inline-block';
+    });
+    if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+    }
+    </script>
 </html>'''
 # =============================================================================
 # MAHARASHTRA POLICE BHARTI ONLINE TEST PORTAL 2026 - MASTER CORE (PART 3/7)
