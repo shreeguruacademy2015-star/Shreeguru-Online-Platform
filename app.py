@@ -2983,30 +2983,33 @@ def student_my_results():
 
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/sw.js')
-      .then(() => console.log('SW Registered'))
-      .catch((err) => console.log('SW Error:', err));
+    navigator.serviceWorker.register('/static/sw.js');
   }
 
-  let deferredPrompt;
-  const installBtn = document.getElementById('pwa-install-btn');
+  var deferredPrompt;
+  var installBtn = document.getElementById('pwa-install-btn');
 
-  window.addEventListener('beforeinstallprompt', (e) => {
+  window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
-    installBtn.style.display = 'inline-block';
-  });
-
-  installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        installBtn.style.display = 'none';
-      }
-      deferredPrompt = null;
+    if (installBtn) {
+      installBtn.style.display = 'inline-block';
     }
   });
+
+  if (installBtn) {
+    installBtn.addEventListener('click', function() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(choiceResult) {
+          if (choiceResult.outcome === 'accepted') {
+            installBtn.style.display = 'none';
+          }
+          deferredPrompt = null;
+        });
+      }
+    });
+  }
 </script>
     </body>
     </html>'''
