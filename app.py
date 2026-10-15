@@ -680,7 +680,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         <span class="badge-live">LIVE</span> 🕒 81M मिशन खाकी २०२६ सराव कक्ष
     </div>
     <div style="display:flex; gap:12px; align-items:center;">
-        <a href="/my_results" style="color:#38bdf8; font-size:12.5px; font-weight:bold; text-decoration:none; background:#0f172a; padding:6px 12px; border-radius:6px; border:1px solid #38bdf8;">👤 माझे जुने निकाल (OTP)</a>
+        <!-- <a href="/my_results" style="color:#38bdf8; font-size:12.5px; font-weight:bold; text-decoration:none; background:#0f172a; padding:6px 12px; border-radius:6px; border:1px solid #38bdf8;">👤 माझे जुने निकाल (OTP)</a> -->
         <span style="font-size:12px; color:#34d399; font-weight:bold;">👥 सध्या ऑनलाईन: {{ active_students_count }}</span>
     </div>
 </div>
