@@ -441,56 +441,55 @@ init_master_db()
 # =============================================================================
 
 TERMS_TEMPLATE = '''<!DOCTYPE html>
-<html lang="mr">
+<html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>नियम, अटी व कायदेशीर घोषणापत्र - महाराष्ट्र पोलीस भरती संभाव्य टेस्ट पोर्टल</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms & Conditions - Maharashtra Police Bharti Test Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { margin: 0; background: #f8fafc; color: #1e293b; padding: 25px 15px; line-height: 1.6; }
-        .terms-container { max-width: 850px; margin: 0 auto; background: white; border-radius: 12px; padding: 35px 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border-top: 5px solid #059669; }
-        h1 { color: #065f46; font-size: 24px; margin-top: 0; }
-        h2 { color: #1e293b; font-size: 16px; margin: 20px 0 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
-        .notice-box { background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 16px; margin: 15px 0 20px; color: #991b1b; font-size: 13.5px; border-radius: 0 6px 6px 0; }
-        p, li { font-size: 13.5px; color: #475569; margin: 6px 0; }
-        ul { padding-left: 20px; margin: 6px 0; }
-        .back-link { display: inline-block; margin-top: 25px; background: #0284c7; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px; }
+        body { margin: 0; background: #0f172a; color: #f8fafc; padding: 25px 15px; line-height: 1.6; }
+        .terms-container { max-width: 850px; margin: 0 auto; background: #1e293b; border-radius: 12px; padding: 30px; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { color: #38bdf8; font-size: 24px; margin-top: 0; border-bottom: 2px solid #334155; padding-bottom: 12px; }
+        h2 { color: #f1f5f9; font-size: 16px; margin: 20px 0 8px; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+        .notice-box { background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 12px 16px; margin: 15px 0; border-radius: 4px; color: #fca5a5; font-size: 13.5px; }
+        p, li { font-size: 14px; color: #cbd5e1; margin: 8px 0; }
+        ul { padding-left: 20px; margin: 8px 0; }
+        .back-link { display: inline-block; margin-top: 25px; background: #0284c7; color: white; padding: 10px 22px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+        .back-link:hover { background: #0369a1; }
     </style>
 </head>
 <body>
-<div class="terms-container">
-    <h1>नियम, अटी व कायदेशीर घोषणापत्र (Terms & Conditions)</h1>
-    <p><small>अद्यतन: २०२६ | महाराष्ट्र पोलीस भरती संभाव्य टेस्ट पोर्टल</small></p>
-    
-    <div class="notice-box">
-        <strong>शासकीय प्रतिनिधीत्वाचा स्पष्ट इन्कार:</strong><br>
-        हे व्यासपीठ स्पर्धा परीक्षा सरावासाठीचे एक स्वतंत्र, खाजगी शैक्षणिक व्यासपीठ असून याचा महाराष्ट्र शासन, गृह विभाग, महाराष्ट्र पोलीस किंवा कोणत्याही अधिकृत भरती मंडळाशी थेट संबंध, प्रतिनिधित्व अथवा प्राधिकृतता नाही.
+    <div class="terms-container">
+        <h1>Terms &amp; Conditions</h1>
+        
+        <div class="notice-box">
+            <strong>Legal Notice:</strong> This platform is purely an educational practice portal and has NO connection with any government recruitment department.
+        </div>
+
+        <p>Welcome to <strong>Maharashtra Police Bharti Online Test Portal</strong>. By accessing or using our practice tests and platform services, you agree to comply with and be bound by the following terms and conditions:</p>
+
+        <h2>1. Non-Government Affiliation Disclaimer</h2>
+        <p>This platform is an independent educational training service operated by <strong>Shreeguru Career Academy</strong>. It is <strong>NOT affiliated with, authorized by, or endorsed by</strong> the Maharashtra State Police Department, Maharashtra State Police Recruitment Board, or any government authority. All mock tests and study sets are developed strictly for educational preparation and practice.</p>
+
+        <h2>2. Single User Access & Device Policy</h2>
+        <p>Exam access tokens and study passes are registered strictly for individual student use. Sharing login tokens, URLs, or access keys across unauthorized devices or third parties is prohibited and may result in immediate access termination.</p>
+
+        <h2>3. Strict No-Refund Policy</h2>
+        <p>As all test series, question banks, and mock exams are digital products with immediate online access upon activation, <strong>all payments and fees paid on this portal are 100% non-refundable and non-transferable</strong> under any circumstances.</p>
+
+        <h2>4. Intellectual Property Rights</h2>
+        <p>All test questions, answers, explanations, graphics, software, and study materials provided on this platform are the exclusive intellectual property of <strong>Shreeguru Career Academy</strong>. Any unauthorized copying, distribution, video recording, or commercial resale of the content is strictly prohibited by law.</p>
+
+        <h2>5. Limitation of Liability</h2>
+        <p>While every reasonable effort is made to maintain high accuracy and quality in questions and explanations, the academy makes no guarantee of appointment, selection, or specific examination results. The platform is not liable for network latency or internet disruptions on the user's end.</p>
+
+        <h2>6. Governing Law & Jurisdiction</h2>
+        <p>These terms and conditions are governed by and construed in accordance with the laws of India. Any legal dispute or claim arising out of the use of this portal shall be subject to the exclusive jurisdiction of the competent courts in <strong>Kolhapur, Maharashtra, India</strong>.</p>
+
+        <a href="/" class="back-link">← Back to Portal</a>
     </div>
-
-    <h2>१. शैक्षणिक उद्देश व स्व-मूल्यमापन</h2>
-    <p>या प्लॅटफॉर्मवरील सर्व सराव चाचण्या, प्रश्न, उत्तरपत्रिका आणि गुणवत्ता क्रमांक हे केवळ विद्यार्थ्यांच्या वैयक्तिक अभ्यासाच्या आणि स्व-मूल्यमापनाच्या मार्गदर्शनासाठी आहेत.</p>
-
-    <h2>२. निवडीची कोणतीही हमी नाही</h2>
-    <p>सराव चाचण्या सोडवल्यामुळे प्रत्यक्ष पोलीस भरतीत निवड होण्याची कोणतीही कायदेशीर हमी दिली जात नाही. निवड प्रक्रिया ही शासनाच्या अधिकृत नियमांनुसारच पार पडते.</p>
-
-    <h2>३. कडक नो-रिफंड पॉलिसी</h2>
-    <p>डिजिटल उत्पादन (सराव चाचण्या व सविस्तर स्पष्टीकरण पत्रिका) त्वरित उपलब्ध होत असल्याने भरलेली कोणतीही फी परत (Refund) केली जाणार नाही.</p>
-
-    <h2>४. बौद्धिक संपदा व कॉपीराइट संरक्षण</h2>
-    <p>प्लॅटफॉर्मवरील सर्व प्रश्न, रचना आणि स्पष्टीकरणे कॉपीराइट संरक्षित आहेत. कोणत्याही सोशल मीडिया किंवा टेलिग्रामवर अनधिकृत वाटप केल्यास कायदेशीर कारवाई केली जाईल.</p>
-
-    <h2>५. कम्युनिटी व ग्रुप शिस्त (महिला प्रायव्हसी)</h2>
-    <ul>
-        <li>अभ्यास ग्रुप्समध्ये महिला सदस्य असल्याने कोणत्याही सदस्याला वैयक्तिक मेसेज (DM) किंवा कॉल करण्यास सक्त मनाई आहे.</li>
-        <li>कोणतेही वादग्रस्त किंवा राजकीय मेसेज टाकल्यास तत्काळ काढून टाकले जाईल.</li>
-    </ul>
-
-    <h2>६. कायदेशीर अधिकार क्षेत्र</h2>
-    <p>कोणत्याही वादाच्या संदर्भात कायदेशीर अधिकार क्षेत्र कोल्हापूर जिल्हा न्यायालय, महाराष्ट्र राहील.</p>
-
-    <a href="/" class="back-link">⬅ मुख्य सराव पोर्टलवर परत जा</a>
-</div>
 </body>
 </html>'''
 
