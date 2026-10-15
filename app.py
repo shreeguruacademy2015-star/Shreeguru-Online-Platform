@@ -658,6 +658,10 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             fetch('/api/heartbeat', {method: 'POST'}).catch(() => {});
         }, 60000);
     </script>
+    <link rel="manifest" href="/static/manifest.json?v=2">
+<link rel="apple-touch-icon" href="/static/icon-512.png?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/icon-512.png?v=2">
+<link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png?v=2">
 </head>
 <body>
 <div id="loadingNoticeModal" class="loading-modal">
