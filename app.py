@@ -699,16 +699,38 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         <div style="display:flex; gap:8px; justify-content:center; margin-top:8px; flex-wrap:wrap;">
             <input type="tel" id="friend_invite_phone" placeholder="१० अंकी मोबाईल नंबर" maxlength="10" style="padding:8px; border-radius:6px; border:1px solid #475569; background:#1e293b; color:white; width:200px;">
             <button onclick="selectContact('friend_invite_phone')" class="phonebook-btn">📖 फोनबुक</button>
-            <!-- App Install Button -->
-<div style="text-align: center; margin: 15px auto; max-width: 90%;">
-  <button id="pwa-install-btn" style="background: linear-gradient(135deg, #28a745, #218838); color: white; padding: 12px 24px; font-size: 16px; font-weight: bold; border: 2px solid #ffffff; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 100%; max-width: 400px; display: inline-block;">
-    📲 adhikrut app download kara (Install App)
-  </button>
-</div>
             <button onclick="inviteFriendWhatsApp()" style="background:#25D366; color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">पाठवा ➔</button>
         </div>
     </div>
+    <!-- स्वतंत्र ॲप इन्स्टॉल बटण -->
+<div style="clear: both; text-align: center; margin: 18px auto; width: 100%; max-width: 420px; display: block;">
+  <button id="pwa-install-btn" onclick="installMyPWA()" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: #ffffff; padding: 13px 22px; font-size: 16px; font-weight: bold; border: 2px solid #ffffff; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.35); width: 100%; display: block;">
+    📲 अधिकृत ॲप डाऊनलोड करा (Install App)
+  </button>
+</div>
 
+<script>
+  var pwaDeferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {{
+    e.preventDefault();
+    pwaDeferredPrompt = e;
+  }});
+
+  function installMyPWA() {{
+    if (pwaDeferredPrompt) {{
+      pwaDeferredPrompt.prompt();
+      pwaDeferredPrompt.userChoice.then(function(res) {{
+        if (res.outcome === 'accepted') {{
+          var b = document.getElementById('pwa-install-btn');
+          if (b) b.style.display = 'none';
+        }}
+        pwaDeferredPrompt = null;
+      }});
+    }} else {{
+      alert("ॲप इन्स्टॉल करण्यासाठी:\n१. क्रोम ब्राऊझरच्या उजव्या बाजूला वर असलेल्या ३ ठिपक्यांवर (Three Dots) क्लिक करा.\n२. तेथे 'Install app' किंवा 'Add to Home screen' हा पर्याय निवडा.");
+    }}
+  }}
+</script>
     <!-- महासंग्राम प्रभावी विक्री व मार्गदर्शन बॅनर -->
     <div id="paidHeroCard" class="paid-hero-card">
         <h3>🎯 अतिसंभाव्य महासंग्राम टेस्ट संच (Mission Khaki 2026)</h3>
