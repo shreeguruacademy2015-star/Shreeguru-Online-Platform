@@ -2247,6 +2247,43 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     </form>
     {% endif %}
 </div>
+<!-- ॲप इन्स्टॉल बटण -->
+<div style="text-align: center; margin: 20px 0;">
+  <button id="pwa-install-btn" style="display: none; background-color: #28a745; color: white; padding: 12px 24px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
+    📲 अधिकृत ॲप डाऊनलोड करा (Install App)
+  </button>
+</div>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js');
+  }
+
+  var deferredPrompt;
+  var installBtn = document.getElementById('pwa-install-btn');
+
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) {
+      installBtn.style.display = 'inline-block';
+    }
+  });
+
+  if (installBtn) {
+    installBtn.addEventListener('click', function() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(choiceResult) {
+          if (choiceResult.outcome === 'accepted') {
+            installBtn.style.display = 'none';
+          }
+          deferredPrompt = null;
+        });
+      }
+    });
+  }
+</script>
 </body>
 </html>'''
 # =============================================================================
