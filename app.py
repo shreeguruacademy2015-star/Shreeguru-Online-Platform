@@ -1028,6 +1028,57 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             validateAndReady();
         };
     </script>
+    <style>
+        /* मजकूर कॉपी किंवा सिलेक्ट करणे पूर्णपणे बंद */
+        body {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        /* स्क्रीन रेकॉर्डिंग किंवा टॅब बदलल्यास स्क्रीन ब्लर करणे */
+        .screen-protected {
+            filter: blur(30px) !important;
+            opacity: 0.05 !important;
+            pointer-events: none !important;
+        }
+    </style>
+
+    <script>
+        // १. माउसचे राईट-क्लिक बंद करणे
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        // २. स्क्रीनशॉट व डेव्हलपर कीज बंद करणे
+        document.addEventListener('keydown', function(e) {
+            if (e.key === "PrintScreen") {
+                navigator.clipboard.writeText('');
+                alert('⚠️ सुरक्षेच्या कारणास्तव परीक्षेदरम्यान स्क्रीनशॉट काढण्यास सक्त बंदी आहे!');
+            }
+            if (e.ctrlKey && ['u', 'U', 's', 'S', 'p', 'P'].includes(e.key)) {
+                e.preventDefault();
+            }
+            if (e.key === "F12" || (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j'].includes(e.key))) {
+                e.preventDefault();
+            }
+        });
+
+        // ३. विद्यार्थी दुसऱ्या ॲपवर गेल्यास किंवा टॅब बदलल्यास प्रश्न ब्लर करणे
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                document.body.classList.add("screen-protected");
+            } else {
+                document.body.classList.remove("screen-protected");
+            }
+        });
+
+        window.addEventListener("blur", function() {
+            document.body.classList.add("screen-protected");
+        });
+        window.addEventListener("focus", function() {
+            document.body.classList.remove("screen-protected");
+        });
+    </script>
 </head>
 <body>
 <div class="exam-header">
@@ -3935,7 +3986,7 @@ def print_test_route(test_id):
                 </div>
                 
                 <div class="header">
-                    <h2>महाराष्ट्र पोलीस भरती सराव केंद्र</h2>
+                    <h2>महाराष्ट्र पोलीस भरती सराव केंद्र</h2>r
                     <p>सराव परीक्षा: {test['test_title']}</p>
                 </div>
                 <div class="meta-box">
