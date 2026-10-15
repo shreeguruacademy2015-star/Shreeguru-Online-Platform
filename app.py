@@ -704,34 +704,11 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     </div>
     <!-- स्वतंत्र ॲप इन्स्टॉल बटण -->
 <div style="clear: both; text-align: center; margin: 18px auto; width: 100%; max-width: 420px; display: block;">
-  <button id="pwa-install-btn" onclick="installMyPWA()" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: #ffffff; padding: 13px 22px; font-size: 16px; font-weight: bold; border: 2px solid #ffffff; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.35); width: 100%; display: block;">
+  <a href="https://shreeguru-online-platform.onrender.com" onclick="alert('हे पोर्टल ॲपप्रमाणे सेव्ह करण्यासाठी: ब्राऊझरच्या वरच्या उजव्या बाजूला असलेल्या ३ ठिपक्यांवर (Three Dots) क्लिक करा आणि Add to Home screen किंवा Install app निवडा.'); return false;" style="display: block; background: linear-gradient(135deg, #28a745, #1e7e34); color: #ffffff; text-decoration: none; padding: 13px 22px; font-size: 16px; font-weight: bold; border: 2px solid #ffffff; border-radius: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
     📲 अधिकृत ॲप डाऊनलोड करा (Install App)
-  </button>
+  </a>
 </div>
-
-<script>
-  var pwaDeferredPrompt = null;
-  window.addEventListener('beforeinstallprompt', function(e) {{
-    e.preventDefault();
-    pwaDeferredPrompt = e;
-  }});
-
-  function installMyPWA() {{
-    if (pwaDeferredPrompt) {{
-      pwaDeferredPrompt.prompt();
-      pwaDeferredPrompt.userChoice.then(function(res) {{
-        if (res.outcome === 'accepted') {{
-          var b = document.getElementById('pwa-install-btn');
-          if (b) b.style.display = 'none';
-        }}
-        pwaDeferredPrompt = null;
-      }});
-    }} else {{
-      alert("ॲप इन्स्टॉल करण्यासाठी:\n१. क्रोम ब्राऊझरच्या उजव्या बाजूला वर असलेल्या ३ ठिपक्यांवर (Three Dots) क्लिक करा.\n२. तेथे 'Install app' किंवा 'Add to Home screen' हा पर्याय निवडा.");
-    }}
-  }}
-</script>
-    <!-- महासंग्राम प्रभावी विक्री व मार्गदर्शन बॅनर -->
+       <!-- महासंग्राम प्रभावी विक्री व मार्गदर्शन बॅनर -->
     <div id="paidHeroCard" class="paid-hero-card">
         <h3>🎯 अतिसंभाव्य महासंग्राम टेस्ट संच (Mission Khaki 2026)</h3>
         <p>🔥 <b>एका कप चहाच्या किमतीत १०० प्रश्नांची प्रश्नपत्रिका सोडवून राज्यात, जिल्ह्यात व संवर्गनिहाय रँक तपासा!</b><br>
