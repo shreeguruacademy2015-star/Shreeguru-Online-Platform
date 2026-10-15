@@ -699,6 +699,12 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         <div style="display:flex; gap:8px; justify-content:center; margin-top:8px; flex-wrap:wrap;">
             <input type="tel" id="friend_invite_phone" placeholder="१० अंकी मोबाईल नंबर" maxlength="10" style="padding:8px; border-radius:6px; border:1px solid #475569; background:#1e293b; color:white; width:200px;">
             <button onclick="selectContact('friend_invite_phone')" class="phonebook-btn">📖 फोनबुक</button>
+            <!-- App Install Button -->
+<div style="text-align: center; margin: 15px auto; max-width: 90%;">
+  <button id="pwa-install-btn" style="background: linear-gradient(135deg, #28a745, #218838); color: white; padding: 12px 24px; font-size: 16px; font-weight: bold; border: 2px solid #ffffff; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 100%; max-width: 400px; display: inline-block;">
+    📲 adhikrut app download kara (Install App)
+  </button>
+</div>
             <button onclick="inviteFriendWhatsApp()" style="background:#25D366; color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">पाठवा ➔</button>
         </div>
     </div>
