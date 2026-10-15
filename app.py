@@ -3968,7 +3968,12 @@ def print_test_route(test_id):
             </html>
             """
             return html_code
-            @app.route('/admin/toggle_block_user', methods=['POST'])
+
+
+# =============================================================================
+# ३६०° पॉवर सर्च - नंबर ब्लॉक व अनब्लॉक राऊट
+# =============================================================================
+@app.route('/admin/toggle_block_user', methods=['POST'])
 def admin_toggle_block_user():
     if not session.get('admin_logged'):
         return redirect('/admin/login')
@@ -4001,7 +4006,6 @@ def admin_toggle_block_user():
                 conn.commit()
                 
     return redirect(f"/admin/dashboard?tab=power&power_phone={phone}")
-
 # -----------------------------------------------------------------------------
 # 8. APPLICATION ENTRYPOINT
 # -----------------------------------------------------------------------------
