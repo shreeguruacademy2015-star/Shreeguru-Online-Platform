@@ -2982,34 +2982,34 @@ def student_my_results():
 </div>
 
 <script>
-  if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator) {{
     navigator.serviceWorker.register('/static/sw.js');
-  }
+  }}
 
   var deferredPrompt;
   var installBtn = document.getElementById('pwa-install-btn');
 
-  window.addEventListener('beforeinstallprompt', function(e) {
+  window.addEventListener('beforeinstallprompt', function(e) {{
     e.preventDefault();
     deferredPrompt = e;
-    if (installBtn) {
+    if (installBtn) {{
       installBtn.style.display = 'inline-block';
-    }
-  });
+    }}
+  }});
 
-  if (installBtn) {
-    installBtn.addEventListener('click', function() {
-      if (deferredPrompt) {
+  if (installBtn) {{
+    installBtn.addEventListener('click', function() {{
+      if (deferredPrompt) {{
         deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function(choiceResult) {
-          if (choiceResult.outcome === 'accepted') {
+        deferredPrompt.userChoice.then(function(choiceResult) {{
+          if (choiceResult.outcome === 'accepted') {{
             installBtn.style.display = 'none';
-          }
+          }}
           deferredPrompt = null;
-        });
-      }
-    });
-  }
+        }});
+      }}
+    }});
+  }}
 </script>
     </body>
     </html>'''
