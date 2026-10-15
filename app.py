@@ -3099,9 +3099,9 @@ def admin_dashboard():
     utr_search = request.args.get('utr_search', '').strip()
     power_phone = request.args.get('power_phone', '').strip()
 
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स मोजणे ---
+   with get_db() as conn:
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स मोजणे ---
         import time
         now_ts = int(time.time())
         cur.execute("SELECT COUNT(*) AS c FROM active_sessions WHERE last_seen > %s;", (now_ts - 120,))
@@ -3111,44 +3111,45 @@ def admin_dashboard():
         cur.execute("SELECT total_visits FROM site_stats WHERE id = 1;")
         row_v = cur.fetchone()
         total_visits_count = row_v['total_visits'] if row_v else 0
-            # १. पॉवर सर्च (विद्यार्थी ३६०° प्रोफाईल व संपूर्ण इतिहास)
-            power_html = ""
-            if power_phone:
-                # १. टेस्ट इतिहास आणणे
+
+        # १. पॉवर सर्च (विद्यार्थी ३६०° प्रोफाईल व संपूर्ण इतिहास)
+        power_html = ""
+        if power_phone:
+            # १. टेस्ट इतिहास आणणे
+            cur.execute("""
+                SELECT * FROM mock_test_leads 
+                WHERE phone=%s AND is_deleted=0 
+                ORDER BY id DESC
+            """, (power_phone,))
+            student_tests = cur.fetchall()
+
+            # २. ब्लॉक स्थिती तपासणे
+            is_blocked = False
+            try:
                 cur.execute("""
-                    SELECT * FROM mock_test_leads 
-                    WHERE phone=%s AND is_deleted=0 
-                    ORDER BY id DESC
-                """, (power_phone,))
-                student_tests = cur.fetchall()
-
-                # २. ब्लॉक स्थिती तपासणे
+                    CREATE TABLE IF NOT EXISTS blocked_users (
+                        id SERIAL PRIMARY KEY,
+                        phone VARCHAR(20) UNIQUE,
+                        blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cur.execute("SELECT id FROM blocked_users WHERE phone=%s", (power_phone,))
+                if cur.fetchone():
+                    is_blocked = True
+            except Exception:
+                conn.rollback()
                 is_blocked = False
-                try:
-                    cur.execute("""
-                        CREATE TABLE IF NOT EXISTS blocked_users (
-                            id SERIAL PRIMARY KEY,
-                            phone VARCHAR(20) UNIQUE,
-                            blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                        )
-                    """)
-                    cur.execute("SELECT id FROM blocked_users WHERE phone=%s", (power_phone,))
-                    if cur.fetchone():
-                        is_blocked = True
-                except Exception:
-                    conn.rollback()
-                    is_blocked = False
 
-                if is_blocked:
-                    block_btn_html = f"""
-                    <form method="POST" action="/admin/toggle_block_user" style="display:inline; margin-left:15px;">
-                        <input type="hidden" name="phone" value="{power_phone}">
-                        <input type="hidden" name="action" value="unblock">
-                        <button type="submit" style="background:#16a34a; color:white; border:none; padding:6px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">
-                            ✅ अनब्लॉक करा
-                        </button>
-                    </form>
-                    """
+            if is_blocked:
+                block_btn_html = f"""
+                <form method="POST" action="/admin/toggle_block_user" style="display:inline; margin-left:15px;">
+                    <input type="hidden" name="phone" value="{power_phone}">
+                    <input type="hidden" name="action" value="unblock">
+                    <button type="submit" style="background:#16a34a; color:white; border:none; padding:6px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">
+                        ✅ अनब्लॉक करा
+                    </button>
+                </form>
+                """
                 else:
                     block_btn_html = f"""
                     <form method="POST" action="/admin/toggle_block_user" style="display:inline; margin-left:15px;">
