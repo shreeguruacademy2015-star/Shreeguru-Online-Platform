@@ -3101,16 +3101,37 @@ def admin_dashboard():
 
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स मोजणे ---
+            # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स मोजणे (सुरक्षित व अचूक पद्धत) ---
             import time
             now_ts = int(time.time())
-            cur.execute("SELECT COUNT(*) AS c FROM active_sessions WHERE last_seen > %s;", (now_ts - 120,))
-            row_live = cur.fetchone()
-            live_now_count = row_live['c'] if row_live else 0
+            live_now_count = 0
+            total_visits_count = 0
 
-            cur.execute("SELECT total_visits FROM site_stats WHERE id = 1;")
-            row_v = cur.fetchone()
-            total_visits_count = row_v['total_visits'] if row_v else 0
+            try:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS active_sessions (
+                        session_id VARCHAR(100) PRIMARY KEY,
+                        last_seen BIGINT
+                    );
+                    CREATE TABLE IF NOT EXISTS site_stats (
+                        id INT PRIMARY KEY,
+                        total_visits INT DEFAULT 0
+                    );
+                    INSERT INTO site_stats (id, total_visits) VALUES (1, 0) ON CONFLICT (id) DO NOTHING;
+                """)
+                conn.commit()
+
+                cur.execute("SELECT COUNT(*) AS c FROM active_sessions WHERE last_seen > %s;", (now_ts - 120,))
+                row_live = cur.fetchone()
+                live_now_count = row_live['c'] if row_live else 0
+
+                cur.execute("SELECT total_visits FROM site_stats WHERE id = 1;")
+                row_v = cur.fetchone()
+                total_visits_count = row_v['total_visits'] if row_v else 0
+            except Exception:
+                conn.rollback()
+                live_now_count = 0
+                total_visits_count = 0
 
             # १. पॉवर सर्च (विद्यार्थी ३६०° प्रोफाईल व संपूर्ण इतिहास)
             power_html = ""
