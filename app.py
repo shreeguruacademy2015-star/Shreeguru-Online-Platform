@@ -695,7 +695,12 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- मित्राला थेट व्हॉट्सॲप आमंत्रण बॉक्स -->
     <div style="background:#0f172a; border:1.5px solid #38bdf8; border-radius:10px; padding:14px; margin-bottom:18px; text-align:center;">
-        <span style="color:#38bdf8; font-weight:bold; font-size:14px;">📲 मित्राला थेट WhatsApp वर टेस्ट पाठवा:</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+  <span style="color:#38bdf8; font-weight:bold; font-size:14px;">📲 मित्राला थेट WhatsApp वर टेस्ट पाठवा:</span>
+  <a href="https://shreeguru-online-platform.onrender.com" onclick="alert('हे पोर्टल ॲपप्रमाणे सेव्ह करण्यासाठी: ब्राऊझरच्या वरच्या उजव्या बाजूला असलेल्या ३ ठिपक्यांवर क्लिक करून Install app किंवा Add to Home screen निवडा.'); return false;" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: #ffffff; text-decoration: none; padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 20px; border: 1px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: inline-flex; align-items: center;">
+    📲 ॲप डाऊनलोड करा
+  </a>
+</div>
         <div style="display:flex; gap:8px; justify-content:center; margin-top:8px; flex-wrap:wrap;">
             <input type="tel" id="friend_invite_phone" placeholder="१० अंकी मोबाईल नंबर" maxlength="10" style="padding:8px; border-radius:6px; border:1px solid #475569; background:#1e293b; color:white; width:200px;">
             <button onclick="selectContact('friend_invite_phone')" class="phonebook-btn">📖 फोनबुक</button>
@@ -2942,43 +2947,6 @@ def student_my_results():
             {''.join([f"<tr><td>{r['test_date']}</td><td><b>{r['test_name']}</b></td><td>{r['student_name']}</td><td>{r['district']}</td><td style='color:#34d399; font-weight:bold;'>{r['score']} / {r['total_marks']}</td><td><a href='/detailed_answers/{r['access_token']}' style='color:#38bdf8; font-weight:bold;'>📖 उत्तरपत्रिका</a> | <a href='/student/admit_card/{r['id']}' target='_blank' style='color:#fbbf24; font-weight:bold;'>🖨️ गुणपत्रक</a></td></tr>" for r in results]) if results else "<tr><td colspan='6' style='text-align:center; padding:20px; color:#94a3b8;'>या नंबरवर कोणताही निकाल सापडला नाही.</td></tr>"}
         </table>''' if step == 'show_results' else ''}
     </div>
-    <!-- ॲप इन्स्टॉल बटण -->
-<div style="text-align: center; margin: 20px 0;">
-  <button id="pwa-install-btn" style="display: none; background-color: #28a745; color: white; padding: 12px 24px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
-    📲 अधिकृत ॲप डाऊनलोड करा (Install App)
-  </button>
-</div>
-
-<script>
-  if ('serviceWorker' in navigator) {{
-    navigator.serviceWorker.register('/static/sw.js');
-  }}
-
-  var deferredPrompt;
-  var installBtn = document.getElementById('pwa-install-btn');
-
-  window.addEventListener('beforeinstallprompt', function(e) {{
-    e.preventDefault();
-    deferredPrompt = e;
-    if (installBtn) {{
-      installBtn.style.display = 'inline-block';
-    }}
-  }});
-
-  if (installBtn) {{
-    installBtn.addEventListener('click', function() {{
-      if (deferredPrompt) {{
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function(choiceResult) {{
-          if (choiceResult.outcome === 'accepted') {{
-            installBtn.style.display = 'none';
-          }}
-          deferredPrompt = null;
-        }});
-      }}
-    }});
-  }}
-</script>
     </body>
     </html>'''
     return render_template_string(html)
