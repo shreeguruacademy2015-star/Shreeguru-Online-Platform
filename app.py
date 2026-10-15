@@ -2937,6 +2937,40 @@ def student_my_results():
             {''.join([f"<tr><td>{r['test_date']}</td><td><b>{r['test_name']}</b></td><td>{r['student_name']}</td><td>{r['district']}</td><td style='color:#34d399; font-weight:bold;'>{r['score']} / {r['total_marks']}</td><td><a href='/detailed_answers/{r['access_token']}' style='color:#38bdf8; font-weight:bold;'>📖 उत्तरपत्रिका</a> | <a href='/student/admit_card/{r['id']}' target='_blank' style='color:#fbbf24; font-weight:bold;'>🖨️ गुणपत्रक</a></td></tr>" for r in results]) if results else "<tr><td colspan='6' style='text-align:center; padding:20px; color:#94a3b8;'>या नंबरवर कोणताही निकाल सापडला नाही.</td></tr>"}
         </table>''' if step == 'show_results' else ''}
     </div>
+    <!-- ॲप इन्स्टॉल बटण -->
+<div style="text-align: center; margin: 20px 0;">
+  <button id="pwa-install-btn" style="display: none; background-color: #28a745; color: white; padding: 12px 24px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
+    📲 अधिकृत ॲप डाऊनलोड करा (Install App)
+  </button>
+</div>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js')
+      .then(() => console.log('SW Registered'))
+      .catch((err) => console.log('SW Error:', err));
+  }
+
+  let deferredPrompt;
+  const installBtn = document.getElementById('pwa-install-btn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-block';
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        installBtn.style.display = 'none';
+      }
+      deferredPrompt = null;
+    }
+  });
+</script>
     </body>
     </html>'''
     return render_template_string(html)
