@@ -2591,14 +2591,15 @@ def home_tests_list():
         'paid': '🎯 अतिसंभाव्य १०० गुण संच (₹९९)',
         'free': '🟢 मोफत टेस्ट्स',
         'rapid': '⚡ २० गुण रॅपिड फायर',
+        'guide': 'ℹ️ टेस्ट गाईड व सर्व माहिती',
         'about': '📖 पोर्टल माहिती व साद',
         'battle': '⚔️ जिल्हा मुकाबला व रँक',
         'docs': '📄 भरती PDF व PYQ',
         'help': '📞 हेल्प डेस्क'
     }
 
-    home_tab_order = settings.get('home_tab_order', 'live,paid,free,rapid,about,battle,docs,help')
-    raw_keys = [t.strip() for t in home_tab_order.split(',') if t.strip() and t.strip() != 'all']
+    home_tab_order = settings.get('home_tab_order', 'live,paid,free,rapid,guide,about,battle,docs,help')
+    raw_keys = [t.strip() for t in home_tab_order.split(',') if t.strip()]
 
     parsed_home_tabs = []
     for k in raw_keys:
