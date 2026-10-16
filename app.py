@@ -968,6 +968,13 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
                 window.location.replace('/');
             }
         }
+        window.addEventListener('beforeunload', function (e) {
+            if (!isFormSubmitted) {
+                e.preventDefault();
+                e.returnValue = 'तुम्ही परीक्षा सोडून जात आहात का?';
+                return e.returnValue;
+            }
+        });
 
         document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
         document.addEventListener('keydown', function(e) {
