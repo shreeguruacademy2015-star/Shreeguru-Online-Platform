@@ -2692,8 +2692,8 @@ def take_test(test_id):
 
             # थेट प्रवेश रोखणे व GST सह पेमेंट स्क्रीन उघडणे
             base_fee = float(test.get('test_fee') or 99.0)
-            gst_amount = round(base_fee * 0.18, 2)
-            total_fee = round(base_fee + gst_amount, 2)
+            gst_amount = 0.0
+            total_fee = base_fee
 
             cur.execute("SELECT setting_key, setting_value FROM academy_settings WHERE setting_key IN ('upi_mobile', 'qr_code_url')")
             s_map = {r['setting_key']: r['setting_value'] for r in cur.fetchall()}
