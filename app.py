@@ -2586,6 +2586,11 @@ def take_test(test_id):
                 test.get('test_type') == 'Paid' or 
                 float(test.get('test_fee') or 0) > 0
             )
+            # सुपर ॲडमिनसाठी सर्व टेस्ट्स (Paid/Free) १००% मोफत व अमर्याद सुरू करणे
+            if current_phone == MASTER_ADMIN_PHONE or session.get('is_admin'):
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
+                questions = cur.fetchall()
+                return render_template_string(EXAM_TEMPLATE, test=test, questions=questions, battle_partner_id=battle_partner_id)
 
             # मोफत टेस्ट थेट सुरू होते
             if not is_paid_test:
@@ -3965,6 +3970,46 @@ def admin_add_test():
             conn.commit()
     return redirect(f'/admin/dashboard?tab=launch&cat_tab={category}')
 
+@app.route('/admin/save_all_questions', methods=['POST'])
+def save_all_questions():
+    if not session.get('admin_logged') and not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'अनधिकृत प्रवेश!'}), 403
+
+    data = request.get_json() or {}
+    questions_list = data.get('questions', [])
+
+    if not questions_list:
+        return jsonify({'success': False, 'message': 'अपडेट करण्यासाठी डेटा सापडला नाही.'})
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            for q in questions_list:
+                cur.execute("""
+                    UPDATE questions 
+                    SET question_text = %s,
+                        option_a = %s,
+                        option_b = %s,
+                        option_c = %s,
+                        option_d = %s,
+                        correct_option = %s,
+                        explanation = %s
+                    WHERE id = %s AND is_deleted = 0
+                """, (
+                    q.get('question_text'),
+                    q.get('option_a'),
+                    q.get('option_b'),
+                    q.get('option_c'),
+                    q.get('option_d'),
+                    q.get('correct_option'),
+                    q.get('explanation', ''),
+                    q.get('id')
+                ))
+            conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': f'सर्व {len(questions_list)} प्रश्न यशस्वीरीत्या सेव्ह झाले!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 @app.route('/admin/update_test/<int:test_id>', methods=['POST'])
 def admin_update_test(test_id):
     if not session.get('admin_logged'): 
