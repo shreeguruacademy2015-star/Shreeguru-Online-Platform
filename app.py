@@ -2565,9 +2565,9 @@ def home_tests_list():
             raw_tests_db = cur.fetchall()
 
             # --- RAPID FIRE SEQUENTIAL DAILY 10 AM UNLOCK LOGIC ---
-            import pytz
-            IST = pytz.timezone('Asia/Kolkata')
-            now_ist = datetime.now(IST)
+            from datetime import timezone
+            ist_tz = timezone(timedelta(hours=5, minutes=30))
+            now_ist = datetime.now(ist_tz)
             today_date = now_ist.date()
 
             user_created_date = session.get('user_created_at')
