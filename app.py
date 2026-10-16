@@ -2087,6 +2087,61 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 6. TESTS MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+    <button type="button" onclick="saveAllTestsData()" id="btnSaveAllTests" style="background: #10b981; color: white; border: none; padding: 9px 20px; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 13.5px; box-shadow: 0 4px 10px rgba(16,185,129,0.3);">
+        💾 सर्व बदल एकाच वेळी सेव्ह करा (Save All)
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+    <button type="button" onclick="saveAllTestsData()" id="btnSaveAllTests" style="background: #10b981; color: white; border: none; padding: 9px 20px; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 13.5px; box-shadow: 0 4px 10px rgba(16,185,129,0.3);">
+        💾 सर्व बदल एकाच वेळी सेव्ह करा (Save All)
+    </button>
+</div>
+
+<script>
+async function saveAllTestsData() {
+    const btn = document.getElementById('btnSaveAllTests');
+    const forms = document.querySelectorAll('form[action*="update_test"]');
+
+    if (forms.length === 0) {
+        alert("सेव्ह करण्यासाठी कोणताही फॉर्म सापडला नाही.");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "⏳ सर्व बदल सेव्ह होत आहेत...";
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let form of forms) {
+        try {
+            const formData = new FormData(form);
+            const res = await fetch(form.action, {
+                method: 'POST',
+                body: formData
+            });
+            if (res.ok) {
+                successCount++;
+            } else {
+                failCount++;
+            }
+        } catch (e) {
+            failCount++;
+        }
+    }
+
+    btn.disabled = false;
+    btn.innerText = "💾 सर्व बदल एकाच वेळी सेव्ह करा (Save All)";
+
+    if (failCount === 0) {
+        alert("✅ सर्व " + successCount + " टेस्ट्समधील बदल एकाच वेळी यशस्वीरीत्या सेव्ह झाले!");
+        location.reload();
+    } else {
+        alert("काही टेस्ट्स सेव्ह झाल्या (" + successCount + "), पण " + failCount + " टेस्ट्स सेव्ह करताना त्रुटी आली.");
+    }
+}
+</script>
+    </button>
+</div>
     <div class="sub-nav-tabs"> 
         <a href="/admin/dashboard?tab=launch&cat_tab=all" class="{{ 'active' if cat_tab == 'all' else '' }}">🌐 सर्व टेस्ट्स</a>
         <a href="/admin/dashboard?tab=launch&cat_tab=free" class="{{ 'active' if cat_tab == 'free' else '' }}">🟢 मोफत टेस्ट्स</a>
