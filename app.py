@@ -3594,7 +3594,9 @@ def admin_dashboard():
 
             test_query = "SELECT * FROM test_papers WHERE is_deleted=0"
             test_params = []
-            if cat_tab != 'all':
+            if cat_tab == 'subjects':
+                test_query += " AND (subject IS NOT NULL AND subject != '')"
+            elif cat_tab != 'all':
                 test_query += " AND category = %s"
                 test_params.append(cat_tab)
             test_query += f" ORDER BY {test_order_sql}"
