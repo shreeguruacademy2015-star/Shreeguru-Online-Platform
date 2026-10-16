@@ -568,11 +568,23 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             if (modal) modal.style.display = 'none';
         };
 
-        // मुख्य होमपेजवरून बाहेर पडताना विचारणा
+        // अंतर्गत लिंकवर क्लिक केल्यास इशारा न विचारण्यासाठी फ्लॅग
+        let isInternalNav = false;
+
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a') || e.target.closest('button');
+            if (link) {
+                isInternalNav = true;
+            }
+        });
+
+        // फक्त वेबसाईट किंवा टॅब पूर्ण बंद करतानाच इशारा येईल, आत फिरताना नाही
         window.addEventListener('beforeunload', function (e) {
-            e.preventDefault();
-            e.returnValue = 'आपण टेस्ट पोर्टलवरून बाहेर पडू इच्छिता का?';
-            return e.returnValue;
+            if (!isInternalNav) {
+                e.preventDefault();
+                e.returnValue = 'आपण टेस्ट पोर्टलवरून बाहेर पडू इच्छिता का?';
+                return e.returnValue;
+            }
         });
 
         // वेब कॉन्टॅक्ट पिकर (फोनबुकमधून थेट नंबर निवडणे)
