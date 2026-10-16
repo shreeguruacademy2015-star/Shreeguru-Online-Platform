@@ -52,6 +52,7 @@ except ImportError:
 # 2. FLASK APPLICATION CONFIGURATION & SECURITY SALTS
 # -----------------------------------------------------------------------------
 app = Flask(__name__)
+MASTER_ADMIN_PHONE = "9921111960"
 app.secret_key = os.environ.get(
     "FLASK_SECRET_KEY",
     "maha_police_master_platform_2026_safe_key_super_secure_production_v2"
@@ -2388,6 +2389,13 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 # MODULE: CORE FLASK ROUTES - PING, HEARTBEAT, HOME LISTING, GST & RAZORPAY
 # =============================================================================
 
+# लॅपटॉपसाठी वन-क्लिक सुपर ॲडमिन ॲक्सेस राऊट
+@app.route('/dev-access')
+def dev_access():
+    session['user_phone'] = MASTER_ADMIN_PHONE
+    session['is_admin'] = True
+    session['user_name'] = "Master Admin (Sachin Sir)"
+    return redirect(url_for('home_tests_list'))
 # UptimeRobot २४/७ पिंग मार्ग (Render स्लीप मोड प्रतिबंध)
 @app.route('/ping')
 def ping_server():
@@ -2530,7 +2538,8 @@ def take_test(test_id):
                 if cur.fetchone():
                     return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ तुमचा मोबाईल नंबर प्रशासकीय कारणास्तव ब्लॉक करण्यात आला आहे!</h3>", 403
                     # १-बाय-१ ऑटो-लॉक: पेपर आधीच सोडवला असल्यास पुन्हा सोडवण्यास बंदी
-            if current_phone:
+            # १-बाय-१ ऑटो-लॉक: पेपर आधीच सोडवला असल्यास पुन्हा सोडवण्यास बंदी (ॲडमिन वगळून)
+            if current_phone and current_phone != MASTER_ADMIN_PHONE and not session.get('is_admin'):
                 cur.execute("""
                     SELECT id, access_token, test_name FROM mock_test_leads 
                     WHERE phone = %s AND test_id = %s AND is_used = 1 AND is_deleted = 0
