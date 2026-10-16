@@ -2148,12 +2148,30 @@ async function saveAllTestsData() {
         <a href="/admin/dashboard?tab=launch&cat_tab=rapid" class="{{ 'active' if cat_tab == 'rapid' else '' }}">⚡ रॅपिड फायर संच</a>
         <a href="/admin/dashboard?tab=launch&cat_tab=paid" class="{{ 'active' if cat_tab == 'paid' else '' }}">🎯 अतिसंभाव्य १०० गुण संच</a>
         <a href="/admin/dashboard?tab=launch&cat_tab=live" class="{{ 'active' if cat_tab == 'live' else '' }}">🔴 मिशन खाकी महासंग्राम</a>
+        <a href="/admin/dashboard?tab=launch&cat_tab=subjects" class="{{ 'active' if cat_tab == 'subjects' else '' }}">📚 सर्व विषय</a>
     </div>
 
     <form method="POST" action="/admin/add_test" style="background:#f8fafc; padding:18px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:25px;">
         <label style="font-weight:bold; font-size:12.5px;">नवीन टेस्ट जोडा:</label>
         <input type="text" name="test_title" placeholder="उदा. महाराष्ट्र पोलीस अतिसंभाव्य टेस्ट संच" required>
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:10px;">
+        <div>
+    <label style="font-weight:bold; font-size:12.5px;">विषय (Subject):</label>
+    <select name="subject" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+        <option value="">-- ऐच्छिक (विषय निवडा) --</option>
+        <option value="मराठी">मराठी व्याकरण</option>
+        <option value="गणित">गणित</option>
+        <option value="बुद्धिमत्ता">बुद्धिमत्ता चाचणी</option>
+        <option value="इतिहास">इतिहास</option>
+        <option value="भूगोल">भूगोल</option>
+        <option value="राज्यशास्त्र">राज्यशास्त्र</option>
+        <option value="अर्थशास्त्र">अर्थशास्त्र</option>
+        <option value="विज्ञान">सामान्य विज्ञान</option>
+        <option value="जीके">सामान्य ज्ञान (GK)</option>
+        <option value="चालू घडामोडी">चालू घडामोडी</option>
+        <option value="इंग्रजी">इंग्रजी व्याकरण</option>
+    </select>
+</div>
             <div>
                 <label style="font-weight:bold; font-size:12.5px;">कॅटेगरी:</label>
                 <select name="category" required>            
@@ -4061,6 +4079,7 @@ def admin_add_test():
     if not session.get('admin_logged'): 
         return redirect('/admin/login')
     title = request.form.get('test_title', '').strip()
+    subject = request.form.get('subject') or None
     category = request.form.get('category', 'paid')
     ttype = request.form.get('test_type', 'Paid')
     seq = int(request.form.get('sequence_order', 1) or 1)
@@ -4070,9 +4089,9 @@ def admin_add_test():
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, sequence_order) 
-                VALUES (%s, %s, %s, %s, 'Active', %s, %s)
-            """, (title, ttype, fee, duration, category, seq))
+    INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, seq, subject)
+    VALUES (%s, %s, %s, %s, 'Active', %s, %s, %s)
+""", (title, ttype, fee, duration, category, seq, subject))
             conn.commit()
     return redirect(f'/admin/dashboard?tab=launch&cat_tab={category}')
 
