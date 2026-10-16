@@ -2698,27 +2698,97 @@ RESULT_SUMMARY_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>चाचणी निकाल सारांश</title>
+    <title>चाचणी निकाल व गुणवत्ता विश्लेषण</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b1329; color: #f1f5f9; margin: 0; padding: 20px; }
-        .card { max-width: 500px; margin: 30px auto; background: #162036; padding: 30px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; border-top: 5px solid #10b981; }
-        .score-box { background: #0f172a; border: 2px dashed #3b82f6; border-radius: 10px; padding: 15px; margin: 20px 0; }
-        .score { font-size: 34px; font-weight: bold; color: #34d399; }
-        .btn { display: inline-block; background: #10b981; color: #022c22; padding: 10px 22px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 15px; }
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { font-family: 'Poppins', sans-serif; background: #0b1329; color: #f1f5f9; margin: 0; padding: 15px; }
+        .card { max-width: 550px; margin: 20px auto; background: #162036; padding: 25px 20px; border-radius: 16px; box-shadow: 0 12px 35px rgba(0,0,0,0.5); text-align: center; border-top: 5px solid #10b981; border-bottom: 5px solid #10b981; }
+        .score-box { background: #0f172a; border: 2px dashed #3b82f6; border-radius: 12px; padding: 15px; margin: 18px 0; }
+        .score { font-size: 38px; font-weight: 800; color: #34d399; }
+        .rank-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 15px 0; }
+        .rank-item { background: #0f172a; padding: 10px 5px; border-radius: 8px; border: 1px solid #334155; }
+        .rank-item small { color: #94a3b8; font-size: 11px; display: block; }
+        .rank-item span { color: #fde047; font-weight: 800; font-size: 16px; }
+        .btn-wa { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: #25D366; color: white; padding: 13px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px; margin: 10px 0; box-shadow: 0 4px 15px rgba(37,211,102,0.3); }
+        .btn-ans { display: block; width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: #022c22; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 14.5px; margin-top: 8px; }
+        .sub-bar-container { background: #0f172a; border-radius: 10px; padding: 14px; margin: 18px 0; text-align: left; border: 1px solid #334155; }
+        .bar-bg { background: #1e293b; height: 7px; border-radius: 5px; overflow: hidden; margin-top: 4px; }
+        .bar-fill { height: 100%; background: #10b981; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2 style="color:#34d399; margin-top:0;">🎯 चाचणी यशस्वीरित्या सबमिट झाली!</h2>
+        {% if battle_result_text %}
+        <div style="background: rgba(245,158,11,0.15); border: 1.5px solid #f59e0b; color: #fde047; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13.5px; font-weight: bold;">
+            {{ battle_result_text }}
+        </div>
+        {% endif %}
+
+        <h2 style="color:#34d399; margin: 0; font-size: 22px;">🎯 चाचणी यशस्वीरित्या सबमिट झाली!</h2>
+        
         <div class="score-box">
-            <div style="color:#94a3b8; font-size:14px;">तुमचे एकूण गुण</div>
+            <div style="color:#94a3b8; font-size:13px; font-weight: 600;">तुमचे एकूण संपादन गुण</div>
             <div class="score">{{ lead.score }} / {{ lead.total_marks }}</div>
         </div>
-        <p><b>नाव:</b> {{ lead.student_name }} | <b>जिल्हा:</b> {{ lead.district }}</p>
-        <p><b>राज्य रँक:</b> #{{ state_rank }} | <b>संवर्ग रँक:</b> #{{ category_rank }}</p>
-        <a href="{{ result_url }}" class="btn">📋 सविस्तर उत्तरतालिका पहा</a>
-        <br><br>
-        <a href="/" style="color:#38bdf8; font-size:13px; text-decoration:none;">🏠 मुख्य पानावर जा</a>
+
+        <p style="font-size: 14.5px; margin: 6px 0; color: #cbd5e1;">
+            <b>विद्यार्थी:</b> {{ lead.student_name }} | <b>जिल्हा:</b> {{ lead.district }}
+        </p>
+
+        <!-- ३ स्तरीय रँक कार्ड -->
+        <div class="rank-grid">
+            <div class="rank-item">
+                <small>महाराष्ट्र राज्य</small>
+                <span>#{{ state_rank }}</span>
+            </div>
+            <div class="rank-item">
+                <small>{{ lead.district }} जिल्हा</small>
+                <span>#{{ district_rank }}</span>
+            </div>
+            <div class="rank-item">
+                <small>{{ lead.caste_category }} संवर्ग</small>
+                <span>#{{ category_rank }}</span>
+            </div>
+        </div>
+
+        <!-- मित्रांना WhatsApp चॅलेंज शेअर करा -->
+        <a href="https://api.whatsapp.com/send?text={{ ego_share_encoded }}" target="_blank" class="btn-wa">
+            📲 मित्रांना WhatsApp वर चॅलेंज शेअर करा
+        </a>
+
+        <!-- विषयनिहाय विश्लेषण -->
+        {% if subject_breakdown %}
+        <div class="sub-bar-container">
+            <div style="font-size: 12.5px; font-weight: bold; color: #38bdf8; margin-bottom: 8px;">📊 घटकनिहाय अचूकता (Subject Analysis):</div>
+            {% for sub in subject_breakdown %}
+            <div style="margin-bottom: 8px;">
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:#cbd5e1;">
+                    <span>{{ sub.name }}</span>
+                    <span><b>{{ sub.obtained }}/{{ sub.total }}</b> ({{ sub.percentage }}%)</span>
+                </div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width: {{ sub.percentage }}%;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <a href="{{ result_url }}" class="btn-ans">📋 सविस्तर उत्तरतालिका व स्पष्टीकरण पहा</a>
+
+        <!-- अधिकृत ग्रुप लिंक -->
+        {% if wa_active_link %}
+        <div style="margin-top: 15px;">
+            <a href="{{ wa_active_link }}" target="_blank" style="color: #25D366; text-decoration: none; font-size: 12.5px; font-weight: bold;">
+                👥 अधिकृत पोलीस भरती WhatsApp ग्रुप जॉईन करा ➔
+            </a>
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 18px;">
+            <a href="/" style="color:#94a3b8; font-size:13px; text-decoration:none;">🏠 मुख्य पानावर जा</a>
+        </div>
     </div>
 </body>
 </html>
