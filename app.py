@@ -2640,7 +2640,7 @@ def home_tests_list():
                 'help': '📞 हेल्प डेस्क'
             }
 
-            home_tab_order = settings.get('home_tab_order', 'live,paid,free,rapid,guide,about,battle,docs,help')
+            home_tab_order = settings.get('home_tab_order', 'live,paid,free,rapid,subjects,guide,about,battle,docs,help')
             raw_keys = [t.strip() for t in home_tab_order.split(',') if t.strip()]
 
             parsed_home_tabs = []
