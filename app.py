@@ -801,6 +801,53 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             तुम्ही सशुल्क टेस्ट घेऊन स्वतःची तयारी तर सिद्ध करालच, शिवाय एका समाजकार्यातही हातभार लावाल! जय हिंद!"
         </div>
     </div>
+    <!-- नवीन टेस्ट गाईड व सविस्तर माहिती टॅब -->
+<div id="guideContainer" class="section-box" style="display:none; text-align:left;">
+    <h3 style="color:#38bdf8; margin-top:0;">🎯 टेस्ट सिरीज मार्गदर्शक व सोडवण्याची पद्धत</h3>
+    <p style="font-size:14px; color:#cbd5e1; line-height:1.7; margin-bottom:15px;">
+        कोणती टेस्ट कशासाठी सोडवायची, तिचे स्वरूप काय आहे आणि परीक्षेसाठी ती किती महत्त्वाची आहे याची सविस्तर माहिती खालीलप्रमाणे:
+    </p>
+
+    <!-- १. महासंग्राम -->
+    <div style="background:#0f172a; border-left:4px solid #ef4444; padding:12px 15px; border-radius:6px; margin-bottom:12px;">
+        <h4 style="color:#f87171; margin:0 0 6px 0; font-size:16px;">🏆 मिशन खाकी महासंग्राम (१०० गुण)</h4>
+        <p style="font-size:13.5px; color:#e2e8f0; margin:0; line-height:1.6;">
+            <b>का सोडवावी?</b> ही १०० गुणांची संपूर्ण पोलीस भरती पॅटर्नवर आधारित राज्यस्तरीय मेगा टेस्ट आहे. प्रत्यक्ष परीक्षा हॉलमधील वातावरणाचा अनुभव घेण्यासाठी ही टेस्ट अत्यंत महत्त्वाची आहे.<br>
+            <b>कशी सोडवावी?</b> दर रविवारी ठरवून दिलेल्या वेळेत शांतपणे एका बैठकीत पूर्ण सोडवावी.<br>
+            <span style="color:#fca5a5;">⭐ <b>फायदा:</b> राज्य आणि जिल्हा गुणवत्ता यादीत तुमची खरी रँक समजते.</span>
+        </p>
+    </div>
+
+    <!-- २. रॅपिड फायर -->
+    <div style="background:#0f172a; border-left:4px solid #f97316; padding:12px 15px; border-radius:6px; margin-bottom:12px;">
+        <h4 style="color:#fb923c; margin:0 0 6px 0; font-size:16px;">⚡ २० गुण रॅपिड फायर टेस्ट</h4>
+        <p style="font-size:13.5px; color:#e2e8f0; margin:0; line-height:1.6;">
+            <b>का सोडवावी?</b> वेळेचे अचूक व्यवस्थापन आणि कमी वेळेत जलद गतीने बिनचूक उत्तर देण्याची क्षमता वाढवण्यासाठी.<br>
+            <b>कशी सोडवावी?</b> रोज सकाळी १० वाजता ही टेस्ट अनलॉक होते. घाई न करता वेगात अचूक पर्याय निवडावा.<br>
+            <span style="color:#fdba74;">⭐ <b>फायदा:</b> प्रत्यक्ष परीक्षेत वेळेअभावी होणारी गडबड पूर्णपणे टळते.</span>
+        </p>
+    </div>
+
+    <!-- ३. १ vs १ लाईव्ह मुकाबला -->
+    <div style="background:#0f172a; border-left:4px solid #a855f7; padding:12px 15px; border-radius:6px; margin-bottom:12px;">
+        <h4 style="color:#c084fc; margin:0 0 6px 0; font-size:16px;">⚔️ १ vs १ लाईव्ह मुकाबला व जिल्हा रँक</h4>
+        <p style="font-size:13.5px; color:#e2e8f0; margin:0; line-height:1.6;">
+            <b>काय सांगते?</b> महाराष्ट्रातील इतर पोलीस भरती उमेदवारांसोबत समोरासमोर थेट स्पर्धा. कोण वेगाने आणि अचूक उत्तर देतो याची थेट लढत.<br>
+            <b>कशी खेळावी?</b> 'मुकाबला' सुरू करताच प्रतिस्पर्धी जोडला जातो आणि दोघांना एकाच वेळी समान प्रश्न दिसतात.<br>
+            <span style="color:#d8b4fe;">⭐ <b>फायदा:</b> मनातील भीती व दडपण नाहीसे होऊन आत्मविश्वास वाढतो.</span>
+        </p>
+    </div>
+
+    <!-- ४. अतिसंभाव्य १०० गुण संच -->
+    <div style="background:#0f172a; border-left:4px solid #22c55e; padding:12px 15px; border-radius:6px; margin-bottom:10px;">
+        <h4 style="color:#4ade80; margin:0 0 6px 0; font-size:16px;">🎯 अतिसंभाव्य १०० गुण संच (₹९९)</h4>
+        <p style="font-size:13.5px; color:#e2e8f0; margin:0; line-height:1.6;">
+            <b>का सोडवावी?</b> पोलीस भरतीला वारंवार विचारले जाणारे अतिसंभाव्य आणि निवडक दर्जाचे प्रश्न सराव करण्यासाठी.<br>
+            <b>कशी सोडवावी?</b> सर्व विषयांचा अभ्यास रिव्हाईज करून सराव पेपर म्हणून शांततेत सोडवावी.<br>
+            <span style="color:#86efac;">⭐ <b>फायदा:</b> आगामी परीक्षेत थेट येणाऱ्या प्रश्नांचा अंदाज येतो आणि गुणांत मोठी वाढ होते.</span>
+        </p>
+    </div>
+</div>
 
     <div id="battleContainer" class="section-box">
         <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा मुकाबला (लाईव्ह लीड्स व सरासरी गुण)</h3>
