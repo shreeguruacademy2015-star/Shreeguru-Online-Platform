@@ -604,27 +604,24 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         }
 
         function filterTab(category, btn) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            if(btn) btn.classList.add('active');
-
-            var paidCard = document.getElementById('paidHeroCard');
-            if (paidCard) paidCard.style.display = (category === 'paid' || category === 'live') ? 'block' : 'none';
-
             document.getElementById('testsContainer').style.display = 'none';
-            document.getElementById('battleContainer').style.display = 'none';
-            document.getElementById('docsContainer').style.display = 'none';
-            document.getElementById('helpContainer').style.display = 'none';
-            document.getElementById('aboutContainer').style.display = 'none';
+document.getElementById('battleContainer').style.display = 'none';
+document.getElementById('docsContainer').style.display = 'none';
+document.getElementById('helpContainer').style.display = 'none';
+document.getElementById('aboutContainer').style.display = 'none';
+if (document.getElementById('guideContainer')) document.getElementById('guideContainer').style.display = 'none';
 
-            if (category === 'battle') {
-                document.getElementById('battleContainer').style.display = 'block';
-            } else if (category === 'docs') {
-                document.getElementById('docsContainer').style.display = 'block';
-            } else if (category === 'help') {
-                document.getElementById('helpContainer').style.display = 'block';
-            } else if (category === 'about') {
-                document.getElementById('aboutContainer').style.display = 'block';
-            } else {
+if (category === 'battle') {
+    document.getElementById('battleContainer').style.display = 'block';
+} else if (category === 'docs') {
+    document.getElementById('docsContainer').style.display = 'block';
+} else if (category === 'help') {
+    document.getElementById('helpContainer').style.display = 'block';
+} else if (category === 'about') {
+    document.getElementById('aboutContainer').style.display = 'block';
+} else if (category === 'guide') {
+    document.getElementById('guideContainer').style.display = 'block';
+} else {
                 document.getElementById('testsContainer').style.display = 'grid';
                 let visibleCount = 0;
                 document.querySelectorAll('.test-card').forEach(card => {
