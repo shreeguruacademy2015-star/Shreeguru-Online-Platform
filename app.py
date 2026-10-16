@@ -2537,6 +2537,7 @@ def register_heartbeat():
     return jsonify({"status": "ok"})
 
 # १. मुख्य होमपेज मार्ग ('all' टॅब वगळून, अचूक कॅटेगरीनुसार)
+# १. मुख्य होमपेज मार्ग ('all' टॅब वगळून, अचूक कॅटेगरीनुसार)
 @app.route('/')
 def home_tests_list():
     ref_phone = request.args.get('ref', '').strip()
@@ -2561,120 +2562,102 @@ def home_tests_list():
                 pass
 
             cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY sequence_order ASC, id ASC")
-            raw_tests = cur.fetchall()
+            raw_tests_db = cur.fetchall()
+
             # --- RAPID FIRE SEQUENTIAL DAILY 10 AM UNLOCK LOGIC ---
-    from datetime import datetime, time, timedelta
-    import pytz
+            import pytz
+            IST = pytz.timezone('Asia/Kolkata')
+            now_ist = datetime.now(IST)
+            today_date = now_ist.date()
 
-    IST = pytz.timezone('Asia/Kolkata')
-    now_ist = datetime.now(IST)
-    today_date = now_ist.date()
-
-    # 1. Vidyarthiyachi join/registration date ghene (session kiva default today)
-    # Jar user login asel tar tyachi date, nahitar aajchi date
-    user_created_date = session.get('user_created_at')
-    if user_created_date:
-        if isinstance(user_created_date, str):
-            user_start_date = datetime.strptime(user_created_date[:10], '%Y-%m-%d').date()
-        else:
-            user_start_date = user_created_date.date()
-    else:
-        # Pahilyandach yenarya vidyarthyasathi session madhye join date save karne
-        user_start_date = today_date
-        session['user_created_at'] = str(today_date)
-
-    # 2. Sakali 10:00 AM zale ahet ka te tapasne
-    unlock_time = time(10, 0, 0)
-    if now_ist.time() < unlock_time:
-        effective_date = today_date - timedelta(days=1)
-        is_today_unlocked = False
-    else:
-        effective_date = today_date
-        is_today_unlocked = True
-
-    # 3. Vidyarthyasathi aajcha sequence number (Day 1 = Seq 1, Day 2 = Seq 2)
-    days_diff = (effective_date - user_start_date).days
-    target_seq = 1 if days_diff < 0 else days_diff + 1
-
-    # 4. raw_tests madhun rapid fire filter karne
-    filtered_tests = []
-    for t in raw_tests:
-        # Category rapid asel tar fakt aajchya sequence chi test thevne
-        cat = str(t.get('category', '')).lower()
-        if 'rapid' in cat or 'रॅपिड' in str(t.get('title', '')):
-            test_seq = t.get('seq') or t.get('test_seq') or 1
-            if int(test_seq) == target_seq:
-                # Jar 10 AM nantar asel tar chalu, nahitar locked mark karne
-                t['is_locked_10am'] = not is_today_unlocked
-                filtered_tests.append(t)
-        else:
-            # Baki itar sarya tests (Mahasangram, Free, etc.) tasych thevne
-            filtered_tests.append(t)
-
-    raw_tests = filtered_tests
-    # ------------------------------------------------------
-
-    cur.execute("""
-        SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
-        FROM mock_test_leads
-        WHERE district IS NOT NULL AND district != '' AND is_deleted=0
-        GROUP BY district
-        ORDER BY avg_score DESC, total_students DESC
-        LIMIT 15
-    """)
-    live_district_battles = cur.fetchall()
-
-    cur.execute("SELECT setting_key, setting_value FROM academy_settings")
-    settings = {r['setting_key']: r['setting_value'] for r in cur.fetchall()}
-
-    cur.execute("SELECT tab_key, tab_label FROM custom_tabs")
-    custom_tabs_rows = {r['tab_key']: r['tab_label'] for r in cur.fetchall()}
-        
-    default_tab_names = {
-        'live': '🔴 मिशन खाकी महासंग्राम',
-        'paid': '🎯 अतिसंभाव्य १०० गुण संच (₹९९)',
-        'free': '🟢 मोफत टेस्ट्स',
-        'rapid': '⚡ २० गुण रॅपिड फायर',
-        'guide': 'ℹ️ टेस्ट गाईड व सर्व माहिती',
-        'about': '📖 पोर्टल माहिती व साद',
-        'battle': '⚔️ जिल्हा मुकाबला व रँक',
-        'docs': '📄 भरती PDF व PYQ',
-        'help': '📞 हेल्प डेस्क'
-    }
-
-    home_tab_order = settings.get('home_tab_order', 'live,paid,free,rapid,guide,about,battle,docs,help')
-    raw_keys = [t.strip() for t in home_tab_order.split(',') if t.strip()]
-
-    parsed_home_tabs = []
-    for k in raw_keys:
-        lbl = custom_tabs_rows.get(k) or default_tab_names.get(k) or k.capitalize()
-        parsed_home_tabs.append({'key': k, 'label': lbl})
-
-    tests = []
-    for t in raw_tests:
-        t_dict = dict(t)
-        if t_dict.get('category') == 'rapid':
-            seq = t_dict.get('sequence_order') or 1
-            if seq == 1:
-                t_dict['is_locked'] = False
+            user_created_date = session.get('user_created_at')
+            if user_created_date:
+                if isinstance(user_created_date, str):
+                    try:
+                        user_start_date = datetime.strptime(user_created_date[:10], '%Y-%m-%d').date()
+                    except Exception:
+                        user_start_date = today_date
+                else:
+                    user_start_date = user_created_date.date()
             else:
-                t_dict['is_locked'] = bool(t_dict.get('publish_at') and t_dict['publish_at'] > now_time)
-        else:
-            t_dict['is_locked'] = False
-        tests.append(t_dict)
-            
-    return render_template_string(
-        HOME_TEMPLATE,
-        tests=tests,
-        recruitment_pdf=settings.get('recruitment_pdf', ''),
-        eligibility_pdf=settings.get('eligibility_pdf', ''),
-        parsed_home_tabs=parsed_home_tabs,
-        live_district_battles=live_district_battles,
-        help_phone=settings.get('help_phone', '9921111960'),
-        help_address=settings.get('help_address', 'महाराष्ट्र पोलीस भरती सराव केंद्र, कोल्हापूर'),
-        active_students_count=active_students_count
-    )
+                user_start_date = today_date
+                session['user_created_at'] = str(today_date)
 
+            unlock_time = datetime.strptime("10:00:00", "%H:%M:%S").time()
+            if now_ist.time() < unlock_time:
+                effective_date = today_date - timedelta(days=1)
+                is_today_unlocked = False
+            else:
+                effective_date = today_date
+                is_today_unlocked = True
+
+            days_diff = (effective_date - user_start_date).days
+            target_seq = 1 if days_diff < 0 else days_diff + 1
+
+            # टेस्ट्स फिल्टर आणि लॉक स्थिती निश्चित करणे
+            tests = []
+            for t in raw_tests_db:
+                t_dict = dict(t)
+                cat = str(t_dict.get('category', '')).lower()
+                is_rapid = ('rapid' in cat) or ('रॅपिड' in str(t_dict.get('test_title', '')))
+
+                if is_rapid:
+                    test_seq = int(t_dict.get('sequence_order') or 1)
+                    if test_seq == target_seq:
+                        t_dict['is_locked'] = not is_today_unlocked
+                        t_dict['is_locked_10am'] = not is_today_unlocked
+                        tests.append(t_dict)
+                else:
+                    t_dict['is_locked'] = False
+                    tests.append(t_dict)
+
+            cur.execute("""
+                SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
+                FROM mock_test_leads
+                WHERE district IS NOT NULL AND district != '' AND is_deleted=0
+                GROUP BY district
+                ORDER BY avg_score DESC, total_students DESC
+                LIMIT 15
+            """)
+            live_district_battles = cur.fetchall()
+
+            cur.execute("SELECT setting_key, setting_value FROM academy_settings")
+            settings = {r['setting_key']: r['setting_value'] for r in cur.fetchall()}
+
+            cur.execute("SELECT tab_key, tab_label FROM custom_tabs")
+            custom_tabs_rows = {r['tab_key']: r['tab_label'] for r in cur.fetchall()}
+                
+            default_tab_names = {
+                'live': '🔴 मिशन खाकी महासंग्राम',
+                'paid': '🎯 अतिसंभाव्य १०० गुण संच (₹९९)',
+                'free': '🟢 मोफत टेस्ट्स',
+                'rapid': '⚡ २० गुण रॅपिड फायर',
+                'guide': 'ℹ️ टेस्ट गाईड व सर्व माहिती',
+                'about': '📖 पोर्टल माहिती व साद',
+                'battle': '⚔️ जिल्हा मुकाबला व रँक',
+                'docs': '📄 भरती PDF व PYQ',
+                'help': '📞 हेल्प डेस्क'
+            }
+
+            home_tab_order = settings.get('home_tab_order', 'live,paid,free,rapid,guide,about,battle,docs,help')
+            raw_keys = [t.strip() for t in home_tab_order.split(',') if t.strip()]
+
+            parsed_home_tabs = []
+            for k in raw_keys:
+                lbl = custom_tabs_rows.get(k) or default_tab_names.get(k) or k.capitalize()
+                parsed_home_tabs.append({'key': k, 'label': lbl})
+                    
+            return render_template_string(
+                HOME_TEMPLATE,
+                tests=tests,
+                recruitment_pdf=settings.get('recruitment_pdf', ''),
+                eligibility_pdf=settings.get('eligibility_pdf', ''),
+                parsed_home_tabs=parsed_home_tabs,
+                live_district_battles=live_district_battles,
+                help_phone=settings.get('help_phone', '9921111960'),
+                help_address=settings.get('help_address', 'महाराष्ट्र पोलीस भरती सराव केंद्र, कोल्हापूर'),
+                active_students_count=active_students_count
+            )
 @app.route('/terms-and-conditions')
 def terms_and_conditions():
     return render_template_string(TERMS_TEMPLATE)
