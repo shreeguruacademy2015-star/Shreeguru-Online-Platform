@@ -2570,22 +2570,22 @@ def home_tests_list():
     raw_tests = filtered_tests
     # ------------------------------------------------------
 
-            cur.execute("""
-                SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
-                FROM mock_test_leads
-                WHERE district IS NOT NULL AND district != '' AND is_deleted=0
-                GROUP BY district
-                ORDER BY avg_score DESC, total_students DESC
-                LIMIT 15
-            """)
-            live_district_battles = cur.fetchall()
+    cur.execute("""
+        SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
+        FROM mock_test_leads
+        WHERE district IS NOT NULL AND district != '' AND is_deleted=0
+        GROUP BY district
+        ORDER BY avg_score DESC, total_students DESC
+        LIMIT 15
+    """)
+    live_district_battles = cur.fetchall()
 
-            cur.execute("SELECT setting_key, setting_value FROM academy_settings")
-            settings = {r['setting_key']: r['setting_value'] for r in cur.fetchall()}
+    cur.execute("SELECT setting_key, setting_value FROM academy_settings")
+    settings = {r['setting_key']: r['setting_value'] for r in cur.fetchall()}
 
-            cur.execute("SELECT tab_key, tab_label FROM custom_tabs")
-            custom_tabs_rows = {r['tab_key']: r['tab_label'] for r in cur.fetchall()}
-
+    cur.execute("SELECT tab_key, tab_label FROM custom_tabs")
+    custom_tabs_rows = {r['tab_key']: r['tab_label'] for r in cur.fetchall()}
+        
     default_tab_names = {
         'live': '🔴 मिशन खाकी महासंग्राम',
         'paid': '🎯 अतिसंभाव्य १०० गुण संच (₹९९)',
