@@ -2500,6 +2500,57 @@ def home_tests_list():
 
             cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY sequence_order ASC, id ASC")
             raw_tests = cur.fetchall()
+            # --- RAPID FIRE SEQUENTIAL DAILY 10 AM UNLOCK LOGIC ---
+    from datetime import datetime, time, timedelta
+    import pytz
+
+    IST = pytz.timezone('Asia/Kolkata')
+    now_ist = datetime.now(IST)
+    today_date = now_ist.date()
+
+    # 1. Vidyarthiyachi join/registration date ghene (session kiva default today)
+    # Jar user login asel tar tyachi date, nahitar aajchi date
+    user_created_date = session.get('user_created_at')
+    if user_created_date:
+        if isinstance(user_created_date, str):
+            user_start_date = datetime.strptime(user_created_date[:10], '%Y-%m-%d').date()
+        else:
+            user_start_date = user_created_date.date()
+    else:
+        # Pahilyandach yenarya vidyarthyasathi session madhye join date save karne
+        user_start_date = today_date
+        session['user_created_at'] = str(today_date)
+
+    # 2. Sakali 10:00 AM zale ahet ka te tapasne
+    unlock_time = time(10, 0, 0)
+    if now_ist.time() < unlock_time:
+        effective_date = today_date - timedelta(days=1)
+        is_today_unlocked = False
+    else:
+        effective_date = today_date
+        is_today_unlocked = True
+
+    # 3. Vidyarthyasathi aajcha sequence number (Day 1 = Seq 1, Day 2 = Seq 2)
+    days_diff = (effective_date - user_start_date).days
+    target_seq = 1 if days_diff < 0 else days_diff + 1
+
+    # 4. raw_tests madhun rapid fire filter karne
+    filtered_tests = []
+    for t in raw_tests:
+        # Category rapid asel tar fakt aajchya sequence chi test thevne
+        cat = str(t.get('category', '')).lower()
+        if 'rapid' in cat or 'रॅपिड' in str(t.get('title', '')):
+            test_seq = t.get('seq') or t.get('test_seq') or 1
+            if int(test_seq) == target_seq:
+                # Jar 10 AM nantar asel tar chalu, nahitar locked mark karne
+                t['is_locked_10am'] = not is_today_unlocked
+                filtered_tests.append(t)
+        else:
+            # Baki itar sarya tests (Mahasangram, Free, etc.) tasych thevne
+            filtered_tests.append(t)
+
+    raw_tests = filtered_tests
+    # ------------------------------------------------------
 
             cur.execute("""
                 SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
