@@ -2664,6 +2664,9 @@ def home_tests_list():
                 days_diff = (effective_date - user_start_date).days
                 target_seq = 1 if days_diff < 0 else days_diff + 1
 
+            except Exception as e:
+                conn.rollback()
+
             # टेस्ट्स फिल्टर आणि लॉक स्थिती निश्चित करणे
             tests = []
             for t in raw_tests_db:
@@ -2678,6 +2681,7 @@ def home_tests_list():
                         t_dict['is_locked_10am'] = not is_today_unlocked
                         tests.append(t_dict)
                 else:
+                    tests.append(t_dict)
                     t_dict['is_locked'] = False
                     tests.append(t_dict)
 
