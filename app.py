@@ -2586,8 +2586,6 @@ def home_tests_list():
     active_students_count = 58
 
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            with get_db() as conn:
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         try:
             # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स अचूक ट्रॅकिंग ---
