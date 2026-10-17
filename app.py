@@ -2588,6 +2588,23 @@ def home_tests_list():
     with get_db() as conn:
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         try:
+            # १. मुख्य होमपेज मार्ग ('all' टॅब वगळून, १३ विषयांच्या फिल्टरसह)
+@app.route('/')
+def home_tests_list():
+    ref_phone = request.args.get('ref', '').strip()
+    ref_sig = request.args.get('sig', '').strip()
+    if ref_phone:
+        if ref_sig and verify_tamper_signature(ref_phone, ref_sig):
+            session['referred_by'] = ref_phone
+        elif not ref_sig and re.match(r'^[6-9]\d{9}$', ref_phone):
+            session['referred_by'] = ref_phone
+
+    now_time = datetime.now()
+    active_students_count = 58
+
+    with get_db() as conn:
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        try:
             # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स अचूक ट्रॅकिंग ---
             import time as py_time
             import uuid
