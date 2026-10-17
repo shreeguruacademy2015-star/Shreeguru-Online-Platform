@@ -1935,11 +1935,11 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             </td>
         </tr>
         {% endfor %}
-    </table>
-'''
+</table>
+
 <!-- 4. SPECIAL ACCESS TAB -->
-    {% elif active_tab == 'special' %}
-    <h3>👑 Special Access व्यवस्थापन</h3>
+{% elif active_tab == 'special' %}
+<h3>👑 Special Access व्यवस्थापन</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
         <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:8px;">
             <h4 style="color:#065f46; margin-top:0;">🔄 अमर्याद प्रयत्न सवलत (Unlimited Attempts)</h4>
