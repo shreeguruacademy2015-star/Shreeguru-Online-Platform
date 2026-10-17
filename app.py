@@ -2642,82 +2642,43 @@ def home_tests_list():
                 """, (u_sid, now_ts, now_ts, now_ts - 300))
                 conn.commit()
                 # ----------------------------------------------------
-            # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स अचूक ट्रॅकिंग ---
-            import time as py_time
-            import uuid
-            now_ts = int(py_time.time())
-
-            # टेबल तयार करणे
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS site_stats (
-                    id INT PRIMARY KEY,
-                    total_visits INT DEFAULT 0
-                );
-                CREATE TABLE IF NOT EXISTS active_sessions (
-                    session_id VARCHAR(100) PRIMARY KEY,
-                    last_seen BIGINT
-                );
-            """)
-
-            # १. एकूण व्हिजिट +१ करणे
-            if 'visited_site' not in session:
-                session['visited_site'] = True
-                cur.execute("""
-                    INSERT INTO site_stats (id, total_visits) VALUES (1, 1)
-                    ON CONFLICT (id) DO UPDATE SET total_visits = site_stats.total_visits + 1;
-                """)
-
-            # २. ऑनलाईन विद्यार्थी ट्रॅक करणे
-            if 'user_sid' not in session:
-                session['user_sid'] = str(uuid.uuid4())
-            
-            u_sid = session['user_sid']
-            cur.execute("""
-                INSERT INTO active_sessions (session_id, last_seen) VALUES (%s, %s)
-                ON CONFLICT (session_id) DO UPDATE SET last_seen = %s;
-                DELETE FROM active_sessions WHERE last_seen < %s;
-            """, (u_sid, now_ts, now_ts, now_ts - 300))
-            conn.commit()
-            # ----------------------------------------------------
-                cur.execute("SELECT COUNT(*) as cnt FROM live_heartbeats WHERE last_seen >= NOW() - INTERVAL '5 minutes'")
+                cur.execute("SELECT COUNT(*) as cnt FROM live_heartbeats")
                 row = cur.fetchone()
                 if row and row['cnt'] > 0:
                     active_students_count = row['cnt'] + 25
-            except Exception:
-                pass
 
-            cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY sequence_order ASC, id ASC")
-            raw_tests_db = cur.fetchall()
+                cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY sequence_order ASC, id ASC")
+                raw_tests_db = cur.fetchall()
 
-            # --- RAPID FIRE SEQUENTIAL DAILY 10 AM UNLOCK LOGIC ---
-            from datetime import timezone
-            ist_tz = timezone(timedelta(hours=5, minutes=30))
-            now_ist = datetime.now(ist_tz)
-            today_date = now_ist.date()
+                # --- RAPID FIRE SEQUENTIAL DAILY 10 AM UNLOCK LOGIC ---
+                from datetime import timezone
+                ist_tz = timezone(timedelta(hours=5, minutes=30))
+                now_ist = datetime.now(ist_tz)
+                today_date = now_ist.date()
 
-            user_created_date = session.get('user_created_at')
-            if user_created_date:
-                if isinstance(user_created_date, str):
-                    try:
-                        user_start_date = datetime.strptime(user_created_date[:10], '%Y-%m-%d').date()
-                    except Exception:
-                        user_start_date = today_date
+                user_created_date = session.get('user_created_at')
+                if user_created_date:
+                    if isinstance(user_created_date, str):
+                        try:
+                            user_start_date = datetime.strptime(user_created_date[:10], '%Y-%m-%d').date()
+                        except Exception:
+                            user_start_date = today_date
+                    else:
+                        user_start_date = user_created_date.date()
                 else:
-                    user_start_date = user_created_date.date()
-            else:
-                user_start_date = today_date
-                session['user_created_at'] = str(today_date)
+                    user_start_date = today_date
+                    session['user_created_at'] = str(today_date)
 
-            unlock_time = time(10, 0, 0)
-            if now_ist.time() < unlock_time:
-                effective_date = today_date - timedelta(days=1)
-                is_today_unlocked = False
-            else:
-                effective_date = today_date
-                is_today_unlocked = True
+                unlock_time = time(10, 0, 0)
+                if now_ist.time() < unlock_time:
+                    effective_date = today_date - timedelta(days=1)
+                    is_today_unlocked = False
+                else:
+                    effective_date = today_date
+                    is_today_unlocked = True
 
-            days_diff = (effective_date - user_start_date).days
-            target_seq = 1 if days_diff < 0 else days_diff + 1
+                days_diff = (effective_date - user_start_date).days
+                target_seq = 1 if days_diff < 0 else days_diff + 1
 
             # टेस्ट्स फिल्टर आणि लॉक स्थिती निश्चित करणे
             tests = []
