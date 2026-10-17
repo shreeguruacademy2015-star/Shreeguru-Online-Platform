@@ -3893,7 +3893,7 @@ def save_all_questions():
 # MODULE: 100% REAL GEMINI AI ENGINE, CSV, OCR, TRASH, PRINT TEST & RUNNER
 # =============================================================================
 
-# 6. Digital Smart AI Question Generator (१००% अस्सल प्रश्न - डमी लूप पूर्णपणे बंद)
+# 6. Digital Smart AI Question Generator (AQ. आणि AIzaSy दोन्ही की सपोर्टसह)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
@@ -3911,6 +3911,13 @@ def admin_ai_generate_advanced():
     generated_list = []
     models_to_try = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
 
+    # AQ. आणि AIzaSy दोन्ही फॉरमॅटसाठी युनिव्हर्सल हेडर लॉजिक
+    headers = {"Content-Type": "application/json"}
+    if api_key.startswith("AQ."):
+        headers["Authorization"] = f"Bearer {api_key}"
+    else:
+        headers["x-goog-api-key"] = api_key
+
     for subj, num in subject_counts.items():
         count = int(num)
         if count <= 0: 
@@ -3925,11 +3932,14 @@ def admin_ai_generate_advanced():
         )
 
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
-        headers = {"Content-Type": "application/json", "x-goog-api-key": api_key}
         success = False
 
         for model_name in models_to_try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            # URL वरून key पॅरामीटर काढून शुद्ध एंडपॉइंट ठेवला
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+            if not api_key.startswith("AQ."):
+                url += f"?key={api_key}"
+
             try:
                 res = requests.post(url, json=payload, headers=headers, timeout=35)
                 if res.status_code == 200:
@@ -3945,12 +3955,14 @@ def admin_ai_generate_advanced():
                     if len(generated_list) > 0:
                         success = True
                         break
+                else:
+                    print(f"Model {model_name} status: {res.status_code}, response: {res.text}")
             except Exception as err:
                 print(f"Model {model_name} Error: {err}")
                 continue
 
         if not success:
-            return jsonify({"success": False, "error": f"'{subj}' विषयासाठी AI प्रश्न तयार करण्यात अडचण आली. कृपया API Key तपासा."}), 500
+            return jsonify({"success": False, "error": f"'{subj}' विषयासाठी AI प्रश्न तयार करण्यात अडचण आली. गुगलने विनंती नाकारली."}), 500
 
     if generated_list:
         with get_db() as conn:
