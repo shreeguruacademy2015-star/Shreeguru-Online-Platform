@@ -3893,7 +3893,7 @@ def save_all_questions():
 # MODULE: 100% REAL GEMINI AI ENGINE, CSV, OCR, TRASH, PRINT TEST & RUNNER
 # =============================================================================
 
-# 6. Digital Smart AI Question Generator (Active Groq Production Models)
+# 6. Digital Smart AI Question Generator (Dynamic Active Groq Models)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
@@ -3908,9 +3908,30 @@ def admin_ai_generate_advanced():
     if not api_key:
         return jsonify({"success": False, "error": "Render Environment मध्ये API Key सेट केलेली नाही!"}), 400
 
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    # 1. Groq कडून थेट सक्रिय मॉडेल्सची यादी मिळवणे
+    active_models = []
+    try:
+        models_res = requests.get("https://api.groq.com/openai/v1/models", headers=headers, timeout=10)
+        if models_res.status_code == 200:
+            m_data = models_res.json().get("data", [])
+            # whisper (ऑडिओ) वगळून केवळ टेक्स्ट/चॅट मॉडेल्स घेणे
+            for m in m_data:
+                mid = m.get("id", "")
+                if "whisper" not in mid.lower():
+                    active_models.append(mid)
+    except Exception as e:
+        print(f"Error fetching models: {e}")
+
+    # बॅकअप म्हणून सर्वात स्थिर प्रॉडक्शन मॉडेल्स
+    if not active_models:
+        active_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192"]
+
     generated_list = []
-    # Groq चे सध्या सक्रिय असलेले अधिकृत मॉडेल्स
-    groq_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
 
     for subj, num in subject_counts.items():
         count = int(num)
@@ -3925,15 +3946,11 @@ def admin_ai_generate_advanced():
             f"सूचना: कोणताही अतिरिक्त मजकूर नको, फक्त {count} ओळी द्या."
         )
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-
         success = False
         last_error = ""
 
-        for model_name in groq_models:
+        # उपलब्ध असलेल्या सक्रिय मॉडेलद्वारे प्रश्न तयार करणे
+        for model_name in active_models:
             payload = {
                 "model": model_name,
                 "messages": [{"role": "user", "content": prompt}],
@@ -3956,7 +3973,7 @@ def admin_ai_generate_advanced():
                         success = True
                         break
                 else:
-                    last_error = f"{res.status_code}: {res.text[:120]}"
+                    last_error = f"{model_name}: {res.text[:100]}"
             except Exception as err:
                 last_error = str(err)
                 continue
