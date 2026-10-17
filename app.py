@@ -1743,7 +1743,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             btn.innerText = '⏳ प्रश्न तयार होत आहेत... कृपया थांबा!';
             btn.disabled = true;
 
-            fetch('/admin/ai_generate_advanced', {
+            fetch('/admin/ai_generate_advanced', { 
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
@@ -2062,6 +2062,19 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 {% endfor %}
             </div>
         </div>
+        <!-- काठिण्य पातळी निवड (Difficulty Level) -->
+<div class="mb-3" style="margin-top: 15px; margin-bottom: 15px;">
+    <label class="form-label font-weight-bold" style="color: #1e293b; font-size: 14px; display: block; margin-bottom: 6px;">
+        🎯 प्रश्नांची काठिण्य पातळी (Difficulty Level):
+    </label>
+    <select id="ai-difficulty" class="form-control" style="border: 2px solid #cbd5e1; border-radius: 8px; font-weight: 500; height: 42px; width: 100%; padding: 6px 12px;">
+        <option value="balanced" selected>🎯 प्रमाण समतोल (३०% सोपे + ५०% मध्यम + २०% कठीण - भरती पॅटर्न)</option>
+        <option value="easy">🟢 सोपी पातळी (Easy - थेट वस्तुनिष्ठ व मूलभूत प्रश्न)</option>
+        <option value="medium">🟡 मध्यम पातळी (Medium - पोलीस भरती नियमित गुणवत्ता स्तर)</option>
+        <option value="hard">🔴 कठीण पातळी (Hard - विधानात्मक, MPSC दर्जा व फसवे पर्याय)</option>
+    </select>
+    <small style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;">टीप: सराव चाचणीसाठी 'प्रमाण समतोल' हा सर्वोत्तम पर्याय आहे.</small>
+</div>
         <button id="advancedAiBtn" type="button" class="btn" onclick="generateAIQuestionsFromAdvancedForm()" style="background:#10b981; color:#022c22; font-weight:800; width:100%;">
             🤖 डिजिटल स्मार्ट प्रश्न जनरेट करा व सेव्ह करा
         </button>
