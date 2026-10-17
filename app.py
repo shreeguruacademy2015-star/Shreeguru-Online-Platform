@@ -3493,7 +3493,7 @@ def admin_dashboard():
             # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स मोजणे ---
             import time as py_time
             now_ts = int(py_time.time())
-            live_now_count = 0
+            live_now_count = 0 
             total_visits_count = 0
 
             try:
