@@ -1746,8 +1746,12 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             fetch('/admin/ai_generate_advanced', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({department: dept, subject_counts: subjectCounts, test_id: testId})
-            })
+                body: JSON.stringify({
+    department: dept,
+    difficulty: (document.getElementById('ai-difficulty') ? document.getElementById('ai-difficulty').value : 'balanced'),
+    test_id: (typeof test_id !== 'undefined' ? test_id : (document.getElementById('ai_test_id') ? document.getElementById('ai_test_id').value : null)),
+    subject_counts: subj
+})
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
