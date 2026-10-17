@@ -2587,7 +2587,44 @@ def home_tests_list():
 
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            try:
+            try:  
+            # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स अचूक ट्रॅकिंग ---
+            import time as py_time
+            import uuid
+            now_ts = int(py_time.time())
+
+            # टेबल तयार करणे
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS site_stats (
+                    id INT PRIMARY KEY,
+                    total_visits INT DEFAULT 0
+                );
+                CREATE TABLE IF NOT EXISTS active_sessions (
+                    session_id VARCHAR(100) PRIMARY KEY,
+                    last_seen BIGINT
+                );
+            """)
+
+            # १. एकूण व्हिजिट +१ करणे
+            if 'visited_site' not in session:
+                session['visited_site'] = True
+                cur.execute("""
+                    INSERT INTO site_stats (id, total_visits) VALUES (1, 1)
+                    ON CONFLICT (id) DO UPDATE SET total_visits = site_stats.total_visits + 1;
+                """)
+
+            # २. ऑनलाईन विद्यार्थी ट्रॅक करणे
+            if 'user_sid' not in session:
+                session['user_sid'] = str(uuid.uuid4())
+            
+            u_sid = session['user_sid']
+            cur.execute("""
+                INSERT INTO active_sessions (session_id, last_seen) VALUES (%s, %s)
+                ON CONFLICT (session_id) DO UPDATE SET last_seen = %s;
+                DELETE FROM active_sessions WHERE last_seen < %s;
+            """, (u_sid, now_ts, now_ts, now_ts - 300))
+            conn.commit()
+            # ----------------------------------------------------
                 cur.execute("SELECT COUNT(*) as cnt FROM live_heartbeats WHERE last_seen >= NOW() - INTERVAL '5 minutes'")
                 row = cur.fetchone()
                 if row and row['cnt'] > 0:
