@@ -2587,7 +2587,9 @@ def home_tests_list():
 
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            try:  
+            with get_db() as conn:
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        try:
             # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स अचूक ट्रॅकिंग ---
             import time as py_time
             import uuid
