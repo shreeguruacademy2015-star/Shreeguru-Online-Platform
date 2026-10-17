@@ -1716,16 +1716,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         }
 
         // स्मार्ट AI प्रश्न जनरेटर (१३ विषयांसह)
-function generateAIQuestionsFromAdvancedForm() {
-```[span_4](start_span)[span_4](end_span)
-तिथपर्यंतचा **हा संपूर्ण जुना तुकडा सिलेक्ट करून Delete करा**[span_5](start_span)[span_5](end_span)[span_6](start_span)[span_6](end_span).
-
----
-
-३. आणि डिलीट केलेल्या जागी (म्हणजेच **`</script>` च्या अगदी वर**) हा खालील दुरुस्त केलेला कोड पेस्ट करा[span_7](start_span)[span_7](end_span):
-
-```javascript
-        // स्मार्ट AI प्रश्न जनरेटर (१३ विषयांसह)
         function generateAIQuestionsFromAdvancedForm() {
             const testIdEl = document.getElementById('ai_target_test_id');
             const testId = testIdEl ? testIdEl.value : null;
