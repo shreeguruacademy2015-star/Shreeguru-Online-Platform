@@ -3893,7 +3893,7 @@ def save_all_questions():
 # MODULE: 100% REAL GEMINI AI ENGINE, CSV, OCR, TRASH, PRINT TEST & RUNNER
 # =============================================================================
 
-# 6. Digital Smart AI Question Generator (AQ. आणि AIzaSy दोन्ही की सपोर्टसह)
+# 6. Digital Smart AI Question Generator (AQ. Token & AIzaSy Supported)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
@@ -3911,12 +3911,19 @@ def admin_ai_generate_advanced():
     generated_list = []
     models_to_try = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
 
-    # AQ. आणि AIzaSy दोन्ही फॉरमॅटसाठी युनिव्हर्सल हेडर लॉजिक
-    headers = {"Content-Type": "application/json"}
+    # AQ. टोकनसाठी अधिकृत गुगल हेडर लॉजिक
+    headers = {
+        "Content-Type": "application/json"
+    }
+    
     if api_key.startswith("AQ."):
+        # AQ. साठी Bearer Authorization आवश्यक असते
         headers["Authorization"] = f"Bearer {api_key}"
+        base_endpoint_format = "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent"
     else:
+        # AIzaSy साठी x-goog-api-key किंवा URL पॅरामीटर
         headers["x-goog-api-key"] = api_key
+        base_endpoint_format = "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key=" + api_key
 
     for subj, num in subject_counts.items():
         count = int(num)
@@ -3925,7 +3932,7 @@ def admin_ai_generate_advanced():
 
         prompt = (
             f"तुम्ही महाराष्ट्र {department} परीक्षेचे तज्ज्ञ पेपर सेटर आहात. "
-            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि उच्च दर्जाचे {count} बहुपर्यायी प्रश्न (MCQs) मराठीतून तयार करा. "
+            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य, सराव परीक्षेसाठी दर्जेदार असे {count} बहुपर्यायी प्रश्न (MCQs) मराठीतून तयार करा. "
             f"प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
             f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
             f"सूचना: कोणताही अतिरिक्त मजकूर नको, फक्त {count} ओळी द्या."
@@ -3935,13 +3942,9 @@ def admin_ai_generate_advanced():
         success = False
 
         for model_name in models_to_try:
-            # URL वरून key पॅरामीटर काढून शुद्ध एंडपॉइंट ठेवला
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
-            if not api_key.startswith("AQ."):
-                url += f"?key={api_key}"
-
+            url = base_endpoint_format.format(model_name)
             try:
-                res = requests.post(url, json=payload, headers=headers, timeout=35)
+                res = requests.post(url, json=payload, headers=headers, timeout=40)
                 if res.status_code == 200:
                     text_out = res.json().get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
                     for line in text_out.strip().split('\n'):
@@ -3956,9 +3959,9 @@ def admin_ai_generate_advanced():
                         success = True
                         break
                 else:
-                    print(f"Model {model_name} status: {res.status_code}, response: {res.text}")
+                    print(f"Model {model_name} HTTP {res.status_code}: {res.text}")
             except Exception as err:
-                print(f"Model {model_name} Error: {err}")
+                print(f"Model {model_name} Network Error: {err}")
                 continue
 
         if not success:
