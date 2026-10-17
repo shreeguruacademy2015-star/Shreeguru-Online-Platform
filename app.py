@@ -23,7 +23,6 @@ import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 import requests
-import pytz
 
 # -----------------------------------------------------------------------------
 # 1. OPTIONAL/FALLBACK ENGINE IMPORTS (Render-safe, zero crash architecture)
