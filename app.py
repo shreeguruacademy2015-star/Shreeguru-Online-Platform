@@ -3893,7 +3893,7 @@ def save_all_questions():
 # MODULE: 100% REAL GEMINI AI ENGINE, CSV, OCR, TRASH, PRINT TEST & RUNNER
 # =============================================================================
 
-# 6. Digital Smart AI Question Generator (AQ. Token & AIzaSy Supported)
+# 6. Digital Smart AI Question Generator (Groq Llama-3 Ultra Fast)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
@@ -3904,26 +3904,11 @@ def admin_ai_generate_advanced():
     subject_counts = data.get('subject_counts', {})
     test_id = data.get('test_id')
 
-    api_key = (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or "").strip()
+    api_key = (os.environ.get("GROQ_API_KEY") or os.environ.get("GEMINI_API_KEY") or "").strip()
     if not api_key:
-        return jsonify({"success": False, "error": "Render Environment मध्ये GEMINI_API_KEY सेट केलेली नाही!"}), 400
+        return jsonify({"success": False, "error": "Render Environment मध्ये API Key सेट केलेली नाही!"}), 400
 
     generated_list = []
-    models_to_try = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
-
-    # AQ. टोकनसाठी अधिकृत गुगल हेडर लॉजिक
-    headers = {
-        "Content-Type": "application/json"
-    }
-    
-    if api_key.startswith("AQ."):
-        # AQ. साठी Bearer Authorization आवश्यक असते
-        headers["Authorization"] = f"Bearer {api_key}"
-        base_endpoint_format = "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent"
-    else:
-        # AIzaSy साठी x-goog-api-key किंवा URL पॅरामीटर
-        headers["x-goog-api-key"] = api_key
-        base_endpoint_format = "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key=" + api_key
 
     for subj, num in subject_counts.items():
         count = int(num)
@@ -3932,40 +3917,38 @@ def admin_ai_generate_advanced():
 
         prompt = (
             f"तुम्ही महाराष्ट्र {department} परीक्षेचे तज्ज्ञ पेपर सेटर आहात. "
-            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य, सराव परीक्षेसाठी दर्जेदार असे {count} बहुपर्यायी प्रश्न (MCQs) मराठीतून तयार करा. "
+            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि उच्च दर्जाचे {count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा. "
             f"प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
             f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
             f"सूचना: कोणताही अतिरिक्त मजकूर नको, फक्त {count} ओळी द्या."
         )
 
-        payload = {"contents": [{"parts": [{"text": prompt}]}]}
-        success = False
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.5
+        }
 
-        for model_name in models_to_try:
-            url = base_endpoint_format.format(model_name)
-            try:
-                res = requests.post(url, json=payload, headers=headers, timeout=40)
-                if res.status_code == 200:
-                    text_out = res.json().get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                    for line in text_out.strip().split('\n'):
-                        parts = [p.strip() for p in line.split('|')]
-                        if len(parts) >= 6:
-                            corr = parts[5].upper()
-                            if corr not in ['A', 'B', 'C', 'D']: 
-                                corr = 'A'
-                            exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार.'
-                            generated_list.append((test_id, parts[0], parts[1], parts[2], parts[3], parts[4], corr, exp, subj))
-                    if len(generated_list) > 0:
-                        success = True
-                        break
-                else:
-                    print(f"Model {model_name} HTTP {res.status_code}: {res.text}")
-            except Exception as err:
-                print(f"Model {model_name} Network Error: {err}")
-                continue
-
-        if not success:
-            return jsonify({"success": False, "error": f"'{subj}' विषयासाठी AI प्रश्न तयार करण्यात अडचण आली. गुगलने विनंती नाकारली."}), 500
+        try:
+            res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=45)
+            if res.status_code == 200:
+                text_out = res.json()["choices"][0]["message"]["content"]
+                for line in text_out.strip().split('\n'):
+                    parts = [p.strip() for p in line.split('|')]
+                    if len(parts) >= 6:
+                        corr = parts[5].upper()
+                        if corr not in ['A', 'B', 'C', 'D']: 
+                            corr = 'A'
+                        exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार.'
+                        generated_list.append((test_id, parts[0], parts[1], parts[2], parts[3], parts[4], corr, exp, subj))
+            else:
+                return jsonify({"success": False, "error": f"API त्रुटी: {res.text[:120]}"}), 500
+        except Exception as err:
+            return jsonify({"success": False, "error": f"Network Error: {str(err)}"}), 500
 
     if generated_list:
         with get_db() as conn:
