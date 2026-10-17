@@ -3893,7 +3893,7 @@ def save_all_questions():
 # MODULE: 100% REAL GEMINI AI ENGINE, CSV, OCR, TRASH, PRINT TEST & RUNNER
 # =============================================================================
 
-# 6. Digital Smart AI Question Generator (Groq Llama-3 Ultra Fast)
+# 6. Digital Smart AI Question Generator (Groq Llama 3.1 Instant)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
@@ -3928,7 +3928,7 @@ def admin_ai_generate_advanced():
             "Content-Type": "application/json"
         }
         payload = {
-            "model": "llama-3.3-70b-versatile",
+            "model": "llama-3.1-8b-instant",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.5
         }
