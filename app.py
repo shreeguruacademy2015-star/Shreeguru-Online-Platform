@@ -3893,7 +3893,7 @@ def save_all_questions():
 # MODULE: 100% REAL GEMINI AI ENGINE, CSV, OCR, TRASH, PRINT TEST & RUNNER
 # =============================================================================
 
-# 6. Digital Smart AI Question Generator (Groq Supported Multi-Model)
+# 6. Digital Smart AI Question Generator (Active Groq Production Models)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
@@ -3909,8 +3909,8 @@ def admin_ai_generate_advanced():
         return jsonify({"success": False, "error": "Render Environment मध्ये API Key सेट केलेली नाही!"}), 400
 
     generated_list = []
-    # Groq च्या उपलब्ध मॉडेलांची वळेरी (Active Groq Models)
-    groq_models = ["llama3-8b-8192", "llama-3.1-70b-versatile", "mixtral-8x7b-32768", "gemma2-9b-it"]
+    # Groq चे सध्या सक्रिय असलेले अधिकृत मॉडेल्स
+    groq_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
 
     for subj, num in subject_counts.items():
         count = int(num)
@@ -3933,7 +3933,6 @@ def admin_ai_generate_advanced():
         success = False
         last_error = ""
 
-        # उपलब्ध आशिल्ल्या दर एका मॉडेलाची तपासणी
         for model_name in groq_models:
             payload = {
                 "model": model_name,
@@ -3942,7 +3941,7 @@ def admin_ai_generate_advanced():
             }
 
             try:
-                res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=40)
+                res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=45)
                 if res.status_code == 200:
                     text_out = res.json()["choices"][0]["message"]["content"]
                     for line in text_out.strip().split('\n'):
@@ -3957,7 +3956,7 @@ def admin_ai_generate_advanced():
                         success = True
                         break
                 else:
-                    last_error = f"{res.status_code}: {res.text[:100]}"
+                    last_error = f"{res.status_code}: {res.text[:120]}"
             except Exception as err:
                 last_error = str(err)
                 continue
