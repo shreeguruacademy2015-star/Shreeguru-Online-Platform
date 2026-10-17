@@ -3893,7 +3893,7 @@ def save_all_questions():
 # MODULE: 100% REAL GEMINI AI ENGINE, CSV, OCR, TRASH, PRINT TEST & RUNNER
 # =============================================================================
 
-# 6. Digital Smart AI Question Generator (Dynamic Active Groq Models)
+# 6. Digital Smart AI Question Generator (Dynamic Models + Hybrid Difficulty)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
@@ -3901,6 +3901,7 @@ def admin_ai_generate_advanced():
 
     data = request.get_json() or {}
     department = data.get('department', 'महाराष्ट्र पोलीस भरती')
+    difficulty = data.get('difficulty', 'balanced')
     subject_counts = data.get('subject_counts', {})
     test_id = data.get('test_id')
 
@@ -3913,13 +3914,12 @@ def admin_ai_generate_advanced():
         "Content-Type": "application/json"
     }
 
-    # 1. Groq कडून थेट सक्रिय मॉडेल्सची यादी मिळवणे
+    # 1. Groq कडून थेट चालू (Active) मॉडेल्स मिळवणे
     active_models = []
     try:
         models_res = requests.get("https://api.groq.com/openai/v1/models", headers=headers, timeout=10)
         if models_res.status_code == 200:
             m_data = models_res.json().get("data", [])
-            # whisper (ऑडिओ) वगळून केवळ टेक्स्ट/चॅट मॉडेल्स घेणे
             for m in m_data:
                 mid = m.get("id", "")
                 if "whisper" not in mid.lower():
@@ -3927,9 +3927,35 @@ def admin_ai_generate_advanced():
     except Exception as e:
         print(f"Error fetching models: {e}")
 
-    # बॅकअप म्हणून सर्वात स्थिर प्रॉडक्शन मॉडेल्स
     if not active_models:
         active_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192"]
+
+    # 2. काठिण्य पातळीनुसार सूचना
+    if difficulty == "easy":
+        diff_instruction = (
+            "काठिण्य पातळी: सोपी (Easy).\n"
+            "- सर्व प्रश्न थेट, वस्तुनिष्ठ, मूलभूत व्याख्या व सरळ नियमांवर आधारित असावेत.\n"
+            "- पर्याय स्पष्ट असावेत, अति-गुंतागुंत नको."
+        )
+    elif difficulty == "medium":
+        diff_instruction = (
+            "काठिण्य पातळी: मध्यम (Medium).\n"
+            "- पोलीस भरतीचे नियमित गुणवत्ता स्तर ठरवणारे प्रश्न असावेत.\n"
+            "- व्याकरणातील नेहमीचे अपवाद, महत्वाच्या घडामोडी व कलमांवर आधारित प्रश्न असावेत."
+        )
+    elif difficulty == "hard":
+        diff_instruction = (
+            "काठिण्य पातळी: कठीण (Hard / Advanced).\n"
+            "- प्रश्न उच्च दर्जाचे, विधानात्मक ('विधान अ आणि ब विचारात घ्या'), 'खालीलपैकी काय असत्य आहे' अशा स्वरूपाचे असावेत.\n"
+            "- पर्याय अत्यंत जवळचे आणि विद्यार्थ्यांची खरी परीक्षा घेणारे असावेत."
+        )
+    else:  # balanced
+        diff_instruction = (
+            "काठिण्य पातळी: प्रमाण समतोल (Balanced Standard Exam Pattern).\n"
+            "- ३०% प्रश्न सोपे (थेट व बेसिक संकल्पना)\n"
+            "- ५०% प्रश्न मध्यम (नियमित स्पर्धा परीक्षा स्तर)\n"
+            "- २०% प्रश्न कठीण (मेरिट ठरवणारे, विधानात्मक व फसवे पर्याय असणारे)"
+        )
 
     generated_list = []
 
@@ -3939,17 +3965,17 @@ def admin_ai_generate_advanced():
             continue
 
         prompt = (
-            f"तुम्ही महाराष्ट्र {department} परीक्षेचे तज्ज्ञ पेपर सेटर आहात. "
-            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि उच्च दर्जाचे {count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा. "
+            f"तुम्ही महाराष्ट्र {department} परीखेचे तज्ज्ञ मुख्य पेपर सेटर आहात. "
+            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि उच्च दर्जाचे एकूण {count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n\n"
+            f"{diff_instruction}\n\n"
             f"प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
             f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
-            f"सूचना: कोणताही अतिरिक्त मजकूर नको, फक्त {count} ओळी द्या."
+            f"सूचना: कोणताही अतिरिक्त प्रास्ताविक मजकूर नको, फक्त {count} ओळी द्या."
         )
 
         success = False
         last_error = ""
 
-        # उपलब्ध असलेल्या सक्रिय मॉडेलद्वारे प्रश्न तयार करणे
         for model_name in active_models:
             payload = {
                 "model": model_name,
