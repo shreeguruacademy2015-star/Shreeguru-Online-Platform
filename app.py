@@ -1716,9 +1716,23 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         }
 
         // स्मार्ट AI प्रश्न जनरेटर (१३ विषयांसह)
+function generateAIQuestionsFromAdvancedForm() {
+```[span_4](start_span)[span_4](end_span)
+तिथपर्यंतचा **हा संपूर्ण जुना तुकडा सिलेक्ट करून Delete करा**[span_5](start_span)[span_5](end_span)[span_6](start_span)[span_6](end_span).
+
+---
+
+३. आणि डिलीट केलेल्या जागी (म्हणजेच **`</script>` च्या अगदी वर**) हा खालील दुरुस्त केलेला कोड पेस्ट करा[span_7](start_span)[span_7](end_span):
+
+```javascript
+        // स्मार्ट AI प्रश्न जनरेटर (१३ विषयांसह)
         function generateAIQuestionsFromAdvancedForm() {
-            const testId = document.getElementById('ai_target_test_id').value;
-            const dept = document.getElementById('ai_department').value;
+            const testIdEl = document.getElementById('ai_target_test_id');
+            const testId = testIdEl ? testIdEl.value : null;
+            const deptEl = document.getElementById('ai_department');
+            const dept = deptEl ? deptEl.value : 'महाराष्ट्र पोलीस भरती';
+            const diffEl = document.getElementById('ai-difficulty');
+            const diff = diffEl ? diffEl.value : 'balanced';
             
             let subjectCounts = {};
             let hasValidSubject = false;
@@ -1735,7 +1749,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             });
 
             if (!hasValidSubject) {
-                alert("⚠️ किमान एक विषय निवडून प्रश्नांची संख्या टाका!");
+                alert("⚠️ कृपया किमान एका विषयाचा चेकबॉक्स निवडा आणि प्रश्नांची संख्या (उदा. ५ किंवा १०) टाका!");
                 return;
             }
 
@@ -1747,25 +1761,26 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-    department: dept,
-    difficulty: (document.getElementById('ai-difficulty') ? document.getElementById('ai-difficulty').value : 'balanced'),
-    test_id: (typeof test_id !== 'undefined' ? test_id : (document.getElementById('ai_test_id') ? document.getElementById('ai_test_id').value : null)),
-    subject_counts: subj
-})
+                    department: dept,
+                    difficulty: diff,
+                    test_id: testId,
+                    subject_counts: subjectCounts
+                })
+            })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
                     alert("✅ अभिनंदन! " + data.inserted_count + " नवीन सराव प्रश्न यशस्वीपणे सेव्ह झाले!");
                     window.location.href = '/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id=' + testId;
                 } else {
-                    alert("⚠️ सूचना: " + (data.error || 'प्रश्न तयार करताना त्रुटी आली.'));
+                    alert("⚠️ सूचना: " + (data.error || 'प्रश्न तयार करताना त्रुटी आली. Render Environment मध्ये API Key तपासली आहे का?'));
+                    btn.innerText = '🤖 डिजिटल स्मार्ट प्रश्न जनरेट करा व सेव्ह करा';
+                    btn.disabled = false;
                 }
-                btn.innerText = '🤖 डिजिटल स्मार्ट प्रश्न जनरेट करा';
-                btn.disabled = false;
             })
-            .catch(() => {
-                alert("सर्व्हर प्रतिसाद देत नाही, कृपया पुन्हा प्रयत्न करा!");
-                btn.innerText = '🤖 डिजिटल स्मार्ट प्रश्न जनरेट करा';
+            .catch(err => {
+                alert("सर्व्हर प्रतिसाद देत नाही किंवा टाईमआऊट झाला, कृपया पुन्हा प्रयत्न करा!");
+                btn.innerText = '🤖 डिजिटल स्मार्ट प्रश्न जनरेट करा व सेव्ह करा';
                 btn.disabled = false;
             });
         }
