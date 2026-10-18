@@ -1062,3 +1062,5 @@ MASTER_SYLLABUS = {
             ]
         }
     }
+}
+    
