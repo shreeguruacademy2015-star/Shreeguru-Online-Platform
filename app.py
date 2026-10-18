@@ -4083,85 +4083,6 @@ def save_all_questions():
 # विषय व्यवस्थापन राऊट्स (Add, Edit, Delete Dynamic Subjects)
 # =============================================================================
 
-@app.route('/admin/add_subject', methods=['POST'])
-def admin_add_subject():
-    if not session.get('admin_logged'): 
-        return redirect('/admin/login')
-    name = request.form.get('subject_name', '').strip()
-    seq = int(request.form.get('sequence_order', 1) or 1)
-    if name:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO subjects (subject_name, sequence_order, is_deleted)
-                    VALUES (%s, %s, 0)
-                    ON CONFLICT (subject_name) DO UPDATE SET sequence_order = %s, is_deleted = 0
-                """, (name, seq, seq))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=subjects_mgmt')
-
-@app.route('/admin/edit_subject/<int:sub_id>', methods=['POST'])
-def admin_edit_subject(sub_id):
-    if not session.get('admin_logged'): 
-        return redirect('/admin/login')
-    name = request.form.get('new_subject_name', '').strip()
-    seq = int(request.form.get('sequence_order', 1) or 1)
-    if name:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("UPDATE subjects SET subject_name=%s, sequence_order=%s WHERE id=%s", (name, seq, sub_id))
-                conn.commit()
-    return redirect('/admin/dashboard?tab=subjects_mgmt')
-
-@app.route('/admin/delete_subject/<int:sub_id>')
-def admin_delete_subject(sub_id):
-    if not session.get('admin_logged'): 
-        return redirect('/admin/login')
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("UPDATE subjects SET is_deleted=1 WHERE id=%s", (sub_id,))
-            conn.commit()
-    return redirect('/admin/dashboard?tab=subjects_mgmt')
-
-    data = request.get_json() or {}
-    questions_list = data.get('questions', [])
-
-    if not questions_list:
-        return jsonify({'success': False, 'message': 'अपडेट करण्यासाठी डेटा सापडला नाही.'})
-
-    try:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                for q in questions_list:
-                    cur.execute("""
-                        UPDATE questions 
-                        SET question = %s,
-                            opt_a = %s,
-                            opt_b = %s,
-                            opt_c = %s,
-                            opt_d = %s,
-                            correct = %s,
-                            explanation = %s
-                        WHERE id = %s AND is_deleted = 0
-                    """, (
-                        q.get('question_text') or q.get('question'),
-                        q.get('opt_a'),
-                        q.get('opt_b'),
-                        q.get('opt_c'),
-                        q.get('opt_d'),
-                        q.get('correct'),
-                        q.get('explanation', ''),
-                        q.get('id')
-                    ))
-                conn.commit()
-        return jsonify({'success': True, 'message': f'सर्व {len(questions_list)} प्रश्न यशस्वीरीत्या सेव्ह झाले!'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-        # =============================================================================
-# MAHARASHTRA POLICE BHARTI ONLINE TEST PORTAL 2026 - MASTER CORE (PART 10/10)
-# MODULE: 100% REAL GEMINI AI ENGINE, CSV, OCR, TRASH, PRINT TEST & RUNNER
-# =============================================================================
-
 # 6. Digital Smart AI Question Generator (Dynamic Models + Hybrid Difficulty)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
@@ -4226,6 +4147,7 @@ def admin_ai_generate_advanced():
             "- २०% प्रश्न कठीण (मेरिट ठरवणारे, विधानात्मक व फसवे पर्याय असणारे)"
         )
 
+    import random
     generated_list = []
 
     for subj, num in subject_counts.items():
@@ -4233,7 +4155,6 @@ def admin_ai_generate_advanced():
         if count <= 0: 
             continue
 
-        # MASTER_SYLLABUS मधून या विषयाचे अधिकृत घटक व उपघटक शोधणे
         syllabus_details = ""
         try:
             from syllabus_data import MASTER_SYLLABUS
@@ -4249,14 +4170,16 @@ def admin_ai_generate_advanced():
             print(f"Syllabus fetch warning: {syl_err}")
             syllabus_details = ""
 
+        # प्रॉम्प्टमध्ये अचूक उत्तराचे स्थान रँडम (A, B, C, D) ठेवण्याचा स्पष्ट नियम जोडला आहे
         prompt = (
-            f"तुम्ही महाराष्ट्र {department} परीक्षेचे तज्ज्ञ मुख्य पेपर सेटर आहात. "
+            f"तुम्ही महाराष्ट्र {department} परीक्षेचे तज्ज्ञ मुख्य पेपर सेटर आहात.\n"
             f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि उच्च दर्जाचे एकूण {count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n\n"
             f"{syllabus_details}\n"
             f"{diff_instruction}\n\n"
-            f"नियम:\n"
-            f"1. वरील अधिकृत अभ्यासक्रम घटकांवरच प्रश्न आधारित असावेत.\n"
-            f"2. प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
+            f"अत्यंत महत्त्वाचे नियम:\n"
+            f"1. सर्व प्रश्नांचे अचूक उत्तर फक्त 'A' असता कामा नये! अचूक उत्तर A, B, C आणि D या चारही पर्यायांमध्ये समप्रमाणात विखुरलेले (Random Balanced Distribution) असावे.\n"
+            f"2. वरील अधिकृत अभ्यासक्रम घटकांवरच प्रश्न आधारित असावेत.\n"
+            f"3. प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
             f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
             f"सूचना: कोणताही अतिरिक्त प्रास्ताविक मजकूर नको, फक्त {count} ओळी द्या."
         )
@@ -4268,7 +4191,7 @@ def admin_ai_generate_advanced():
             payload = {
                 "model": model_name,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.5
+                "temperature": 0.7  # तापमान वाढवल्याने विविधता वाढते
             }
 
             try:
@@ -4278,11 +4201,38 @@ def admin_ai_generate_advanced():
                     for line in text_out.strip().split('\n'):
                         parts = [p.strip() for p in line.split('|')]
                         if len(parts) >= 6:
-                            corr = parts[5].upper()
-                            if corr not in ['A', 'B', 'C', 'D']: 
-                                corr = 'A'
+                            q_text = parts[0]
+                            options = [
+                                ('A', parts[1]),
+                                ('B', parts[2]),
+                                ('C', parts[3]),
+                                ('D', parts[4])
+                            ]
+                            raw_corr = parts[5].upper()
+                            if raw_corr not in ['A', 'B', 'C', 'D']:
+                                raw_corr = 'A'
+                            
+                            # अचूक उत्तर कोणता पर्याय आहे ते ओळखणे
+                            corr_text = dict(options).get(raw_corr, parts[1])
+                            
+                            # बॅकएंडवर पर्यायांची पूर्णपणे निष्पक्ष सरमिसळ (Random Shuffle)
+                            shuffled_opts = [parts[1], parts[2], parts[3], parts[4]]
+                            random.shuffle(shuffled_opts)
+                            
+                            # नवीन जागेनुसार अचूक पर्यायाचे लेटर (A/B/C/D) ठरवणे
+                            letters = ['A', 'B', 'C', 'D']
+                            final_corr = 'A'
+                            for idx, opt_val in enumerate(shuffled_opts):
+                                if opt_val == corr_text:
+                                    final_corr = letters[idx]
+                                    break
+                            
                             exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार.'
-                            generated_list.append((test_id, parts[0], parts[1], parts[2], parts[3], parts[4], corr, exp, subj))
+                            generated_list.append((
+                                test_id, q_text, 
+                                shuffled_opts[0], shuffled_opts[1], shuffled_opts[2], shuffled_opts[3], 
+                                final_corr, exp, subj
+                            ))
                     if len(generated_list) > 0:
                         success = True
                         break
