@@ -387,6 +387,28 @@ def init_master_db():
                     tab_key TEXT UNIQUE NOT NULL,
                     tab_label TEXT NOT NULL
                 )''')
+                # 16. Dynamic Subjects Table (विषय व्यवस्थापन टेबल)
+                cur.execute('''CREATE TABLE IF NOT EXISTS subjects (
+                    id SERIAL PRIMARY KEY,
+                    subject_name TEXT UNIQUE NOT NULL,
+                    sequence_order INTEGER DEFAULT 1,
+                    is_deleted INTEGER DEFAULT 0
+                )''')
+
+                # सुरुवातीचे डीफॉल्ट १३ विषय आपोआप जोडणे
+                default_subjects = [
+                    ('मराठी व्याकरण', 1), ('गणित', 2), ('बुद्धिमत्ता', 3), 
+                    ('राज्यशास्त्र व नागरिक शास्त्र', 4), ('भूगोल', 5), ('सामान्य विज्ञान', 6), 
+                    ('इतिहास', 7), ('महाराष्ट्र समाजसुधारक', 8), ('अर्थशास्त्र', 9), 
+                    ('चालू घडामोडी', 10), ('संगणक ज्ञान', 11), ('माहिती अधिकार कायदा २००५', 12), 
+                    ('इंग्रजी व्याकरण', 13)
+                ]
+                for sub, seq in default_subjects:
+                    cur.execute("""
+                        INSERT INTO subjects (subject_name, sequence_order)
+                        VALUES (%s, %s)
+                        ON CONFLICT (subject_name) DO NOTHING
+                    """, (sub, seq))
 
                 # Default Configurations (ह्यामध्ये subjects टॅब जोडला आहे)
                 default_settings = [
