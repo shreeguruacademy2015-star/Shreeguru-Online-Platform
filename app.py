@@ -3774,6 +3774,8 @@ def admin_dashboard():
 
             cur.execute("SELECT DISTINCT district FROM mock_test_leads WHERE district != '' AND is_deleted=0")
             all_districts = [r['district'] for r in cur.fetchall()]
+            cur.execute("SELECT * FROM subjects WHERE is_deleted=0 ORDER BY sequence_order ASC, id ASC")
+            all_dynamic_subjects = cur.fetchall()
 
             # ३. टेस्ट्स यादी व शेड्युलिंग
             test_order_sql = "sequence_order ASC, id ASC"
@@ -3893,6 +3895,7 @@ def admin_dashboard():
                 otp_audits=otp_audits,
                 test_stats=test_stats,
                 all_districts=all_districts,
+                all_dynamic_subjects=all_dynamic_subjects,
                 lead_dist=lead_dist,
                 lead_cat=lead_cat,
                 lead_test_id=lead_test_id,
