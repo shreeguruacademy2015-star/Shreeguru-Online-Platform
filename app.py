@@ -4150,11 +4150,14 @@ def admin_ai_generate_advanced():
     import random
     generated_list = []
 
+    import random
+
     for subj, num in subject_counts.items():
         count = int(num)
         if count <= 0: 
             continue
 
+        # MASTER_SYLLABUS मधून या विषयाचे अधिकृत घटक व उपघटक शोधणे
         syllabus_details = ""
         try:
             from syllabus_data import MASTER_SYLLABUS
@@ -4170,16 +4173,18 @@ def admin_ai_generate_advanced():
             print(f"Syllabus fetch warning: {syl_err}")
             syllabus_details = ""
 
-        # प्रॉम्प्टमध्ये अचूक उत्तराचे स्थान रँडम (A, B, C, D) ठेवण्याचा स्पष्ट नियम जोडला आहे
+        # अत्यंत कडक, त्रुटीमुक्त व समतोल पर्यायांचा प्रॉम्प्ट
         prompt = (
-            f"तुम्ही महाराष्ट्र {department} परीक्षेचे तज्ज्ञ मुख्य पेपर सेटर आहात.\n"
-            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि उच्च दर्जाचे एकूण {count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n\n"
+            f"तुम्ही महाराष्ट्र लोकसेवा आयोग व पोलीस भरतीचे सर्वोच्च मुख्य पेपर सेटर आहात.\n"
+            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि १००% बिनचूक असे एकूण {count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n\n"
             f"{syllabus_details}\n"
             f"{diff_instruction}\n\n"
-            f"अत्यंत महत्त्वाचे नियम:\n"
-            f"1. सर्व प्रश्नांचे अचूक उत्तर फक्त 'A' असता कामा नये! अचूक उत्तर A, B, C आणि D या चारही पर्यायांमध्ये समप्रमाणात विखुरलेले (Random Balanced Distribution) असावे.\n"
-            f"2. वरील अधिकृत अभ्यासक्रम घटकांवरच प्रश्न आधारित असावेत.\n"
-            f"3. प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
+            f"कडक पडताळणी नियम (Zero Error Mandate):\n"
+            f"1. तथ्य अचूकता: सर्व कलमे, तारखा, घटनादुरुस्त्या, आकडेवारी आणि व्याकरण नियम १००% अधिकृत शासकीय संदर्भानुसारच असावेत.\n"
+            f"2. पर्याय सुस्पष्टता: ४ पैकी केवळ एकच पर्याय योग्य असावा. इतर ३ पर्याय स्पष्टपणे चुकीचे असावेत.\n"
+            f"3. समतोल उत्तरे: सर्व प्रश्नांचे उत्तर 'A' असू नये. अचूक पर्याय A, B, C, D मध्ये समप्रमाणात द्या.\n"
+            f"4. स्पष्टीकरण सुसंगती: निवडलेल्या अचूक पर्यायाचे थेट समर्थन स्पष्टीकरणात आले पाहिजे.\n\n"
+            f"प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
             f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
             f"सूचना: कोणताही अतिरिक्त प्रास्ताविक मजकूर नको, फक्त {count} ओळी द्या."
         )
@@ -4191,7 +4196,7 @@ def admin_ai_generate_advanced():
             payload = {
                 "model": model_name,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.7  # तापमान वाढवल्याने विविधता वाढते
+                "temperature": 0.25  # अचूक उत्तरासाठी तापमान ०.२५
             }
 
             try:
@@ -4212,14 +4217,14 @@ def admin_ai_generate_advanced():
                             if raw_corr not in ['A', 'B', 'C', 'D']:
                                 raw_corr = 'A'
                             
-                            # अचूक उत्तर कोणता पर्याय आहे ते ओळखणे
+                            # अचूक उत्तराचा मूळ मजकूर सुरक्षित साठवणे
                             corr_text = dict(options).get(raw_corr, parts[1])
                             
-                            # बॅकएंडवर पर्यायांची पूर्णपणे निष्पक्ष सरमिसळ (Random Shuffle)
+                            # ४ पर्यायांची अदलाबदल (Shuffle) करणे
                             shuffled_opts = [parts[1], parts[2], parts[3], parts[4]]
                             random.shuffle(shuffled_opts)
                             
-                            # नवीन जागेनुसार अचूक पर्यायाचे लेटर (A/B/C/D) ठरवणे
+                            # बदललेल्या जागेनुसार अचूक पर्यायाचे अक्षर निश्चित करणे
                             letters = ['A', 'B', 'C', 'D']
                             final_corr = 'A'
                             for idx, opt_val in enumerate(shuffled_opts):
@@ -4227,7 +4232,7 @@ def admin_ai_generate_advanced():
                                     final_corr = letters[idx]
                                     break
                             
-                            exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार.'
+                            exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार अधिकृत विश्लेषण.'
                             generated_list.append((
                                 test_id, q_text, 
                                 shuffled_opts[0], shuffled_opts[1], shuffled_opts[2], shuffled_opts[3], 
