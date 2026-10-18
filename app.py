@@ -1837,6 +1837,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             {% elif tab == 'payments' %}<a href="/admin/dashboard?tab=payments" class="{{ 'active' if active_tab == 'payments' else '' }}">💰 Payments & Razorpay</a>
             {% elif tab == 'special' %}<a href="/admin/dashboard?tab=special" class="{{ 'active' if active_tab == 'special' else '' }}">👑 Special Access</a>
             {% elif tab == 'questions' %}<a href="/admin/dashboard?tab=questions&q_subtab={{ q_subtab }}{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if active_tab == 'questions' else '' }}">📝 Questions</a>
+            {% elif tab == 'subjects_mgmt' %}<a href="/admin/dashboard?tab=subjects_mgmt" class="{{ 'active' if active_tab == 'subjects_mgmt' else '' }}">📚 विषय व्यवस्थापन</a>
             {% elif tab == 'launch' %}<a href="/admin/dashboard?tab=launch&cat_tab={{ cat_tab }}" class="{{ 'active' if active_tab == 'launch' else '' }}">🚀 Tests Management</a>
             {% elif tab == 'analytics' %}<a href="/admin/dashboard?tab=analytics" class="{{ 'active' if active_tab == 'analytics' else '' }}">📊 Analytics & Traffic</a>
             {% elif tab == 'audit' %}<a href="/admin/dashboard?tab=audit" class="{{ 'active' if active_tab == 'audit' else '' }}">🔍 OTP Audit</a>
@@ -2172,6 +2173,57 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             {% endfor %}
         </table>
     </form>
+    <!-- 5B. SUBJECTS MANAGEMENT TAB -->
+    {% elif active_tab == 'subjects_mgmt' %}
+    <h3>📚 सर्व विषय व्यवस्थापन (नवीन विषय जोडा / बदला / डिलीट करा)</h3>
+    
+    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px;">
+        <h4 style="margin:0 0 10px; color:#065f46;">➕ नवीन विषय जोडा:</h4>
+        <form method="POST" action="/admin/add_subject" style="display:grid; grid-template-columns: 2fr 1fr auto; gap:10px; align-items:end;">
+            <div>
+                <label style="font-weight:bold; font-size:12px;">विषयाचे नाव:</label>
+                <input type="text" name="subject_name" placeholder="उदा. चालू घडामोडी किंवा वनरक्षक विशेष" required style="margin-bottom:0;">
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12px;">क्रम (Sequence):</label>
+                <input type="number" name="sequence_order" value="1" required style="margin-bottom:0;">
+            </div>
+            <div>
+                <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold; height:38px;">➕ विषय जोडा</button>
+            </div>
+        </form>
+    </div>
+
+    <h4>📋 अस्तित्वात असलेले विषय:</h4>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:70px;">क्रम</th>
+                <th>विषयाचे नाव (नाव बदलून सेव्ह करा)</th>
+                <th style="text-align:center; width:160px;">कृती</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in all_dynamic_subjects %}
+            <tr>
+                <form method="POST" action="/admin/edit_subject/{{ s.id }}">
+                    <td>
+                        <input type="number" name="sequence_order" value="{{ s.sequence_order }}" style="margin-bottom:0; text-align:center;">
+                    </td>
+                    <td>
+                        <input type="text" name="new_subject_name" value="{{ s.subject_name }}" required style="margin-bottom:0; font-weight:600;">
+                    </td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; padding:6px 12px; cursor:pointer;">💾 सेव्ह</button>
+                        <a href="/admin/delete_subject/{{ s.id }}" class="btn-sm" style="background:#dc2626; color:white; padding:6px 10px;" onclick="return confirm('हा विषय खरोखर काढून टाकायचा का?');">🗑️ डिलीट</a>
+                    </td>
+                </form>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" style="text-align:center; padding:15px; color:#64748b;">कोणताही विषय सापडला नाही.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
     <!-- 6. TESTS MANAGEMENT TAB (Single Clean Save-All Button) -->
     {% elif active_tab == 'launch' %}
