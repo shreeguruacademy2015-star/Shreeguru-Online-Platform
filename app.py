@@ -3775,7 +3775,7 @@ def admin_dashboard():
             cur.execute("SELECT DISTINCT district FROM mock_test_leads WHERE district != '' AND is_deleted=0")
             all_districts = [r['district'] for r in cur.fetchall()]
             cur.execute("SELECT * FROM subjects WHERE is_deleted=0 ORDER BY sequence_order ASC, id ASC")
-            all_dynamic_subjects = cur.fetchall()
+            all_dynamic_subjects = cur.fetchall() 
 
             # ३. टेस्ट्स यादी व शेड्युलिंग
             test_order_sql = "sequence_order ASC, id ASC"
