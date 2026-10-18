@@ -4233,11 +4233,30 @@ def admin_ai_generate_advanced():
         if count <= 0: 
             continue
 
+        # MASTER_SYLLABUS मधून या विषयाचे अधिकृत घटक व उपघटक शोधणे
+        syllabus_details = ""
+        try:
+            from syllabus_data import MASTER_SYLLABUS
+            for k, sdata in MASTER_SYLLABUS.items():
+                if sdata.get('name', '').strip().lower() == subj.strip().lower() or subj.strip().lower() in sdata.get('name', '').strip().lower():
+                    sec_list = []
+                    for sec_title, sec_points in sdata.get('sections', {}).items():
+                        points_text = ", ".join(sec_points[:6])
+                        sec_list.append(f"• {sec_title}: {points_text}")
+                    syllabus_details = "\nअधिकृत अभ्यासक्रम घटक:\n" + "\n".join(sec_list) + "\n"
+                    break
+        except Exception as syl_err:
+            print(f"Syllabus fetch warning: {syl_err}")
+            syllabus_details = ""
+
         prompt = (
-            f"तुम्ही महाराष्ट्र {department} परीखेचे तज्ज्ञ मुख्य पेपर सेटर आहात. "
+            f"तुम्ही महाराष्ट्र {department} परीक्षेचे तज्ज्ञ मुख्य पेपर सेटर आहात. "
             f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि उच्च दर्जाचे एकूण {count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n\n"
+            f"{syllabus_details}\n"
             f"{diff_instruction}\n\n"
-            f"प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
+            f"नियम:\n"
+            f"1. वरील अधिकृत अभ्यासक्रम घटकांवरच प्रश्न आधारित असावेत.\n"
+            f"2. प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
             f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
             f"सूचना: कोणताही अतिरिक्त प्रास्ताविक मजकूर नको, फक्त {count} ओळी द्या."
         )
