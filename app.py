@@ -424,7 +424,7 @@ def init_master_db():
                     ('toppers_link', '/'),
                     ('wa_groups_multiline', 'https://chat.whatsapp.com/sampleGroup1'),
                     ('home_tab_order', 'live,paid,free,rapid,subjects,guide,about,battle,docs,help'),
-                    ('admin_tab_order', 'leads,power,payments,special,questions,launch,analytics,audit,blocked,leaderboard,feedback,notices,trash,settings'),
+                    ('admin_tab_order', 'leads,power,payments,special,questions,subject_mgmt,launch,analytics,audit,blocked,leaderboard,feedback,notices,trash,settings'),
                     ('recruitment_pdf', ''),
                     ('eligibility_pdf', ''),
                     ('razorpay_key_id', 'rzp_test_TmenVmrQI8nTRA'),
