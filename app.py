@@ -24,6 +24,8 @@ from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 import requests
 
+from syllabus_data import MASTER_SYLLABUS
+
 # -----------------------------------------------------------------------------
 # 1. OPTIONAL/FALLBACK ENGINE IMPORTS (Render-safe, zero crash architecture)
 # -----------------------------------------------------------------------------
@@ -3940,6 +3942,7 @@ def admin_dashboard():
                 wa_groups_multiline=settings_map.get('wa_groups_multiline', ''),
                 home_tab_order=settings_map.get('home_tab_order', 'live,paid,free,rapid,about,battle,docs,help'),
                 admin_tab_order=admin_tab_order,
+                master_syllabus=MASTER_SYLLABUS,
                 ordered_admin_tabs=ordered_admin_tabs,
                 site_status=settings_map.get('site_status', 'active'),
                 custom_tabs_list=custom_tabs_list,
