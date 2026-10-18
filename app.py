@@ -3991,6 +3991,49 @@ def admin_edit_question(q_id):
 def save_all_questions():
     if not session.get('admin_logged') and not session.get('is_admin'):
         return jsonify({'success': False, 'message': 'अनधिकृत प्रवेश!'}), 403
+        # =============================================================================
+# विषय व्यवस्थापन राऊट्स (Add, Edit, Delete Dynamic Subjects)
+# =============================================================================
+
+@app.route('/admin/add_subject', methods=['POST'])
+def admin_add_subject():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    name = request.form.get('subject_name', '').strip()
+    seq = int(request.form.get('sequence_order', 1) or 1)
+    if name:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO subjects (subject_name, sequence_order, is_deleted)
+                    VALUES (%s, %s, 0)
+                    ON CONFLICT (subject_name) DO UPDATE SET sequence_order = %s, is_deleted = 0
+                """, (name, seq, seq))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=subjects_mgmt')
+
+@app.route('/admin/edit_subject/<int:sub_id>', methods=['POST'])
+def admin_edit_subject(sub_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    name = request.form.get('new_subject_name', '').strip()
+    seq = int(request.form.get('sequence_order', 1) or 1)
+    if name:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE subjects SET subject_name=%s, sequence_order=%s WHERE id=%s", (name, seq, sub_id))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=subjects_mgmt')
+
+@app.route('/admin/delete_subject/<int:sub_id>')
+def admin_delete_subject(sub_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE subjects SET is_deleted=1 WHERE id=%s", (sub_id,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=subjects_mgmt')
 
     data = request.get_json() or {}
     questions_list = data.get('questions', [])
