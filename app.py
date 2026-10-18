@@ -2199,57 +2199,117 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             {% endfor %}
         </table>
     </form>
-    <!-- 5B. SUBJECTS MANAGEMENT TAB -->
+    <!-- 5B. SUBJECTS MANAGEMENT TAB (Sub-tabs + Full Deep Syllabus Display) -->
     {% elif active_tab == 'subjects_mgmt' %}
-    <h3>📚 सर्व विषय व्यवस्थापन (नवीन विषय जोडा / बदला / डिलीट करा)</h3>
-    
-    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px;">
-        <h4 style="margin:0 0 10px; color:#065f46;">➕ नवीन विषय जोडा:</h4>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="margin:0; color:#065f46;">📚 परिपूर्ण अभ्यासक्रम व विषय व्यवस्थापन</h3>
+        <span style="font-size:12.5px; background:#ecfdf5; color:#065f46; border:1px solid #10b981; padding:4px 10px; border-radius:6px; font-weight:bold;">
+            एकूण विषय: {{ all_dynamic_subjects|length }}
+        </span>
+    </div>
+
+    <!-- नवीन विषय जोडण्याचा छोटा फॉर्म -->
+    <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:14px; border-radius:8px; margin-bottom:18px;">
         <form method="POST" action="/admin/add_subject" style="display:grid; grid-template-columns: 2fr 1fr auto; gap:10px; align-items:end;">
             <div>
-                <label style="font-weight:bold; font-size:12px;">विषयाचे नाव:</label>
-                <input type="text" name="subject_name" placeholder="उदा. चालू घडामोडी किंवा वनरक्षक विशेष" required style="margin-bottom:0;">
+                <label style="font-weight:bold; font-size:12px; color:#334155;">+ नवीन विषय जोडा:</label>
+                <input type="text" name="subject_name" placeholder="उदा. पर्यावरण व वने" required style="margin-bottom:0;">
             </div>
             <div>
-                <label style="font-weight:bold; font-size:12px;">क्रम (Sequence):</label>
-                <input type="number" name="sequence_order" value="1" required style="margin-bottom:0;">
+                <label style="font-weight:bold; font-size:12px; color:#334155;">अनुक्रमांक (Seq):</label>
+                <input type="number" name="sequence_order" value="30" required style="margin-bottom:0;">
             </div>
             <div>
-                <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold; height:38px;">➕ विषय जोडा</button>
+                <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold; height:36px;">➕ विषय जोडा</button>
             </div>
         </form>
     </div>
 
-    <h4>📋 अस्तित्वात असलेले विषय:</h4>
-    <table>
-        <thead>
-            <tr>
-                <th style="width:70px;">क्रम</th>
-                <th>विषयाचे नाव (नाव बदलून सेव्ह करा)</th>
-                <th style="text-align:center; width:160px;">कृती</th>
-            </tr>
-        </thead>
-        <tbody>
+    <!-- २ भागांची रचना: डावीकडे सब-टॅब, उजवीकडे सिलॅबस कार्ड्स -->
+    <div style="display:grid; grid-template-columns: 320px 1fr; gap:18px; align-items:start;">
+        
+        <!-- डावा विभाग: सर्व विषयांची बटणे (Sub-tabs) -->
+        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
+            <div style="background:#1e293b; color:#38bdf8; padding:10px 14px; font-weight:bold; font-size:13px;">
+                📋 अधिकृत विषय यादी (क्लिक करा):
+            </div>
+            <div style="max-height:68vh; overflow-y:auto; padding:6px;">
+                {% for s in all_dynamic_subjects %}
+                <div id="subtab-btn-{{ loop.index }}" onclick="showSyllabusCard({{ loop.index }})" 
+                     style="padding:9px 12px; margin-bottom:4px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background: {{ '#10b981' if loop.first else '#ffffff' }}; color: {{ '#022c22' if loop.first else '#334155' }}; border: 1px solid {{ '#059669' if loop.first else '#e2e8f0' }};" class="subj-nav-item">
+                    <span><b>{{ s.sequence_order }}.</b> {{ s.subject_name }}</span>
+                    <span style="font-size:11px; opacity:0.8;">➔</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- उजवा विभाग: निवडलेल्या विषयाचा सखोल सिलॅबस -->
+        <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:18px; max-height:74vh; overflow-y:auto;">
             {% for s in all_dynamic_subjects %}
-            <tr>
-                <form method="POST" action="/admin/edit_subject/{{ s.id }}">
-                    <td>
-                        <input type="number" name="sequence_order" value="{{ s.sequence_order }}" style="margin-bottom:0; text-align:center;">
-                    </td>
-                    <td>
-                        <input type="text" name="new_subject_name" value="{{ s.subject_name }}" required style="margin-bottom:0; font-weight:600;">
-                    </td>
-                    <td style="text-align:center; white-space:nowrap;">
-                        <button type="submit" class="btn-sm" style="background:#0284c7; color:white; border:none; padding:6px 12px; cursor:pointer;">💾 सेव्ह</button>
+            <div id="syllabus-view-{{ loop.index }}" class="syllabus-panel" style="display: {{ 'block' if loop.first else 'none' }};">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:10px; margin-bottom:14px;">
+                    <div>
+                        <span style="font-size:11px; font-weight:bold; color:#0284c7; text-transform:uppercase;">अनुक्रमांक #{{ s.sequence_order }}</span>
+                        <h4 style="margin:2px 0 0 0; color:#065f46; font-size:18px;">📖 {{ s.subject_name }}</h4>
+                    </div>
+                    <div style="display:flex; gap:6px;">
                         <a href="/admin/delete_subject/{{ s.id }}" class="btn-sm" style="background:#dc2626; color:white; padding:6px 10px;" onclick="return confirm('हा विषय खरोखर काढून टाकायचा का?');">🗑️ डिलीट</a>
-                    </td>
-                </form>
-            </tr>
-            {% else %}
-            <tr><td colspan="3" style="text-align:center; padding:15px; color:#64748b;">कोणताही विषय सापडला नाही.</td></tr>
+                    </div>
+                </div>
+
+                <!-- सिलॅबस घटक (MASTER_SYLLABUS मॅपिंग) -->
+                {% set matched_syllabus = none %}
+                {% if master_syllabus %}
+                    {% for key, sdata in master_syllabus.items() %}
+                        {% if sdata.name.strip().lower() == s.subject_name.strip().lower() %}
+                            {% set matched_syllabus = sdata %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+
+                {% if matched_syllabus %}
+                    {% for sec_title, sec_points in matched_syllabus.sections.items() %}
+                    <div style="background:#f8fafc; border-left:4px solid #0284c7; border-radius:6px; padding:12px; margin-bottom:12px; border-top:1px solid #e2e8f0; border-right:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0;">
+                        <div style="font-weight:700; color:#0f172a; font-size:13.5px; margin-bottom:8px;">
+                            {{ sec_title }}
+                        </div>
+                        <ul style="margin:0; padding-left:20px; font-size:12.5px; color:#334155; line-height:1.6;">
+                            {% for pt in sec_points %}
+                            <li>{{ pt }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="background:#fef3c7; border:1px dashed #d97706; padding:15px; border-radius:6px; color:#92400e; font-size:13px;">
+                        ℹ️ या विषयाचे अभ्यासक्रम मॉडेल बॅकएंडला सुरक्षित नोंदलेले आहे. AI प्रश्न जनरेटर थेट प्रमाणित प्रश्न निर्मितीसाठी याचा वापर करेल.
+                    </div>
+                {% endif %}
+            </div>
             {% endfor %}
-        </tbody>
-    </table>
+        </div>
+    </div>
+
+    <script>
+    function showSyllabusCard(idx) {
+        document.querySelectorAll('.syllabus-panel').forEach(p => p.style.display = 'none');
+        document.querySelectorAll('.subj-nav-item').forEach(b => {
+            b.style.background = '#ffffff';
+            b.style.color = '#334155';
+            b.style.borderColor = '#e2e8f0';
+        });
+        
+        const activePanel = document.getElementById('syllabus-view-' + idx);
+        const activeBtn = document.getElementById('subtab-btn-' + idx);
+        if (activePanel) activePanel.style.display = 'block';
+        if (activeBtn) {
+            activeBtn.style.background = '#10b981';
+            activeBtn.style.color = '#022c22';
+            activeBtn.style.borderColor = '#059669';
+        }
+    }
+    </script>
 
     <!-- 6. TESTS MANAGEMENT TAB (Single Clean Save-All Button) -->
     {% elif active_tab == 'launch' %}
