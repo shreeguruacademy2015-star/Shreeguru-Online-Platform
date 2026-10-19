@@ -5070,9 +5070,6 @@ def admin_test_paper_view(test_id):
                     questions = cur.fetchall()
 
     return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
-
-    except Exception as e:
-        return f"<pre style='color:red; background:#fee; padding:20px; font-size:14px;'>एरर आला आहे:\n\n{traceback.format_exc()}</pre>", 500
         
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
