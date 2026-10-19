@@ -838,6 +838,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                 </span>
             </div>
         </div>
+    </div>
 
     <!-- Tabs Navigation -->
     <div class="tabs-wrapper">
