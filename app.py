@@ -4144,11 +4144,10 @@ def admin_ai_generate_advanced():
         "Content-Type": "application/json"
     }
 
-    # अधिकृत चालू मॉडेल्सची अचूक यादी
+    # 1. Groq चे चालू असलेले अधिकृत मॉडेल्स
     active_models = [
-        "llama-3.1-8b-instant",
-        "llama3-70b-8192",
-        "mixtral-8x7b-32768"
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant"
     ]
 
     if difficulty == "easy":
@@ -4183,22 +4182,44 @@ def admin_ai_generate_advanced():
             f"२. कोणताही अतिरिक्त मजकूर नको, फक्त {count} ओळी द्या."
         )
 
+        # प्रत्येक विषयाचा लूप
+    for subj, count in subject_counts.items():
+        try:
+            count = int(count)
+        except (ValueError, TypeError):
+            continue
+
+        if count <= 0:
+            continue
+
+        prompt = (
+            ...
+        )
+
         subj_success = False
+        
+        # ---> येथे हा कोड पेस्ट झालेला असावा <---
         for model_name in active_models:
             payload = {
                 "model": model_name,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
                 "temperature": 0.3,
-                "max_tokens": 3000
+                "max_tokens": 2048
             }
 
             try:
                 res = requests.post(
                     "https://api.groq.com/openai/v1/chat/completions",
                     json=payload,
-                    headers=headers,
+                    headers={
+                        "Authorization": f"Bearer {api_key.strip()}",
+                        "Content-Type": "application/json"
+                    },
                     timeout=45
                 )
+
                 if res.status_code == 200:
                     text_out = res.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                     for line in text_out.strip().split('\n'):
@@ -4231,7 +4252,13 @@ def admin_ai_generate_advanced():
                     subj_success = True
                     break
                 else:
-                    overall_errors.append(f"{model_name}: {res.status_code}")
+                    err_detail = ""
+                    try:
+                        err_detail = res.json().get("error", {}).get("message", res.text[:80])
+                    except Exception:
+                        err_detail = res.text[:80]
+                    overall_errors.append(f"{model_name}: {res.status_code} ({err_detail})")
+
             except Exception as err:
                 overall_errors.append(f"{model_name}: {str(err)}")
                 continue
