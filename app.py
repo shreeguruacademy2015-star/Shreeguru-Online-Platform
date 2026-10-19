@@ -3918,7 +3918,7 @@ def admin_dashboard():
             tests = cur.fetchall()
 
             cur.execute("SELECT * FROM test_papers WHERE is_deleted=0 ORDER BY category ASC, id ASC")
-available_tests = cur.fetchall()
+            available_tests = cur.fetchall()
 
             if not filter_test_id and all_available_tests:
                 filter_test_id = str(all_available_tests[0]['id'])
