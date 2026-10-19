@@ -4198,56 +4198,56 @@ def admin_ai_generate_advanced():
             "temperature": 0.25
         }
 
-            try:
-                res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=45)
-                if res.status_code == 200:
-                    text_out = res.json()["choices"][0]["message"]["content"]
-                    for line in text_out.strip().split('\n'):
-                        parts = [p.strip() for p in line.split('|')]
-                        if len(parts) >= 6:
-                            q_text = parts[0]
-                            options = [
-                                ('A', parts[1]),
-                                ('B', parts[2]),
-                                ('C', parts[3]),
-                                ('D', parts[4])
-                            ]
-                            raw_corr = parts[5].upper()
-                            if raw_corr not in ['A', 'B', 'C', 'D']:
-                                raw_corr = 'A'
-                            
-                            # अचूक उत्तराचा मूळ मजकूर सुरक्षित साठवणे
-                            corr_text = dict(options).get(raw_corr, parts[1])
-                            
-                            # ४ पर्यायांची अदलाबदल (Shuffle) करणे
-                            shuffled_opts = [parts[1], parts[2], parts[3], parts[4]]
-                            random.shuffle(shuffled_opts)
-                            
-                            # बदललेल्या जागेनुसार अचूक पर्यायाचे अक्षर निश्चित करणे
-                            letters = ['A', 'B', 'C', 'D']
-                            final_corr = 'A'
-                            for idx, opt_val in enumerate(shuffled_opts):
-                                if opt_val == corr_text:
-                                    final_corr = letters[idx]
-                                    break
-                            
-                            exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार अधिकृत विश्लेषण.'
-                            generated_list.append((
-                                test_id, q_text, 
-                                shuffled_opts[0], shuffled_opts[1], shuffled_opts[2], shuffled_opts[3], 
-                                final_corr, exp, subj
-                            ))
-                    if len(generated_list) > 0:
-                        success = True
-                        break
-                else:
-                    last_error = f"{model_name}: {res.text[:100]}"
-            except Exception as err:
-                last_error = str(err)
-                continue
+        try:
+            res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=45)
+            if res.status_code == 200:
+                text_out = res.json()["choices"][0]["message"]["content"]
+                for line in text_out.strip().split('\n'):
+                    parts = [p.strip() for p in line.split('|')]
+                    if len(parts) >= 6:
+                        q_text = parts[0]
+                        options = [
+                            ('A', parts[1]),
+                            ('B', parts[2]),
+                            ('C', parts[3]),
+                            ('D', parts[4])
+                        ]
+                        raw_corr = parts[5].upper()
+                        if raw_corr not in ['A', 'B', 'C', 'D']:
+                            raw_corr = 'A'
+                        
+                        # अचूक उत्तराचा मूळ मजकूर सुरक्षित साठवणे
+                        corr_text = dict(options).get(raw_corr, parts[1])
+                        
+                        # ४ पर्यायांची अदलाबदल (Shuffle) करणे
+                        shuffled_opts = [parts[1], parts[2], parts[3], parts[4]]
+                        random.shuffle(shuffled_opts)
+                        
+                        # बदललेल्या जागेनुसार अचूक पर्यायाचे अक्षर निश्चित करणे
+                        letters = ['A', 'B', 'C', 'D']
+                        final_corr = 'A'
+                        for idx, opt_val in enumerate(shuffled_opts):
+                            if opt_val == corr_text:
+                                final_corr = letters[idx]
+                                break
+                        
+                        exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार अधिकृत विश्लेषण.'
+                        generated_list.append((
+                            test_id, q_text, 
+                            shuffled_opts[0], shuffled_opts[1], shuffled_opts[2], shuffled_opts[3], 
+                            final_corr, exp, subj
+                        ))
+                if len(generated_list) > 0:
+                    success = True
+                    break
+            else:
+                last_error = f"{model_name}: {res.text[:100]}"
+        except Exception as err:
+            last_error = str(err)
+            continue
 
-        if not success:
-            return jsonify({"success": False, "error": f"API त्रुटी: {last_error}"}), 500
+    if not success:
+        return jsonify({"success": False, "error": f"API त्रुटी: {last_error}"}), 500
 
     if generated_list:
         with get_db() as conn:
