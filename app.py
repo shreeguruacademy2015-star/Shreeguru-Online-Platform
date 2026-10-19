@@ -11,7 +11,6 @@ import re
 import secrets
 import hmac
 import hashlib
-import random
 import urllib.parse
 from datetime import date, datetime, timedelta, time
 from contextlib import contextmanager
@@ -4120,9 +4119,7 @@ def save_all_questions():
 # विषय व्यवस्थापन राऊट्स (Add, Edit, Delete Dynamic Subjects)
 # =============================================================================
 
-# =============================================================================
-# 6. DIGITAL SMART AI QUESTION GENERATOR (FINAL 100% COMPLETE & TESTED)
-# =============================================================================
+# 6. Digital Smart AI Question Generator (Dynamic Models + Hybrid Difficulty)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
 def admin_ai_generate_advanced():
     if not session.get('admin_logged'): 
@@ -4134,156 +4131,160 @@ def admin_ai_generate_advanced():
     subject_counts = data.get('subject_counts', {})
     test_id = data.get('test_id')
 
-    if not test_id:
-        return jsonify({"success": False, "error": "कृपया आधी टेस्ट निवडा!"}), 400
-
     api_key = (os.environ.get("GROQ_API_KEY") or os.environ.get("GEMINI_API_KEY") or "").strip()
     if not api_key:
-        return jsonify({"success": False, "error": "Render Environment मध्ये GROQ_API_KEY सेट केलेली नाही!"}), 400
+        return jsonify({"success": False, "error": "Render Environment मध्ये API Key सेट केलेली नाही!"}), 400
 
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
 
-    active_models = [
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant"
-    ]
+    # 1. Groq कडून थेट चालू (Active) मॉडेल्स मिळवणे
+    active_models = []
+    try:
+        models_res = requests.get("https://api.groq.com/openai/v1/models", headers=headers, timeout=10)
+        if models_res.status_code == 200:
+            m_data = models_res.json().get("data", [])
+            for m in m_data:
+                mid = m.get("id", "")
+                if "whisper" not in mid.lower():
+                    active_models.append(mid)
+    except Exception as e:
+        print(f"Error fetching models: {e}")
 
-    # काठिण्य पातळी सूचना
+    if not active_models:
+        active_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192"]
+
+    # 2. काठिण्य पातळीनुसार सूचना
     if difficulty == "easy":
-        diff_instruction = "काठिण्य पातळी: सोपी (Easy). सर्व प्रश्न थेट, वस्तुनिष्ठ, मूलभूत व्याख्या व सरळ नियमांवर आधारित असावेत. पर्याय स्पष्ट असावेत."
+        diff_instruction = (
+            "काठिण्य पातळी: सोपी (Easy).\n"
+            "- सर्व प्रश्न थेट, वस्तुनिष्ठ, मूलभूत व्याख्या व सरळ नियमांवर आधारित असावेत.\n"
+            "- पर्याय स्पष्ट असावेत, अति-गुंतागुंत नको."
+        )
     elif difficulty == "medium":
-        diff_instruction = "काठिण्य पातळी: मध्यम (Medium). पोलीस भरतीचे नियमित गुणवत्ता स्तर ठरवणारे प्रश्न, व्याकरणातील अपवाद व चालू कलमांवर आधारित प्रश्न असावेत."
+        diff_instruction = (
+            "काठिण्य पातळी: मध्यम (Medium).\n"
+            "- पोलीस भरतीचे नियमित गुणवत्ता स्तर ठरवणारे प्रश्न असावेत.\n"
+            "- व्याकरणातील नेहमीचे अपवाद, महत्वाच्या घडामोडी व कलमांवर आधारित प्रश्न असावेत."
+        )
     elif difficulty == "hard":
-        diff_instruction = "काठिण्य पातळी: कठीण (Hard). प्रश्न उच्च दर्जाचे, विधानात्मक व मेरिट ठरवणारे असावेत. पर्याय जवळचे असावेत."
-    else:
-        diff_instruction = "काठिण्य पातळी: प्रमाण समतोल. ३०% सोपे, ५०% मध्यम आणि २०% कठीण मेरिट प्रश्न."
-
-    generated_list = []
-    overall_errors = []
-
-    # प्रत्येक निवडलेल्या विषयानुसार प्रश्न निर्मिती
-    for subj, count in subject_counts.items():
-        try:
-            count = int(count)
-        except (ValueError, TypeError):
-            continue
-
-        if count <= 0:
-            continue
-
-        prompt_text = (
-            f"तुम्ही {department} परीक्षेचे सर्वोच्च मुख्य पेपर सेटर आहात.\n"
-            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि १००% बिनचूक असे एकूण {count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n"
-            f"{diff_instruction}\n\n"
-            f"कडक पडताळणी नियम:\n"
-            f"१. तथ्य अचूकता: सर्व कलमे, तारखा, घटनादुरुस्त्या, आकडेवारी व व्याकरण नियम १००% अधिकृत शासकीय संदर्भानुसारच असावेत.\n"
-            f"२. पर्याय सुस्पष्टता: ४ पैकी केवळ एकच पर्याय योग्य असावा. इतर ३ पर्याय स्पष्टपणे चुकीचे असावेत. पर्याय डुप्लिकेट नसावेत.\n"
-            f"३. समतोल उत्तरे: सर्व प्रश्नांचे उत्तर एकच असू नये. अचूक पर्याय समप्रमाणात द्या.\n"
-            f"४. स्पष्टीकरण: निवडलेल्या अचूक पर्यायाचे थेट समर्थन स्पष्टीकरणात आले पाहिजे.\n"
-            f"५. अत्यंत महत्त्वाचे: आधी योग्य उत्तर व त्याचे स्पष्टीकरण ठरवा, नंतर उरलेले ३ पर्याय लिहा.\n\n"
-            f"प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
-            f"प्रश्न|पर्याय A|पर्याय B|पर्याय C|पर्याय D|अचूक पर्याय (A/B/C/D)|स्पष्टीकरण\n\n"
-            f"नमुना फॉरमॅट:\n"
-            f"१८५७ च्या उठावाचे तात्कालिक कारण काय होते?|चरबी लावलेली काडतुसे|सैनिकांचे गणवेश बदलणे|जमीन महसूल वाढवणे|नवीन जकात कर|A|ब्रिटिशांनी एन्फिल्ड रायफलच्या काडतुसांवर गाय व डुकराची चरबी वापरल्यामुळे सैनिकांच्या धार्मिक भावना दुखावल्या आणि उठाव सुरू झाला.\n\n"
-            f"सूचना: कोणताही अतिरिक्त प्रास्ताविक किंवा समारोपाचा मजकूर देऊ नका. फक्त {count} ओळी द्या."
+        diff_instruction = (
+            "काठिण्य पातळी: कठीण (Hard / Advanced).\n"
+            "- प्रश्न उच्च दर्जाचे, विधानात्मक ('विधान अ आणि ब विचारात घ्या'), 'खालीलपैकी काय असत्य आहे' अशा स्वरूपाचे असावेत.\n"
+            "- पर्याय अत्यंत जवळचे आणि विद्यार्थ्यांची खरी परीक्षा घेणारे असावेत."
+        )
+    else:  # balanced
+        diff_instruction = (
+            "काठिण्य पातळी: प्रमाण समतोल (Balanced Standard Exam Pattern).\n"
+            "- ३०% प्रश्न सोपे (थेट व बेसिक संकल्पना)\n"
+            "- ५०% प्रश्न मध्यम (नियमित स्पर्धा परीक्षा स्तर)\n"
+            "- २०% प्रश्न कठीण (मेरिट ठरवणारे, विधानात्मक व फसवे पर्याय असणारे)"
         )
 
-        subj_success = False
+    import random
+    generated_list = []
+
+    import random
+
+    for subj, num in subject_counts.items():
+        count = int(num)
+        if count <= 0: 
+            continue
+
+        # MASTER_SYLLABUS मधून या विषयाचे अधिकृत घटक व उपघटक शोधणे
+        syllabus_details = ""
+        try:
+            from syllabus_data import MASTER_SYLLABUS
+            for k, sdata in MASTER_SYLLABUS.items():
+                if sdata.get('name', '').strip().lower() == subj.strip().lower() or subj.strip().lower() in sdata.get('name', '').strip().lower():
+                    sec_list = []
+                    for sec_title, sec_points in sdata.get('sections', {}).items():
+                        points_text = ", ".join(sec_points[:6])
+                        sec_list.append(f"• {sec_title}: {points_text}")
+                    syllabus_details = "\nअधिकृत अभ्यासक्रम घटक:\n" + "\n".join(sec_list) + "\n"
+                    break
+        except Exception as syl_err:
+            print(f"Syllabus fetch warning: {syl_err}")
+            syllabus_details = ""
+
+        # अत्यंत कडक, त्रुटीमुक्त व समतोल पर्यायांचा प्रॉम्प्ट
+        prompt = (
+            f"तुम्ही महाराष्ट्र लोकसेवा आयोग व पोलीस भरतीचे सर्वोच्च मुख्य पेपर सेटर आहात.\n"
+            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि १००% बिनचूक असे एकूण {count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n\n"
+            f"{syllabus_details}\n"
+            f"{diff_instruction}\n\n"
+            f"कडक पडताळणी नियम (Zero Error Mandate):\n"
+            f"1. तथ्य अचूकता: सर्व कलमे, तारखा, घटनादुरुस्त्या, आकडेवारी आणि व्याकरण नियम १००% अधिकृत शासकीय संदर्भानुसारच असावेत.\n"
+            f"2. पर्याय सुस्पष्टता: ४ पैकी केवळ एकच पर्याय योग्य असावा. इतर ३ पर्याय स्पष्टपणे चुकीचे असावेत.\n"
+            f"3. समतोल उत्तरे: सर्व प्रश्नांचे उत्तर 'A' असू नये. अचूक पर्याय A, B, C, D मध्ये समप्रमाणात द्या.\n"
+            f"4. स्पष्टीकरण सुसंगती: निवडलेल्या अचूक पर्यायाचे थेट समर्थन स्पष्टीकरणात आले पाहिजे.\n\n"
+            f"प्रत्येक प्रश्नाचे उत्तर खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
+            f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
+            f"सूचना: कोणताही अतिरिक्त प्रास्ताविक मजकूर नको, फक्त {count} ओळी द्या."
+        )
+
+        success = False
+        last_error = ""
+
         for model_name in active_models:
             payload = {
                 "model": model_name,
-                "messages": [
-                    {"role": "user", "content": prompt_text}
-                ],
-                "temperature": 0.25,
-                "max_tokens": 2048
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.25  # अचूक उत्तरासाठी तापमान ०.२५
             }
 
             try:
-                res = requests.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    json=payload,
-                    headers=headers,
-                    timeout=45
-                )
-
+                res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=45)
                 if res.status_code == 200:
-                    res_json = res.json()
-                    choices = res_json.get("choices", [])
-                    if choices:
-                        text_out = choices[0].get("message", {}).get("content", "")
-                        for line in text_out.strip().split('\n'):
-                            parts = [p.strip() for p in line.split('|')]
-                            if len(parts) >= 6:
-                                q_text = parts[0]
-                                raw_corr = parts[5].upper()
-                                if raw_corr not in ['A', 'B', 'C', 'D']:
-                                    raw_corr = 'A'
-
-                                opts_map = {'A': parts[1], 'B': parts[2], 'C': parts[3], 'D': parts[4]}
-                                corr_text = opts_map.get(raw_corr, parts[1])
-
-                                # ४ पर्यायांचे शफलिंग
-                                shuffled_opts = [parts[1], parts[2], parts[3], parts[4]]
-                                random.shuffle(shuffled_opts)
-
-                                letters = ['A', 'B', 'C', 'D']
-                                final_corr = 'A'
-                                for idx, opt_val in enumerate(shuffled_opts):
-                                    if opt_val == corr_text:
-                                        final_corr = letters[idx]
-                                        break
-
-                                exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार विश्लेषण.'
-                                generated_list.append((
-                                    test_id, q_text,
-                                    shuffled_opts[0], shuffled_opts[1], shuffled_opts[2], shuffled_opts[3],
-                                    final_corr, exp, subj
-                                ))
-                        subj_success = True
+                    text_out = res.json()["choices"][0]["message"]["content"]
+                    for line in text_out.strip().split('\n'):
+                        parts = [p.strip() for p in line.split('|')]
+                        if len(parts) >= 6:
+                            q_text = parts[0]
+                            options = [
+                                ('A', parts[1]),
+                                ('B', parts[2]),
+                                ('C', parts[3]),
+                                ('D', parts[4])
+                            ]
+                            raw_corr = parts[5].upper()
+                            if raw_corr not in ['A', 'B', 'C', 'D']:
+                                raw_corr = 'A'
+                            
+                            # अचूक उत्तराचा मूळ मजकूर सुरक्षित साठवणे
+                            corr_text = dict(options).get(raw_corr, parts[1])
+                            
+                            # ४ पर्यायांची अदलाबदल (Shuffle) करणे
+                            shuffled_opts = [parts[1], parts[2], parts[3], parts[4]]
+                            random.shuffle(shuffled_opts)
+                            
+                            # बदललेल्या जागेनुसार अचूक पर्यायाचे अक्षर निश्चित करणे
+                            letters = ['A', 'B', 'C', 'D']
+                            final_corr = 'A'
+                            for idx, opt_val in enumerate(shuffled_opts):
+                                if opt_val == corr_text:
+                                    final_corr = letters[idx]
+                                    break
+                            
+                            exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार अधिकृत विश्लेषण.'
+                            generated_list.append((
+                                test_id, q_text, 
+                                shuffled_opts[0], shuffled_opts[1], shuffled_opts[2], shuffled_opts[3], 
+                                final_corr, exp, subj
+                            ))
+                    if len(generated_list) > 0:
+                        success = True
                         break
                 else:
-                    err_msg = res.text[:80]
-                    try:
-                        err_msg = res.json().get("error", {}).get("message", err_msg)
-                    except Exception:
-                        pass
-                    overall_errors.append(f"{model_name}: {res.status_code} ({err_msg})")
-
+                    last_error = f"{model_name}: {res.text[:100]}"
             except Exception as err:
-                overall_errors.append(f"{model_name}: {str(err)}")
+                last_error = str(err)
                 continue
 
-    if not generated_list:
-        err_detail = ", ".join(overall_errors[-2:]) if overall_errors else "कोणतेही प्रश्न तयार झाले नाहीत."
-        return jsonify({"success": False, "error": f"API त्रुटी: {err_detail}"}), 500
-
-    try:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.executemany("""
-                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation, subject)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, generated_list)
-                conn.commit()
-        return jsonify({"success": True, "inserted_count": len(generated_list)})
-    except Exception as db_err:
-        return jsonify({"success": False, "error": f"डेटाबेस सेव्ह त्रुटी: {str(db_err)}"}), 500
-
-    try:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.executemany("""
-                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation, subject)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, generated_list)
-                conn.commit()
-        return jsonify({"success": True, "inserted_count": len(generated_list)})
-    except Exception as db_err:
-        return jsonify({"success": False, "error": f"डेटाबेस सेव्ह त्रुटी: {str(db_err)}"}), 500
+        if not success:
+            return jsonify({"success": False, "error": f"API त्रुटी: {last_error}"}), 500
 
     if generated_list:
         with get_db() as conn:
@@ -5070,21 +5071,6 @@ def admin_test_paper_view(test_id):
                     questions = cur.fetchall()
 
     return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
-
-    # विषय डिलीट करण्यासाठी राऊट
-@app.route('/admin/delete_subject/<int:subject_id>', methods=['GET', 'POST'])
-def admin_delete_subject(subject_id):
-    if not session.get('is_admin'):
-        return redirect(url_for('admin_login'))
-    try:
-        with get_db() as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM subjects WHERE id = ?", (subject_id,))
-            conn.commit()
-        flash("विषय यशस्वीरीत्या डिलीट करण्यात आला आहे.", "success")
-    except Exception as e:
-        flash(f"त्रुटी: {str(e)}", "danger")
-    return redirect(request.referrer or url_for('admin_dashboard'))
         
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
