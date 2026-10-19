@@ -2530,6 +2530,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                         <option value="free" {% if t.category=='free' %}selected{% endif %}>🟢 मोफत</option>
                         <option value="paid" {% if t.category=='paid' %}selected{% endif %}>🎯 अतिसंभाव्य</option>
                         <option value="live" {% if t.category=='live' %}selected{% endif %}>🔴 महासंग्राम</option>
+                        <option value="subjects" {% if t.category=='subjects' %}selected{% endif %}>📚 विषयनिहाय टेस्ट (Subject-wise)</option>
                         <option value="rapid" {% if t.category=='rapid' %}selected{% endif %}>⚡ रॅपिड फायर</option>
                         {% for ct in custom_tabs_list %}
                         <option value="{{ ct.key }}" {% if t.category==ct.key %}selected{% endif %}>{{ ct.label }}</option>
@@ -4669,7 +4670,7 @@ def admin_bulk_toggle_test_status():
             if cat_tab == 'all':
                 cur.execute("UPDATE test_papers SET status = %s WHERE is_deleted = 0", (target_status,))
             elif cat_tab == 'subjects':
-                cur.execute("UPDATE test_papers SET status = %s WHERE is_deleted = 0 AND (subject IS NOT NULL AND subject != '')", (target_status,))
+                cur.execute("UPDATE test_papers SET status = %s WHERE is_deleted = 0 AND (category = 'subjects' OR (subject IS NOT NULL AND subject != ''))", (target_status,))
             else:
                 cur.execute("UPDATE test_papers SET status = %s WHERE is_deleted = 0 AND category = %s", (target_status, cat_tab))
             conn.commit()
