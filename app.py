@@ -4237,6 +4237,21 @@ def admin_ai_generate_advanced():
                     break
         except Exception:
             syllabus_details = ""
+            # चालू घडामोडींसाठी मागील एका वर्षाची कालमर्यादा
+        from datetime import datetime, timedelta
+        current_date_obj = datetime.now()
+        current_date_str = current_date_obj.strftime("%d %B %Y")
+        one_year_back_str = (current_date_obj - timedelta(days=365)).strftime("%B %Y")
+
+        ca_time_rule = ""
+        if "चालू घडामोडी" in subj:
+            ca_time_rule = (
+                f"\n⚠️ अत्यंत महत्त्वाचा कालमर्यादा नियम (Strict Current Affairs Rule):\n"
+                f"- आजची तारीख: {current_date_str}.\n"
+                f"- सर्व प्रश्न अनिवार्यपणे मागील एका वर्षातीलच (म्हणजे {one_year_back_str} ते {current_date_str} या कालावधीतीलच) असावेत.\n"
+                f"- २०२४ किंवा त्यापूर्वीचे जुने चालू घडामोडींचे प्रश्न देणे सक्त मनाई आहे.\n"
+                f"- अपवाद: एखादी अतिशय मोठी राष्ट्रीय/आंतरराष्ट्रीय ऐतिहासिक घटना किंवा धोरण असेल तरच १ वर्षापूर्वीचा संदर्भ चालेल, अन्यथा चालू घडामोडी १००% अद्ययावत (Latest 1 Year) असाव्यात.\n"
+            )
 
         prompt = (
             f"तुम्ही {department} परीक्षेचे सर्वोच्च मुख्य पेपर सेटर आहात.\n"
@@ -4252,6 +4267,36 @@ def admin_ai_generate_advanced():
         )
 
         subj_success = False
+        # चालू घडामोडींसाठी मागील एका वर्षाची कालमर्यादा
+        from datetime import datetime, timedelta
+        current_date_obj = datetime.now()
+        current_date_str = current_date_obj.strftime("%d %B %Y")
+        one_year_back_str = (current_date_obj - timedelta(days=365)).strftime("%B %Y")
+
+        ca_time_rule = ""
+        if "चालू घडामोडी" in subj:
+            ca_time_rule = (
+                f"\n⚠️ अत्यंत महत्त्वाचा कालमर्यादा नियम (Strict Current Affairs Rule):\n"
+                f"- आजची तारीख: {current_date_str}.\n"
+                f"- सर्व प्रश्न अनिवार्यपणे मागील एका वर्षातीलच (म्हणजे {one_year_back_str} ते {current_date_str} या कालावधीतीलच) असावेत.\n"
+                f"- २०२४ किंवा त्यापूर्वीचे जुने चालू घडामोडींचे प्रश्न देणे सक्त मनाई आहे.\n"
+                f"- अपवाद: एखादी अतिशय मोठी राष्ट्रीय/आंतरराष्ट्रीय ऐतिहासिक घटना किंवा धोरण असेल तरच १ वर्षापूर्वीचा संदर्भ चालेल, अन्यथा चालू घडामोडी १००% अद्ययावत (Latest 1 Year) असाव्यात.\n"
+            )
+
+        # अत्यंत कडक, त्रुटीमुक्त व समतोल पर्यायांचा प्रॉम्प्ट
+        prompt = (
+            f"तुम्ही {department} परीक्षेचे सर्वोच्च मुख्य पेपर सेटर आहात.\n"
+            f"'{subj}' या विषयावर आधारित अत्यंत संभाव्य आणि १००% बिनचूक असे एकूण {count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n\n"
+            f"{syllabus_details}\n"
+            f"{diff_instruction}\n"
+            f"{ca_time_rule}\n\n"
+            f"कडक पडताळणी नियम:\n"
+            f"१. ४ पैकी केवळ एकच पर्याय योग्य असावा, इतर ३ पर्याय स्पष्टपणे चुकीचे असावेत.\n"
+            f"२. अचूक पर्याय A, B, C, D मध्ये समप्रमाणात द्यावेत.\n"
+            f"३. प्रत्येक प्रश्न खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | चिन्ह वापरून):\n"
+            f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
+            f"सूचना: कोणताही अतिरिक्त मजकूर लिहू नका, फक्त {count} ओळी द्या."
+        )
 
         for model_name in ordered_models:
             payload = {
