@@ -2514,6 +2514,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     <a href="/admin/clone_test/{{ t.id }}" class="btn-sm" style="background:#d97706; color:white;">📋 क्लोन</a>
                     <a href="/admin/print_test/{{ t.id }}" target="_blank" class="btn-sm" style="background:#059669; color:white; text-decoration:none;">🖨️ प्रिंट</a>
                     <a href="/admin/delete_test/{{ t.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायची?');">🗑</a>
+                    <a href="/admin/test_paper_view/{{ t.id }}?mode=student" target="_blank" style="background:#059669; color:white; padding:5px 9px; border-radius:4px; text-decoration:none; font-size:11px; font-weight:bold; margin-left:4px; display:inline-block;">🖨️ ऑफलाईन पेपर</a>
+                    <a href="/admin/test_paper_view/{{ t.id }}?mode=master" target="_blank" style="background:#475569; color:white; padding:5px 9px; border-radius:4px; text-decoration:none; font-size:11px; font-weight:bold; margin-left:4px; display:inline-block;">🔑 उत्तरतालिका</a>
                 </td>
             </form>
         </tr>
