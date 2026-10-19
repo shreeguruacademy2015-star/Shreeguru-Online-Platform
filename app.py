@@ -4116,8 +4116,40 @@ def save_all_questions():
     if not session.get('admin_logged') and not session.get('is_admin'):
         return jsonify({'success': False, 'message': 'अनधिकृत प्रवेश!'}), 403
         # =============================================================================
-# विषय व्यवस्थापन राऊट्स (Add, Edit, Delete Dynamic Subjects)
+# विषय व्यवस्थापन राऊट्स (Add & Delete Dynamic Subjects)
 # =============================================================================
+
+@app.route('/admin/add_subject', methods=['POST'])
+def admin_add_subject():
+    if not session.get('admin_logged') and not session.get('is_admin'):
+        return redirect('/admin/login')
+    
+    subject_name = request.form.get('subject_name', '').strip()
+    sequence_order = int(request.form.get('sequence_order', 30) or 30)
+    
+    if subject_name:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO subjects (subject_name, sequence_order, is_deleted)
+                    VALUES (%s, %s, 0)
+                    ON CONFLICT (subject_name) 
+                    DO UPDATE SET sequence_order = EXCLUDED.sequence_order, is_deleted = 0
+                """, (subject_name, sequence_order))
+                conn.commit()
+                
+    return redirect('/admin/dashboard?tab=subjects_mgmt')
+
+
+@app.route('/admin/delete_subject/<int:subject_id>')
+def admin_delete_subject(subject_id):
+    if not session.get('admin_logged') and not session.get('is_admin'):
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("UPDATE subjects SET is_deleted = 1 WHERE id = %s", (subject_id,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=subjects_mgmt')
 
 # 6. Digital Smart AI Question Generator (Dynamic Models + Hybrid Difficulty)
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
