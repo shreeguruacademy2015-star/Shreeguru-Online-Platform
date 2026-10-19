@@ -4144,7 +4144,12 @@ def admin_ai_generate_advanced():
         "Content-Type": "application/json"
     }
 
-    active_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+    # अधिकृत चालू मॉडेल्सची अचूक यादी
+    active_models = [
+        "llama-3.1-8b-instant",
+        "llama3-70b-8192",
+        "mixtral-8x7b-32768"
+    ]
 
     if difficulty == "easy":
         diff_instruction = "काठिण्य पातळी: सोपी (Easy). सर्व प्रश्न थेट, वस्तुनिष्ठ व मूलभूत व्याख्यांवर असावेत."
