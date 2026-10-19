@@ -5042,9 +5042,6 @@ OFFLINE_PAPER_TEMPLATE = """
 
 @app.route('/admin/test_paper_view/<int:test_id>')
 def admin_test_paper_view(test_id):
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
-    
     mode = request.args.get('mode', 'student')
     conn = get_db_connection()
     cur = conn.cursor()
