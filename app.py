@@ -2338,6 +2338,14 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 6. TESTS MANAGEMENT TAB (Single Clean Save-All Button) -->
     {% elif active_tab == 'launch' %}
+    <!-- TESTS MANAGEMENT TAB (Single Clean Save-All Button) -->
+    {% elif active_tab == 'launch' %}
+    <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+        <button type="button" onclick="saveAllTestsData()" id="btnSaveAllTests" style="background: #10b981; color: white; border: none; padding: 9px 20px; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 13.5px; box-shadow: 0 4px 10px rgba(16,185,129,0.3);">
+            💾 सर्व बदल एकाच वेळी सेव्ह करा (Save All)
+        </button>
+    </div>
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
     <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
         <button type="button" onclick="saveAllTestsData()" id="btnSaveAllTests" style="background: #10b981; color: white; border: none; padding: 9px 20px; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 13.5px; box-shadow: 0 4px 10px rgba(16,185,129,0.3);">
@@ -4614,7 +4622,26 @@ def admin_add_test():
             """, (title, ttype, fee, duration, category, seq, subject))
             conn.commit()
     return redirect(f'/admin/dashboard?tab=launch&cat_tab={category}')
-
+# एका क्लिकवर सर्व टेस्ट्स चालू किंवा बंद करण्याचा राऊट
+@app.route('/admin/bulk_toggle_test_status', methods=['POST'])
+def admin_bulk_toggle_test_status():
+    if not session.get('admin_logged'):
+        return redirect('/admin/login')
+    
+    target_status = request.form.get('target_status', 'Active')  # 'Active' किंवा 'Closed'
+    cat_tab = request.form.get('cat_tab', 'all')
+    
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if cat_tab == 'all':
+                cur.execute("UPDATE test_papers SET status = %s WHERE is_deleted = 0", (target_status,))
+            elif cat_tab == 'subjects':
+                cur.execute("UPDATE test_papers SET status = %s WHERE is_deleted = 0 AND (subject IS NOT NULL AND subject != '')", (target_status,))
+            else:
+                cur.execute("UPDATE test_papers SET status = %s WHERE is_deleted = 0 AND category = %s", (target_status, cat_tab))
+            conn.commit()
+            
+    return redirect(f'/admin/dashboard?tab=launch&cat_tab={cat_tab}')
 @app.route('/admin/update_test/<int:test_id>', methods=['POST'])
 def admin_update_test(test_id):
     if not session.get('admin_logged'): 
