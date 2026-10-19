@@ -4942,6 +4942,124 @@ def service_worker():
         mimetype='application/javascript'
     )
     return response
+    # -------------------------------------------------------------
+# मास्टर टेस्ट रिपॉझिटरी व ऑफलाईन प्रिंट व्ह्यू (विद्यार्थी पेपर व मास्टर की)
+# -------------------------------------------------------------
+OFFLINE_PAPER_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ test.title }} - ऑफलाईन प्रिंट</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; color: #111; background: #fff; }
+        .no-print { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #cbd5e1; }
+        .btn-print { background: #059669; color: white; border: none; padding: 8px 18px; font-weight: bold; font-size: 14px; border-radius: 6px; cursor: pointer; }
+        .mode-link { text-decoration: none; font-size: 13px; font-weight: bold; padding: 6px 12px; border-radius: 6px; margin-right: 8px; }
+        .mode-active { background: #1e293b; color: #fff; }
+        .mode-inactive { background: #e2e8f0; color: #334155; }
+        
+        /* अकॅडमी हेडर */
+        .exam-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
+        .exam-header h2 { margin: 0 0 4px; font-size: 20px; text-transform: uppercase; }
+        .exam-header h3 { margin: 0 0 6px; font-size: 15px; color: #333; }
+        .exam-meta { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; border-top: 1px dashed #666; padding-top: 6px; margin-top: 6px; }
+        .student-fill { display: flex; justify-content: space-between; font-size: 13px; margin-top: 8px; padding-bottom: 4px; border-bottom: 1px solid #000; }
+
+        /* २-कॉलम कागद बचत रचना */
+        .paper-columns { column-count: 2; column-gap: 30px; column-rule: 1px solid #cbd5e1; }
+        .q-block { break-inside: avoid; margin-bottom: 12px; font-size: 12.5px; line-height: 1.45; }
+        .q-title { font-weight: bold; margin-bottom: 3px; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-left: 6px; font-size: 12px; }
+        
+        /* मास्टर की व स्पष्टीकरण हायलाईट */
+        .ans-key-tag { background: #dcfce7; color: #166534; font-weight: bold; padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 3px; font-size: 11px; }
+        .exp-box { background: #f8fafc; border-left: 3px solid #3b82f6; padding: 4px 8px; margin-top: 3px; font-size: 11px; color: #334155; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 8mm 10mm; font-size: 11px; }
+            .paper-columns { column-count: 2; column-gap: 24px; }
+            .q-block { margin-bottom: 10px; font-size: 11.5px; }
+            .options-grid { font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print">
+        <div>
+            <a href="/admin/test_paper_view/{{ test.id }}?mode=student" class="mode-link {{ 'mode-active' if mode == 'student' else 'mode-inactive' }}">📄 विद्यार्थी ऑफलाईन पेपर (फक्त प्रश्न)</a>
+            <a href="/admin/test_paper_view/{{ test.id }}?mode=master" class="mode-link {{ 'mode-active' if mode == 'master' else 'mode-inactive' }}">🔑 मास्टर उत्तरतालिका (स्पष्टीकरणासह)</a>
+        </div>
+        <div>
+            <button onclick="window.print()" class="btn-print">🖨️ प्रिंट काढा (Print / Save PDF)</button>
+        </div>
+    </div>
+
+    <div class="exam-header">
+        <h2>श्रीगुरु करिअर अकॅडमी, आडूर</h2>
+        <h3>{{ test.title }} {% if mode == 'master' %}<span style="color:#dc2626;">(शिक्षक/मास्टर की)</span>{% endif %}</h3>
+        <div class="exam-meta">
+            <span>एकूण प्रश्न: {{ questions|length }}</span>
+            <span>वेळ: {{ test.time_limit }} मिनिटे</span>
+            <span>गुण: {{ questions|length }}</span>
+        </div>
+        {% if mode == 'student' %}
+        <div class="student-fill">
+            <span>विद्यार्थ्याचे नाव: _________________________________________</span>
+            <span>रोल नं: _________</span>
+            <span>गुण: ____/{{ questions|length }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="paper-columns">
+        {% for q in questions %}
+        <div class="q-block">
+            <div class="q-title">प्र. {{ loop.index }}. {{ q.question }}</div>
+            <div class="options-grid">
+                <div>(A) {{ q.opt_a }}</div>
+                <div>(B) {{ q.opt_b }}</div>
+                <div>(C) {{ q.opt_c }}</div>
+                <div>(D) {{ q.opt_d }}</div>
+            </div>
+            {% if mode == 'master' %}
+            <div class="ans-key-tag">✅ अचूक उत्तर: पर्याय {{ q.correct_opt }}</div>
+            {% if q.explanation %}
+            <div class="exp-box"><b>💡 स्पष्टीकरण:</b> {{ q.explanation }}</div>
+            {% endif %}
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+</body>
+</html>
+"""
+
+@app.route('/admin/test_paper_view/<int:test_id>')
+def admin_test_paper_view(test_id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    
+    mode = request.args.get('mode', 'student')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT * FROM mock_tests WHERE id = %s", (test_id,))
+    test = cur.fetchone()
+    
+    cur.execute("SELECT * FROM mock_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
+    questions = cur.fetchall()
+    
+    cur.close()
+    conn.close()
+    
+    if not test:
+        return "टेस्ट सापडली नाही", 404
+        
+    return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
