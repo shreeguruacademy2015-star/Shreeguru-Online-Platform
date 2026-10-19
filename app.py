@@ -3966,12 +3966,9 @@ def admin_dashboard():
                 filter_test_id = available_tests[0]['id']
 
             if filter_test_id:
-                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (filter_test_id,))
-            elif available_tests:
-                filter_test_id = available_tests[0]['id']
-                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (filter_test_id,))
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id DESC", (filter_test_id,))
             else:
-                cur.execute("SELECT * FROM questions WHERE is_deleted=0 ORDER BY id ASC LIMIT 50")
+                cur.execute("SELECT * FROM questions WHERE is_deleted=0 ORDER BY id DESC")
             all_questions = cur.fetchall()
 
             selected_test_title = "निवडलेली टेस्ट"
