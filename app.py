@@ -4639,21 +4639,34 @@ def admin_bulk_delete_feedback():
 def admin_add_test():
     if not session.get('admin_logged'): 
         return redirect('/admin/login')
+    
     title = request.form.get('test_title', '').strip()
     subject = request.form.get('subject') or None
     category = request.form.get('category', 'paid')
     ttype = request.form.get('test_type', 'Paid')
-    seq = int(request.form.get('sequence_order', 1) or 1)
+    seq_input = request.form.get('sequence_order')
     fee = float(request.form.get('test_fee', 99) or 0)
     duration = int(request.form.get('duration_minutes', 60) or 60)
-    
+
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # अनुक्रमांक दिला नसेल तर शेवटचा क्रमांक शोधून आपोआप +१ करणे:
+            if not seq_input or str(seq_input).strip() == '':
+                cur.execute("""
+                    SELECT COALESCE(MAX(sequence_order), 0) + 1 AS next_seq 
+                    FROM test_papers 
+                    WHERE category = %s AND is_deleted = 0
+                """, (category,))
+                seq = cur.fetchone()['next_seq']
+            else:
+                seq = int(seq_input)
+
             cur.execute("""
                 INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, sequence_order, subject)
                 VALUES (%s, %s, %s, %s, 'Active', %s, %s, %s)
             """, (title, ttype, fee, duration, category, seq, subject))
             conn.commit()
+
     return redirect(f'/admin/dashboard?tab=launch&cat_tab={category}')
 # एका क्लिकवर सर्व टेस्ट्स चालू किंवा बंद करण्याचा राऊट
 @app.route('/admin/bulk_toggle_test_status', methods=['POST'])
