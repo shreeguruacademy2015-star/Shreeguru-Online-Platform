@@ -5046,35 +5046,18 @@ def admin_test_paper_view(test_id):
     try:
         mode = request.args.get('mode', 'student')
         
-        # उपलब्ध डेटाबेस फंक्शन शोधणे
-        conn = None
-        for func_name in ['get_db', 'get_connection', 'get_db_conn', 'db_connection', 'get_database']:
-            if func_name in globals():
-                conn = globals()[func_name]()
-                break
-        if conn is None:
-            # थेट ग्लोबल conn किंवा db वापरणे
-            conn = globals().get('conn') or globals().get('db')
-        
-        # RealDictCursor वापरण्याचा प्रयत्न
-        try:
-            import psycopg2.extras
-            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        except Exception:
+        test = None
+        questions = []
+
+        # Context manager (with) वापरून सुरक्षित क्वेरी चालवणे
+        with get_db() as conn:
             cur = conn.cursor()
+            cur.execute("SELECT * FROM mock_tests WHERE id = %s", (test_id,))
+            test = cur.fetchone()
 
-        cur.execute("SELECT * FROM mock_tests WHERE id = %s", (test_id,))
-        test = cur.fetchone()
-
-        cur.execute("SELECT * FROM mock_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
-        questions = cur.fetchall()
-
-        cur.close()
-        # जर get_db मधील कनेक्शन आपोआप बंद होत नसेल तरच close करा
-        try:
-            conn.close()
-        except Exception:
-            pass
+            cur.execute("SELECT * FROM mock_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
+            questions = cur.fetchall()
+            cur.close()
 
         if not test:
             return "टेस्ट सापडली नाही", 404
@@ -5084,6 +5067,7 @@ def admin_test_paper_view(test_id):
             if isinstance(q, dict):
                 formatted_questions.append(q)
             else:
+                # ट्युपल (tuple) असल्यास योग्य मॅपिंग
                 formatted_questions.append({
                     'question': q[2] if len(q) > 2 else '',
                     'opt_a': q[3] if len(q) > 3 else '',
@@ -5100,6 +5084,7 @@ def admin_test_paper_view(test_id):
 
     except Exception as e:
         return f"<pre style='color:red; background:#fee; padding:20px; font-size:14px;'>एरर आला आहे:\n\n{traceback.format_exc()}</pre>", 500
+        
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
