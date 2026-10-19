@@ -2915,7 +2915,6 @@ def home_tests_list():
                         t_dict['is_locked_10am'] = not is_today_unlocked
                         tests.append(t_dict)
                 else:
-                    tests.append(t_dict)
                     t_dict['is_locked'] = False
                     tests.append(t_dict)
 
@@ -3967,9 +3966,12 @@ def admin_dashboard():
                 filter_test_id = available_tests[0]['id']
 
             if filter_test_id:
-                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id DESC", (filter_test_id,))
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (filter_test_id,))
+            elif available_tests:
+                filter_test_id = available_tests[0]['id']
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (filter_test_id,))
             else:
-                cur.execute("SELECT * FROM questions WHERE is_deleted=0 ORDER BY id DESC")
+                cur.execute("SELECT * FROM questions WHERE is_deleted=0 ORDER BY id ASC LIMIT 50")
             all_questions = cur.fetchall()
 
             selected_test_title = "निवडलेली टेस्ट"
