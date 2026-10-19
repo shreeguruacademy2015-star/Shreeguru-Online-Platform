@@ -4755,6 +4755,22 @@ def admin_delete_test(test_id):
             conn.commit()
     return redirect('/admin/dashboard?tab=launch')
 
+@app.route('/admin/resequence_tests')
+def admin_resequence_tests():
+    if not session.get('admin_logged'):
+        return redirect('/admin/login')
+    
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id FROM test_papers WHERE is_deleted = 0 ORDER BY sequence_order ASC, id ASC")
+            all_tests = cur.fetchall()
+            
+            for new_seq, t in enumerate(all_tests, start=1):
+                cur.execute("UPDATE test_papers SET sequence_order = %s WHERE id = %s", (new_seq, t['id']))
+            conn.commit()
+            
+    return redirect('/admin/dashboard?tab=launch')
+
 # स्पेशल ॲक्सेस व पेमेंट मंजुरी राऊट्स
 @app.route('/admin/approve_payment/<int:lead_id>', methods=['POST'])
 def admin_approve_payment(lead_id):
