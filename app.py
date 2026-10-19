@@ -2865,7 +2865,7 @@ def home_tests_list():
                 if row and row['cnt'] > 0:
                     active_students_count = row['cnt'] + 25
 
-                cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY sequence_order ASC, id ASC")
+                cur.execute("SELECT DISTINCT ON (test_title) * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY test_title, sequence_order ASC, id ASC")
                 raw_tests_db = cur.fetchall()
 
                 # --- RAPID FIRE SEQUENTIAL DAILY 10 AM UNLOCK LOGIC ---
