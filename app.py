@@ -1921,7 +1921,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <label style="font-size:12px; font-weight:bold;">टेस्ट:</label>
             <select name="lead_test_id" style="width:160px; margin-bottom:0;" onchange="this.form.submit()">
                 <option value="">-- सर्व टेस्ट्स --</option>
-                {% for t in tests %}<option value="{{ t.id }}" {% if lead_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>{% endfor %}
+                {% for t in tests %}
+                <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>[{{ t.category }}] {{ t.test_title }}</option>{% endfor %}
             </select>
             <a href="/admin/dashboard?tab=leads" class="btn-sm" style="background:#64748b; color:white;">Clear</a>
         </form>
