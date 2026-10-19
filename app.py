@@ -786,8 +786,9 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         <span class="badge-live">LIVE</span> 🕒 81M मिशन खाकी २०२६ सराव कक्ष
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
-        <a href="https://shreeguru-online-platform.onrender.com" onclick="alert('हे पोर्टल ॲपप्रमाणे सेव्ह करण्यासाठी: ब्राऊझरच्या वरच्या उजव्या बाजूला असलेल्या ३ ठिपक्यांवर क्लिक करून Install app किंवा Add to Home screen निवडा.'); return false;" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: #ffffff; text-decoration: none; padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 20px; border: 1px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: inline-flex; align-items: center; gap: 4px;">
-            📲 ॲप डाऊनलोड
+        <button type="button" onclick="triggerDirectInstall()" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: #ffffff; border: 1px solid #ffffff; padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+    📲 ॲप डाऊनलोड
+</button>
         </a>
     </div>
 </div>
@@ -3230,10 +3231,10 @@ RESULT_SUMMARY_TEMPLATE = """
             <div style="color: #34d399; font-weight: bold; font-size: 13.5px; margin-bottom: 6px;">
                 📲 आगामी सर्व टेस्ट्स व थेट रँक अलर्टसाठी ॲप वापरा!
             </div>
-            <a href="/" onclick="alert('ॲप इन्स्टॉल करण्यासाठी: ब्राऊझरच्या ३ ठिपक्यांवर (⋮) क्लिक करून Install app निवडा.');" style="background: #10b981; color: #022c22; font-weight: 800; font-size: 12.5px; padding: 7px 16px; border-radius: 20px; text-decoration: none; display: inline-block;">
-                ⚡ अधिकृत ॲप इन्स्टॉल करा
-            </a>
-        </div>
+            <button type="button" onclick="triggerDirectInstall()" style="background: #10b981; color: #022c22; font-weight: 800; font-size: 12.5px; padding: 7px 16px; border-radius: 20px; border: none; cursor: pointer; display: inline-block;">
+            ⚡ अधिकृत ॲप इन्स्टॉल करा
+        </button>
+    </div>
         <a href="{{ result_url }}" class="btn-ans">📋 सविस्तर उत्तरतालिका व स्पष्टीकरण पहा</a>
 
         <!-- अधिकृत ग्रुप लिंक -->
