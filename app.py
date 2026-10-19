@@ -4195,11 +4195,17 @@ def admin_ai_generate_advanced():
         payload = {
             "model": model_name,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.25
+            "temperature": 0.3,
+            "max_tokens": 2500
         }
 
         try:
-            res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=45)
+            res = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                json=payload,
+                headers=headers,
+                timeout=30
+            )
             if res.status_code == 200:
                 text_out = res.json()["choices"][0]["message"]["content"]
                 for line in text_out.strip().split('\n'):
