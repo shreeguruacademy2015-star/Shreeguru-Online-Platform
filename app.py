@@ -2336,15 +2336,48 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     }
     </script>
 
-    <!-- 6. TESTS MANAGEMENT TAB (Single Clean Save-All Button) -->
+    <!-- 6. TESTS MANAGEMENT TAB -->
     {% elif active_tab == 'launch' %}
-    <!-- TESTS MANAGEMENT TAB (Single Clean Save-All Button) -->
-    {% elif active_tab == 'launch' %}
-    <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
-        <button type="button" onclick="saveAllTestsData()" id="btnSaveAllTests" style="background: #10b981; color: white; border: none; padding: 9px 20px; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 13.5px; box-shadow: 0 4px 10px rgba(16,185,129,0.3);">
-            💾 सर्व बदल एकाच वेळी सेव्ह करा (Save All)
-        </button>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+        <h3 style="margin: 0; color: #065f46;">🚀 टेस्ट व्यवस्थापन, सॉर्टिंग व शेड्युलिंग</h3>
+        
+        <!-- एकाच क्लिकवर सर्व चालू / बंद आणि सेव्ह बटणे -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <form method="POST" action="/admin/bulk_toggle_test_status" onsubmit="return confirm('सध्याच्या टॅबमधील सर्व टेस्ट्स चालू (Active) करायच्या का?');" style="margin: 0;">
+                <input type="hidden" name="target_status" value="Active">
+                <input type="hidden" name="cat_tab" value="{{ cat_tab }}">
+                <button type="submit" style="background: #16a34a; color: white; border: none; padding: 8px 14px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12.5px;">
+                    🟢 सर्व टेस्ट्स चालू करा
+                </button>
+            </form>
+
+            <form method="POST" action="/admin/bulk_toggle_test_status" onsubmit="return confirm('सध्याच्या टॅबमधील सर्व टेस्ट्स बंद (Closed) करायच्या का?');" style="margin: 0;">
+                <input type="hidden" name="target_status" value="Closed">
+                <input type="hidden" name="cat_tab" value="{{ cat_tab }}">
+                <button type="submit" style="background: #dc2626; color: white; border: none; padding: 8px 14px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12.5px;">
+                    🔴 सर्व टेस्ट्स बंद करा
+                </button>
+            </form>
+
+            <button type="button" onclick="saveAllTestsData()" id="btnSaveAllTests" style="background: #10b981; color: #022c22; border: none; padding: 8px 16px; font-weight: 800; border-radius: 6px; cursor: pointer; font-size: 12.5px; box-shadow: 0 2px 6px rgba(16,185,129,0.3);">
+                💾 सर्व बदल सेव्ह करा (Save All)
+            </button>
+        </div>
+    </div>
+
+    <!-- सॉर्टिंग (Sort by Sequence, Name, ID) आणि काउंट बार -->
+    <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: bold; font-size: 13px; color: #334155;">🔽 क्रमवारी (Sort By):</span>
+            <select onchange="location.href='/admin/dashboard?tab=launch&cat_tab={{ cat_tab }}&sort_by=' + this.value" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; margin-bottom: 0; width: auto;">
+                <option value="seq" {% if sort_by=='seq' %}selected{% endif %}>🔢 अनुक्रमांकानुसार (Sequence Order)</option>
+                <option value="name" {% if sort_by=='name' %}selected{% endif %}>🔤 नावानुसार (Test Name A-Z)</option>
+                <option value="id" {% if sort_by=='id' %}selected{% endif %}>🆕 नवीन जोडलेले आधी (Latest ID)</option>
+            </select>
+        </div>
+        <div style="font-size: 12.5px; color: #64748b; font-weight: bold;">
+            एकूण टेस्ट्स: <span style="color: #059669; font-size: 14px;">{{ tests|length }}</span>
+        </div>
     </div>
     <h3>🚀 टेस्ट व्यवस्थापन व शेड्युलिंग</h3>
     <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
