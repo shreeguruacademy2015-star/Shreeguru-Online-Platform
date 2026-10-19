@@ -829,7 +829,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         <div class="unlock-badge" style="cursor: pointer; line-height: 1.6; display: inline-block; padding: 10px 18px;" onclick="document.getElementById('friend_invite_phone').focus(); window.scrollTo({top: 180, behavior: 'smooth'});">
     🎁 <b>विशेष ऑफर:</b> ३ मित्रांना मोफत टेस्ट शेअर करा; त्यांनी टेस्ट सोडवताच तुम्हाला २ महासंग्राम टेस्ट्स १००% मोफत मिळतील! 
     <span style="background: #022c22; color: #a7f3d0; padding: 4px 10px; border-radius: 12px; margin-left: 6px; font-size: 12px; text-decoration: underline;">
-        📲 येथे क्लिक करून लिंक पाठवा ➔
+                                                                 📲 येथे क्लिक करून लिंक पाठवा ➔
     </span>
 </div>
     </div>
