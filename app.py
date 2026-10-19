@@ -5045,9 +5045,18 @@ def admin_test_paper_view(test_id):
     import traceback
     try:
         mode = request.args.get('mode', 'student')
-        conn = get_db_connection()
         
-        # RealDictCursor वापरून डेटा डिक्शनरी स्वरूपात घेणे
+        # उपलब्ध डेटाबेस फंक्शन शोधणे
+        conn = None
+        for func_name in ['get_db', 'get_connection', 'get_db_conn', 'db_connection', 'get_database']:
+            if func_name in globals():
+                conn = globals()[func_name]()
+                break
+        if conn is None:
+            # थेट ग्लोबल conn किंवा db वापरणे
+            conn = globals().get('conn') or globals().get('db')
+        
+        # RealDictCursor वापरण्याचा प्रयत्न
         try:
             import psycopg2.extras
             cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -5061,18 +5070,20 @@ def admin_test_paper_view(test_id):
         questions = cur.fetchall()
 
         cur.close()
-        conn.close()
+        # जर get_db मधील कनेक्शन आपोआप बंद होत नसेल तरच close करा
+        try:
+            conn.close()
+        except Exception:
+            pass
 
         if not test:
             return "टेस्ट सापडली नाही", 404
 
-        # जर डेटाबेस SQLite किंवा साधा Tuple असेल तर सुरक्षित डिक्शनरीमध्ये रूपांतर
         formatted_questions = []
         for q in questions:
             if isinstance(q, dict):
                 formatted_questions.append(q)
             else:
-                # ट्युपल असल्यास इंडेक्सनुसार मॅपिंग
                 formatted_questions.append({
                     'question': q[2] if len(q) > 2 else '',
                     'opt_a': q[3] if len(q) > 3 else '',
@@ -5083,12 +5094,11 @@ def admin_test_paper_view(test_id):
                     'explanation': q[8] if len(q) > 8 else ''
                 })
 
-        test_dict = dict(test) if hasattr(test, 'keys') else {'title': test[1] if len(test) > 1 else 'टेस्ट'}
+        test_dict = dict(test) if hasattr(test, 'keys') else {'test_title': test[1] if len(test) > 1 else 'टेस्ट'}
 
         return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test_dict, questions=formatted_questions, mode=mode)
 
     except Exception as e:
-        # जर काही अडचण आली तर पांढऱ्या स्क्रीनऐवजी खरा एरर स्क्रीनवर दिसेल
         return f"<pre style='color:red; background:#fee; padding:20px; font-size:14px;'>एरर आला आहे:\n\n{traceback.format_exc()}</pre>", 500
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
