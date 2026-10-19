@@ -1586,6 +1586,7 @@ DETAILED_KEY_TEMPLATE = '''<!DOCTYPE html>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #334155; padding-bottom:10px;">
         <span style="font-size:13px; font-weight:bold; color:#34d399;">📖 सविस्तर स्पष्टीकरण कक्ष</span>
         <a href="/" style="background:#0284c7; color:white; padding:6px 14px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px;">🏠 मुख्य पानावर जा</a>
+        <a href="/" onclick="alert('ॲप इन्स्टॉल करण्यासाठी: ब्राऊझरच्या ३ ठिपक्यांवर (⋮) क्लिक करून Install app निवडा.'); return false;" style="background:#10b981; color:#022c22; padding:6px 14px; border-radius:6px; text-decoration:none; font-weight:800; font-size:12px; margin-left:6px;">📲 ॲप मिळवा</a>
     </div>
 
     <h2 style="color:#34d399; text-align:center; margin-top:0;">📋 सविस्तर उत्तरपत्रिका व तज्ज्ञ स्पष्टीकरण</h2>
