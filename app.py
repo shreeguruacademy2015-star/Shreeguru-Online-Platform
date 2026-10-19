@@ -3210,6 +3210,15 @@ RESULT_SUMMARY_TEMPLATE = """
         </div>
         {% endif %}
 
+        <!-- ॲप डाऊनलोड विशेष बॅनर -->
+        <div style="background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(15,23,42,0.9)); border: 1.5px solid #10b981; border-radius: 10px; padding: 12px; margin: 15px 0; text-align: center;">
+            <div style="color: #34d399; font-weight: bold; font-size: 13.5px; margin-bottom: 6px;">
+                📲 आगामी सर्व टेस्ट्स व थेट रँक अलर्टसाठी ॲप वापरा!
+            </div>
+            <a href="/" onclick="alert('ॲप इन्स्टॉल करण्यासाठी: ब्राऊझरच्या ३ ठिपक्यांवर (⋮) क्लिक करून Install app निवडा.');" style="background: #10b981; color: #022c22; font-weight: 800; font-size: 12.5px; padding: 7px 16px; border-radius: 20px; text-decoration: none; display: inline-block;">
+                ⚡ अधिकृत ॲप इन्स्टॉल करा
+            </a>
+        </div>
         <a href="{{ result_url }}" class="btn-ans">📋 सविस्तर उत्तरतालिका व स्पष्टीकरण पहा</a>
 
         <!-- अधिकृत ग्रुप लिंक -->
