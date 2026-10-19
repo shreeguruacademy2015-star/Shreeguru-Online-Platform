@@ -5034,6 +5034,21 @@ def admin_test_paper_view(test_id):
                     questions = cur.fetchall()
 
     return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
+
+    # विषय डिलीट करण्यासाठी राऊट
+@app.route('/admin/delete_subject/<int:subject_id>', methods=['GET', 'POST'])
+def admin_delete_subject(subject_id):
+    if not session.get('is_admin'):
+        return redirect(url_for('admin_login'))
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM subjects WHERE id = ?", (subject_id,))
+            conn.commit()
+        flash("विषय यशस्वीरीत्या डिलीट करण्यात आला आहे.", "success")
+    except Exception as e:
+        flash(f"त्रुटी: {str(e)}", "danger")
+    return redirect(request.referrer or url_for('admin_dashboard'))
         
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
