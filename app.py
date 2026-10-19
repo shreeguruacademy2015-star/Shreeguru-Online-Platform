@@ -785,7 +785,10 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     <div style="font-weight:bold; font-size:13.5px; color:#a7f3d0; display:flex; align-items:center; gap:8px;">
         <span class="badge-live">LIVE</span> 🕒 81M मिशन खाकी २०२६ सराव कक्ष
     </div>
-    <div style="display:flex; gap:12px; align-items:center;">
+    <div style="display:flex; gap:8px; align-items:center;">
+        <a href="https://shreeguru-online-platform.onrender.com" onclick="alert('हे पोर्टल ॲपप्रमाणे सेव्ह करण्यासाठी: ब्राऊझरच्या वरच्या उजव्या बाजूला असलेल्या ३ ठिपक्यांवर क्लिक करून Install app किंवा Add to Home screen निवडा.'); return false;" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: #ffffff; text-decoration: none; padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 20px; border: 1px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: inline-flex; align-items: center; gap: 4px;">
+            📲 ॲप डाऊनलोड
+        </a>
     </div>
 </div>
 
