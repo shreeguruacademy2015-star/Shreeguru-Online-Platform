@@ -2193,8 +2193,8 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <label style="font-weight:bold; font-size:13px; color:#0f172a;">🎯 कोणत्या टेस्टचे प्रश्न पाहायचे आहेत ते निवडा:</label>
             <select style="width:300px; margin-bottom:0; font-weight:bold; color:#065f46;" onchange="switchTestView(this.value, '{{ q_subtab }}')">
                 {% for t in tests %}
-                <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
-                {% endfor %}
+<option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>[{{ t.category }}] {{ t.test_title }}</option>
+{% endfor %}
             </select>
         </div>
         <div style="font-size:13px; color:#64748b; font-weight:bold;">
