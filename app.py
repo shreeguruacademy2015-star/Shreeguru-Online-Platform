@@ -5042,55 +5042,34 @@ OFFLINE_PAPER_TEMPLATE = """
 
 @app.route('/admin/test_paper_view/<int:test_id>')
 def admin_test_paper_view(test_id):
-    import traceback
-    try:
-        mode = request.args.get('mode', 'student')
+    if not session.get('admin_logged'):
+        return redirect('/admin/login')
         
-        test = None
-        questions = []
-
-        with get_db() as conn:
-            cur = conn.cursor()
-            
-            # tests टेबलमधून माहिती घेणे
-            try:
-                cur.execute("SELECT * FROM tests WHERE id = %s", (test_id,))
-                test = cur.fetchone()
-            except Exception:
-                cur.execute("SELECT * FROM mock_tests WHERE id = %s", (test_id,))
-                test = cur.fetchone()
-
-            # questions टेबलमधून माहिती घेणे
-            try:
-                cur.execute("SELECT * FROM questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
-                questions = cur.fetchall()
-            except Exception:
-                cur.execute("SELECT * FROM mock_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
-                questions = cur.fetchall()
+    mode = request.args.get('mode', 'student')
+    
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # १. टेस्ट तपशील मिळवणे
+            cur.execute("SELECT id, test_title, category, duration_minutes, test_fee FROM test_papers WHERE id = %s", (test_id,))
+            test = cur.fetchone()
+            if not test:
+                return "टेस्ट सापडली नाही!", 404
                 
-            cur.close()
+            # २. प्रश्नांची यादी मिळवणे
+            try:
+                cur.execute("SELECT * FROM paper_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
+                questions = cur.fetchall()
+            except Exception:
+                conn.rollback()
+                try:
+                    cur.execute("SELECT * FROM test_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
+                    questions = cur.fetchall()
+                except Exception:
+                    conn.rollback()
+                    cur.execute("SELECT * FROM questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
+                    questions = cur.fetchall()
 
-        if not test:
-            return "टेस्ट सापडली नाही", 404
-
-        formatted_questions = []
-        for q in questions:
-            if isinstance(q, dict):
-                formatted_questions.append(q)
-            else:
-                formatted_questions.append({
-                    'question': q[2] if len(q) > 2 else '',
-                    'opt_a': q[3] if len(q) > 3 else '',
-                    'opt_b': q[4] if len(q) > 4 else '',
-                    'opt_c': q[5] if len(q) > 5 else '',
-                    'opt_d': q[6] if len(q) > 6 else '',
-                    'correct_opt': q[7] if len(q) > 7 else '',
-                    'explanation': q[8] if len(q) > 8 else ''
-                })
-
-        test_dict = dict(test) if hasattr(test, 'keys') else {'test_title': test[1] if len(test) > 1 else 'टेस्ट'}
-
-        return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test_dict, questions=formatted_questions, mode=mode)
+    return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
 
     except Exception as e:
         return f"<pre style='color:red; background:#fee; padding:20px; font-size:14px;'>एरर आला आहे:\n\n{traceback.format_exc()}</pre>", 500
