@@ -3917,8 +3917,8 @@ def admin_dashboard():
             cur.execute(test_query, tuple(test_params))
             tests = cur.fetchall()
 
-            cur.execute("SELECT * FROM test_papers WHERE is_deleted=0 ORDER BY sequence_order ASC, id ASC")
-            all_available_tests = cur.fetchall()
+            cur.execute("SELECT * FROM test_papers WHERE is_deleted=0 ORDER BY category ASC, id ASC")
+available_tests = cur.fetchall()
 
             if not filter_test_id and all_available_tests:
                 filter_test_id = str(all_available_tests[0]['id'])
