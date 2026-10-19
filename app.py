@@ -4721,10 +4721,18 @@ def admin_clone_test(test_id):
             cur.execute("SELECT * FROM test_papers WHERE id=%s", (test_id,))
             t = cur.fetchone()
             if t:
+                # संबंधित कॅटेगरीमधील शेवटचा अनुक्रमांक शोधून +१ करणे:
+                cur.execute("""
+                    SELECT COALESCE(MAX(sequence_order), 0) + 1 AS next_seq 
+                    FROM test_papers 
+                    WHERE category = %s AND is_deleted = 0
+                """, (t['category'],))
+                next_seq = cur.fetchone()['next_seq']
+
                 cur.execute("""
                     INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, sequence_order, subject)
                     VALUES (%s, %s, %s, %s, 'Active', %s, %s, %s) RETURNING id
-                """, (f"{t['test_title']} (Copy)", t['test_type'], t['test_fee'], t['duration_minutes'], t['category'], (t['sequence_order'] or 1) + 1, t.get('subject', '')))
+                """, (f"{t['test_title']} (Copy)", t['test_type'], t['test_fee'], t['duration_minutes'], t['category'], next_seq, t.get('subject', '')))
                 new_t_id = cur.fetchone()['id']
 
                 cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0", (test_id,))
