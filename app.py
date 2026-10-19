@@ -2362,6 +2362,10 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <button type="button" onclick="saveAllTestsData()" id="btnSaveAllTests" style="background: #10b981; color: #022c22; border: none; padding: 8px 16px; font-weight: 800; border-radius: 6px; cursor: pointer; font-size: 12.5px; box-shadow: 0 2px 6px rgba(16,185,129,0.3);">
                 💾 सर्व बदल सेव्ह करा (Save All)
             </button>
+
+            <a href="/admin/resequence_tests" style="background: #0284c7; color: white; padding: 8px 16px; text-decoration: none; font-weight: 800; border-radius: 6px; font-size: 12.5px; display: inline-block; box-shadow: 0 2px 6px rgba(2,132,199,0.3);" onclick="return confirm('सर्व टेस्ट्स १, २, ३ अशा सलग क्रमाने लावायच्या का?');">
+                🔢 सर्व टेस्ट्स सलग क्रमाने लावा (Auto 1, 2, 3...)
+            </a>
         </div>
     </div>
 
