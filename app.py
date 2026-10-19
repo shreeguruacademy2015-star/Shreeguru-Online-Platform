@@ -5042,34 +5042,54 @@ OFFLINE_PAPER_TEMPLATE = """
 
 @app.route('/admin/test_paper_view/<int:test_id>')
 def admin_test_paper_view(test_id):
+    import traceback
     try:
-        import psycopg2.extras
-    except ImportError:
-        pass
-
-    mode = request.args.get('mode', 'student')
-    conn = get_db_connection()
-    
-    # कॉलम नावांनुसार डेटा (DictCursor) मिळवण्यासाठी
-    try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    except Exception:
-        cur = conn.cursor()
-    
-    cur.execute("SELECT * FROM mock_tests WHERE id = %s", (test_id,))
-    test = cur.fetchone()
-    
-    cur.execute("SELECT * FROM mock_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
-    questions = cur.fetchall()
-    
-    cur.close()
-    conn.close()
-    
-    if not test:
-        return "टेस्ट सापडली नाही", 404
+        mode = request.args.get('mode', 'student')
+        conn = get_db_connection()
         
-    return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
+        # RealDictCursor वापरून डेटा डिक्शनरी स्वरूपात घेणे
+        try:
+            import psycopg2.extras
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        except Exception:
+            cur = conn.cursor()
 
+        cur.execute("SELECT * FROM mock_tests WHERE id = %s", (test_id,))
+        test = cur.fetchone()
+
+        cur.execute("SELECT * FROM mock_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
+        questions = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        if not test:
+            return "टेस्ट सापडली नाही", 404
+
+        # जर डेटाबेस SQLite किंवा साधा Tuple असेल तर सुरक्षित डिक्शनरीमध्ये रूपांतर
+        formatted_questions = []
+        for q in questions:
+            if isinstance(q, dict):
+                formatted_questions.append(q)
+            else:
+                # ट्युपल असल्यास इंडेक्सनुसार मॅपिंग
+                formatted_questions.append({
+                    'question': q[2] if len(q) > 2 else '',
+                    'opt_a': q[3] if len(q) > 3 else '',
+                    'opt_b': q[4] if len(q) > 4 else '',
+                    'opt_c': q[5] if len(q) > 5 else '',
+                    'opt_d': q[6] if len(q) > 6 else '',
+                    'correct_opt': q[7] if len(q) > 7 else '',
+                    'explanation': q[8] if len(q) > 8 else ''
+                })
+
+        test_dict = dict(test) if hasattr(test, 'keys') else {'title': test[1] if len(test) > 1 else 'टेस्ट'}
+
+        return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test_dict, questions=formatted_questions, mode=mode)
+
+    except Exception as e:
+        # जर काही अडचण आली तर पांढऱ्या स्क्रीनऐवजी खरा एरर स्क्रीनवर दिसेल
+        return f"<pre style='color:red; background:#fee; padding:20px; font-size:14px;'>एरर आला आहे:\n\n{traceback.format_exc()}</pre>", 500
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
