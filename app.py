@@ -1090,6 +1090,20 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             navigator.serviceWorker.register('/sw.js').catch(() => {});
         });
     }
+    // थेट इन्स्टॉल पॉपअप उघडण्यासाठी नवीन फंक्शन
+    function triggerDirectInstall() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    if (installBtn) installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
+        } else {
+            alert("📲 ॲप आधीच इन्स्टॉल झालेले आहे किंवा ब्राऊझरच्या ३ ठिपक्यांवर (⋮) क्लिक करून 'Install app' निवडा.");
+        }
+    }
     </script>
 </html>'''
 # =============================================================================
