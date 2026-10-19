@@ -5049,14 +5049,25 @@ def admin_test_paper_view(test_id):
         test = None
         questions = []
 
-        # Context manager (with) वापरून सुरक्षित क्वेरी चालवणे
         with get_db() as conn:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM mock_tests WHERE id = %s", (test_id,))
-            test = cur.fetchone()
+            
+            # tests टेबलमधून माहिती घेणे
+            try:
+                cur.execute("SELECT * FROM tests WHERE id = %s", (test_id,))
+                test = cur.fetchone()
+            except Exception:
+                cur.execute("SELECT * FROM mock_tests WHERE id = %s", (test_id,))
+                test = cur.fetchone()
 
-            cur.execute("SELECT * FROM mock_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
-            questions = cur.fetchall()
+            # questions टेबलमधून माहिती घेणे
+            try:
+                cur.execute("SELECT * FROM questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
+                questions = cur.fetchall()
+            except Exception:
+                cur.execute("SELECT * FROM mock_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
+                questions = cur.fetchall()
+                
             cur.close()
 
         if not test:
@@ -5067,7 +5078,6 @@ def admin_test_paper_view(test_id):
             if isinstance(q, dict):
                 formatted_questions.append(q)
             else:
-                # ट्युपल (tuple) असल्यास योग्य मॅपिंग
                 formatted_questions.append({
                     'question': q[2] if len(q) > 2 else '',
                     'opt_a': q[3] if len(q) > 3 else '',
