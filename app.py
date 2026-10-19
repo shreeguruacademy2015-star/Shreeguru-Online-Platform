@@ -3931,7 +3931,7 @@ def admin_dashboard():
             all_questions = cur.fetchall()
 
             selected_test_title = "निवडलेली टेस्ट"
-            for t in all_available_tests:
+            for t in available_tests:
                 if str(t['id']) == str(filter_test_id):
                     selected_test_title = t['test_title']
                     break
