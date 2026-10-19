@@ -4141,19 +4141,6 @@ def admin_ai_generate_advanced():
     }
 
     # 1. Groq कडून थेट चालू (Active) मॉडेल्स मिळवणे
-    active_models = []
-    try:
-        models_res = requests.get("https://api.groq.com/openai/v1/models", headers=headers, timeout=10)
-        if models_res.status_code == 200:
-            m_data = models_res.json().get("data", [])
-            for m in m_data:
-                mid = m.get("id", "")
-                if "whisper" not in mid.lower():
-                    active_models.append(mid)
-    except Exception as e:
-        print(f"Error fetching models: {e}")
-
-    if not active_models:
         active_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192"]
 
     # 2. काठिण्य पातळीनुसार सूचना
