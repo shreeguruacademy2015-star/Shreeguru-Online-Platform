@@ -4952,7 +4952,7 @@ OFFLINE_PAPER_TEMPLATE = """
 <html lang="mr">
 <head>
     <meta charset="UTF-8">
-    <title>{{ test.title }} - ऑफलाईन प्रिंट</title>
+    <title>{{ test.test_title or test.title }} - ऑफलाईन प्रिंट</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; color: #111; background: #fff; }
         .no-print { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #cbd5e1; }
@@ -5001,7 +5001,7 @@ OFFLINE_PAPER_TEMPLATE = """
 
     <div class="exam-header">
         <h2>श्रीगुरु करिअर अकॅडमी, आडूर</h2>
-        <h3>{{ test.title }} {% if mode == 'master' %}<span style="color:#dc2626;">(शिक्षक/मास्टर की)</span>{% endif %}</h3>
+        <h3>{{ test.test_title or test.title }} {% if mode == 'master' %}<span style="color:#dc2626;">(शिक्षक/मास्टर की)</span>{% endif %}</h3>
         <div class="exam-meta">
             <span>एकूण प्रश्न: {{ questions|length }}</span>
             <span>वेळ: {{ test.time_limit }} मिनिटे</span>
@@ -5042,9 +5042,19 @@ OFFLINE_PAPER_TEMPLATE = """
 
 @app.route('/admin/test_paper_view/<int:test_id>')
 def admin_test_paper_view(test_id):
+    try:
+        import psycopg2.extras
+    except ImportError:
+        pass
+
     mode = request.args.get('mode', 'student')
     conn = get_db_connection()
-    cur = conn.cursor()
+    
+    # कॉलम नावांनुसार डेटा (DictCursor) मिळवण्यासाठी
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    except Exception:
+        cur = conn.cursor()
     
     cur.execute("SELECT * FROM mock_tests WHERE id = %s", (test_id,))
     test = cur.fetchone()
