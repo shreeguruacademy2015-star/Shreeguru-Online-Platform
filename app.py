@@ -1026,9 +1026,12 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     </div>
 
     <div class="footer">
-        <span>© २०२६ महाराष्ट्र पोलीस भरती संभाव्य टेस्ट पोर्टल | </span>
-        <a href="/terms-and-conditions" target="_blank" style="color:#38bdf8;">नियम व अटी (Terms & Conditions)</a>
-    </div>
+    <p style="font-size: 11.5px; color: #94a3b8; max-width: 750px; margin: 0 auto 10px; line-height: 1.5;">
+        ⚠️ <b>अस्वीकरण (Disclaimer):</b> हे पोर्टल एक खाजगी सराव व शैक्षणिक व्यासपीठ आहे. याचा महाराष्ट्र शासन, गृह विभाग किंवा महाराष्ट्र पोलीस भरती मंडळाशी कोणताही अधिकृत संबंध नाही. सर्व सराव संच केवळ विद्यार्थ्यांच्या लेखी परीक्षा सरावासाठी तयार केलेले आहेत.
+    </p>
+    <span>© २०२६ महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल | </span>
+    <a href="/terms-and-conditions" target="_blank" style="color:#38bdf8;">नियम व अटी (Terms & Conditions)</a>
+</div>
 </div>
 </body>
 <!-- ========================================== -->
