@@ -55,14 +55,8 @@ except ImportError:
 # -----------------------------------------------------------------------------
 app = Flask(__name__)
 MASTER_ADMIN_PHONE = "9921111960"
-app.secret_key = os.environ.get(
-    "FLASK_SECRET_KEY",
-    "maha_police_master_platform_2026_safe_key_super_secure_production_v2"
-)
-SECURITY_SALT = os.environ.get(
-    "LINK_SECURITY_SALT",
-    "anti_tamper_police_salt_2026_super_hardened"
-)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
+SECURITY_SALT = os.environ.get("LINK_SECURITY_SALT") or secrets.token_hex(16)
 
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
