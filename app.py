@@ -627,193 +627,206 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .phonebook-btn { background: #0284c7; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
     </style>
     <script>
-        window.onpageshow = function(event) {
-            var modal = document.getElementById('loadingNoticeModal');
-            if (modal) modal.style.display = 'none';
-        };
+    window.onpageshow = function(event) {
+        var modal = document.getElementById('loadingNoticeModal');
+        if (modal) modal.style.display = 'none';
+    };
 
-        let isInternalNav = false;
+    let isInternalNav = false;
 
-        document.addEventListener('click', function(e) {
-            const link = e.target.closest('a') || e.target.closest('button');
-            if (link) {
-                isInternalNav = true;
-            }
-        });
-
-        window.addEventListener('beforeunload', function (e) {
-            if (!isInternalNav) {
-                e.preventDefault();
-                e.returnValue = 'आपण टेस्ट पोर्टलवरून बाहेर पडू इच्छिता का?';
-                return e.returnValue;
-            }
-        });
-
-        async function selectContact(targetId) {
-            if ('contacts' in navigator && 'ContactsManager' in window) {
-                try {
-                    const contacts = await navigator.contacts.select(['tel'], {multiple: false});
-                    if (contacts && contacts[0] && contacts[0].tel && contacts[0].tel.length > 0) {
-                        let phoneNum = contacts[0].tel[0].replace(/[^0-9]/g, '').slice(-10);
-                        document.getElementById(targetId).value = phoneNum;
-                    }
-                } catch (err) {}
-            } else {
-                alert("तुमचा ब्राऊझर थेट फोनबुक ॲक्सेसला सपोर्ट करत नाही. कृपया १० अंकी नंबर टाईप करा.");
-            }
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a') || e.target.closest('button');
+        if (link) {
+            isInternalNav = true;
         }
+    });
 
-        function filterTab(categoryKey) {
-    // १. महासंग्राम माहिती बॉक्स दाखवणे किंवा लपवणे
-    const mahasangramBox = document.getElementById('mahasangram-info-box');
-    if (mahasangramBox) {
-        if (categoryKey === 'mahasangram' || (categoryKey && (categoryKey.indexOf('sangram') !== -1 || categoryKey.indexOf('100') !== -1))) {
-            mahasangramBox.style.display = 'block';
+    window.addEventListener('beforeunload', function (e) {
+        if (!isInternalNav) {
+            e.preventDefault();
+            e.returnValue = 'आपण टेस्ट पोर्टलवरून बाहेर पडू इच्छिता का?';
+            return e.returnValue;
+        }
+    });
+
+    async function selectContact(targetId) {
+        if ('contacts' in navigator && 'ContactsManager' in window) {
+            try {
+                const contacts = await navigator.contacts.select(['tel'], {multiple: false});
+                if (contacts && contacts[0] && contacts[0].tel && contacts[0].tel.length > 0) {
+                    let phoneNum = contacts[0].tel[0].replace(/[^0-9]/g, '').slice(-10);
+                    document.getElementById(targetId).value = phoneNum;
+                }
+            } catch (err) {}
         } else {
-            mahasangramBox.style.display = 'none';
+            alert("तुमचा ब्राऊझर थेट फोनबुक ॲक्सेसला सपोर्ट करत नाही. कृपया १० अंकी नंबर टाईप करा.");
         }
     }
 
-    // २. टेस्ट्स योग्य टॅबनुसार फिल्टर करणे
-    const cards = document.querySelectorAll('.test-card');
-    cards.forEach(function(card) {
-        const cType = (card.getAttribute('data-type') || '').toLowerCase();
-        const cCat = (card.getAttribute('data-category') || '').toLowerCase();
-        const cTitle = (card.innerText || '').toLowerCase();
-        const key = (categoryKey || '').toLowerCase();
+    function filterTab(category, btnElement) {
+        try {
+            // टॅब बटण ॲक्टिव्ह करणे
+            if (btnElement) {
+                document.querySelectorAll('.tab-btn, .filter-tab-btn').forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
 
-        if (key === 'all' || key === 'guide' || key === 'सर्व माहिती' || key === '') {
-            card.style.display = 'block';
-        } else if (key.indexOf('rapid') !== -1 || key.indexOf('रॅपिड') !== -1 || key.indexOf('20') !== -1) {
-            // रॅपिड फायर टेस्ट्स
-            if (cType.indexOf('rapid') !== -1 || cCat.indexOf('rapid') !== -1 || cTitle.indexOf('रॅपिड') !== -1) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
+            const key = (category || '').toString().toLowerCase();
+
+            // १. महासंग्राम माहिती बॉक्स दाखवणे किंवा लपवणे
+            const mahasangramBox = document.getElementById('mahasangram-info-box');
+            if (mahasangramBox) {
+                if (key.indexOf('sangram') !== -1 || key.indexOf('महासंग्राम') !== -1 || key.indexOf('100') !== -1) {
+                    mahasangramBox.style.display = 'block';
+                } else {
+                    mahasangramBox.style.display = 'none';
+                }
             }
-        } else if (key.indexOf('free') !== -1 || key.indexOf('मोफत') !== -1) {
-            // १०० प्रश्नांचा मोफत सराव पेपर
-            if ((cType.indexOf('free') !== -1 || cCat.indexOf('free') !== -1 || cTitle.indexOf('मोफत') !== -1) && cTitle.indexOf('रॅपिड') === -1) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        } else if (key.indexOf('sangram') !== -1 || key.indexOf('महासंग्राम') !== -1 || key.indexOf('100') !== -1) {
-            // मिशन खाकी महासंग्राम टेस्ट्स
-            if (cType.indexOf('paid') !== -1 || cType.indexOf('sangram') !== -1 || cCat.indexOf('sangram') !== -1 || cTitle.indexOf('महासंग्राम') !== -1) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        } else {
-            // इतर विशिष्ट विषय किंवा टॅब
-            if (cCat === key || cType === key || cTitle.indexOf(key) !== -1) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        }
-    });
-}
+
+            // २. विषय फिल्टर बॉक्स हाताळणे
             var subjBox = document.getElementById('subjectsFilterBox');
-            if (subjBox) subjBox.style.display = (category === 'subjects') ? 'block' : 'none';
+            if (subjBox) subjBox.style.display = (key === 'subjects' || key.indexOf('विषय') !== -1) ? 'block' : 'none';
 
-            document.getElementById('testsContainer').style.display = 'none';
-            document.getElementById('battleContainer').style.display = 'none';
-            document.getElementById('docsContainer').style.display = 'none';
-            document.getElementById('helpContainer').style.display = 'none';
-            document.getElementById('aboutContainer').style.display = 'none';
-            if (document.getElementById('guideContainer')) document.getElementById('guideContainer').style.display = 'none';
+            // ३. सर्व कंटेनर्स लपवणे
+            const containers = ['testsContainer', 'battleContainer', 'docsContainer', 'helpContainer', 'aboutContainer', 'guideContainer'];
+            containers.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
 
-            if (category === 'battle') {
-                document.getElementById('battleContainer').style.display = 'block';
-            } else if (category === 'docs') {
-                document.getElementById('docsContainer').style.display = 'block';
-            } else if (category === 'help') {
-                document.getElementById('helpContainer').style.display = 'block';
-            } else if (category === 'about') {
-                document.getElementById('aboutContainer').style.display = 'block';
-            } else if (category === 'guide') {
-                document.getElementById('guideContainer').style.display = 'block';
-            } else if (category === 'subjects') {
-                document.getElementById('testsContainer').style.display = 'grid';
+            // ४. विशिष्ट इतर पेजेस उघडणे
+            if (key === 'battle' || key.indexOf('जिल्हा') !== -1) {
+                const el = document.getElementById('battleContainer');
+                if (el) el.style.display = 'block';
+            } else if (key === 'docs' || key.indexOf('pdf') !== -1 || key.indexOf('pyq') !== -1) {
+                const el = document.getElementById('docsContainer');
+                if (el) el.style.display = 'block';
+            } else if (key === 'help' || key.indexOf('हेल्प') !== -1) {
+                const el = document.getElementById('helpContainer');
+                if (el) el.style.display = 'block';
+            } else if (key === 'about' || key.indexOf('साद') !== -1) {
+                const el = document.getElementById('aboutContainer');
+                if (el) el.style.display = 'block';
+            } else if (key === 'guide' || key.indexOf('गाईड') !== -1) {
+                const el = document.getElementById('guideContainer');
+                if (el) el.style.display = 'block';
+            } else if (key === 'subjects' || key.indexOf('विषय') !== -1) {
+                const el = document.getElementById('testsContainer');
+                if (el) el.style.display = 'grid';
                 filterBySubjectSpecific('all', document.querySelector('.subj-btn'));
             } else {
-                document.getElementById('testsContainer').style.display = 'grid';
+                // ५. टेस्ट्सचे अचूक फिल्टरिंग (मोफत, रॅपिड फायर, महासंग्राम, सर्व)
+                const testsCont = document.getElementById('testsContainer');
+                if (testsCont) testsCont.style.display = 'grid';
+
                 let visibleCount = 0;
-                document.querySelectorAll('.test-card').forEach(card => {
-                    const cardCat = card.getAttribute('data-cat') || 'free';
-                    if (cardCat === category) {
+                document.querySelectorAll('.test-card').forEach(function(card) {
+                    const cType = (card.getAttribute('data-type') || card.getAttribute('data-cat') || '').toLowerCase();
+                    const cCat = (card.getAttribute('data-category') || '').toLowerCase();
+                    const cTitle = (card.innerText || '').toLowerCase();
+
+                    let isMatch = false;
+
+                    if (key === 'all' || key === '' || key.indexOf('सर्व') !== -1) {
+                        isMatch = true;
+                    } else if (key.indexOf('rapid') !== -1 || key.indexOf('रॅपिड') !== -1 || key.indexOf('20') !== -1) {
+                        // फक्त २० गुण रॅपिड फायर टेस्ट
+                        if (cType.indexOf('rapid') !== -1 || cCat.indexOf('rapid') !== -1 || cTitle.indexOf('रॅपिड') !== -1) {
+                            isMatch = true;
+                        }
+                    } else if (key.indexOf('free') !== -1 || key.indexOf('मोफत') !== -1) {
+                        // १०० प्रश्नांचा मोफत सराव पेपर (यात रॅपिड येणार नाही)
+                        if ((cType.indexOf('free') !== -1 || cCat.indexOf('free') !== -1 || cTitle.indexOf('मोफत') !== -1) && cTitle.indexOf('रॅपिड') === -1) {
+                            isMatch = true;
+                        }
+                    } else if (key.indexOf('sangram') !== -1 || key.indexOf('महासंग्राम') !== -1 || key.indexOf('100') !== -1) {
+                        // महासंग्राम टेस्ट्स
+                        if (cType.indexOf('paid') !== -1 || cType.indexOf('sangram') !== -1 || cCat.indexOf('sangram') !== -1 || cTitle.indexOf('महासंग्राम') !== -1) {
+                            isMatch = true;
+                        }
+                    } else {
+                        if (cCat === key || cType === key || cTitle.indexOf(key) !== -1) {
+                            isMatch = true;
+                        }
+                    }
+
+                    if (isMatch) {
                         card.style.display = 'flex';
                         visibleCount++;
                     } else {
                         card.style.display = 'none';
                     }
                 });
+
                 const noTestMsg = document.getElementById('noTestMsg');
                 if (noTestMsg) noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
             }
+        } catch (e) {
+            console.error("FilterTab Error:", e);
         }
+    }
 
-        function filterBySubjectSpecific(subjName, btn) {
-            document.querySelectorAll('.subj-btn').forEach(b => b.classList.remove('active'));
-            if(btn) btn.classList.add('active');
+    function filterBySubjectSpecific(subjName, btn) {
+        document.querySelectorAll('.subj-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
 
-            let visibleCount = 0;
-            document.querySelectorAll('.test-card').forEach(card => {
-                const cardSubj = (card.getAttribute('data-subject') || '').trim().toLowerCase();
-                const targetSubj = subjName.trim().toLowerCase();
+        let visibleCount = 0;
+        document.querySelectorAll('.test-card').forEach(card => {
+            const cardSubj = (card.getAttribute('data-subject') || '').trim().toLowerCase();
+            const targetSubj = subjName.trim().toLowerCase();
 
-                if (targetSubj === 'all') {
-                    if (cardSubj !== '') {
-                        card.style.display = 'flex';
-                        visibleCount++;
-                    } else {
-                        card.style.display = 'none';
-                    }
+            if (targetSubj === 'all') {
+                if (cardSubj !== '') {
+                    card.style.display = 'flex';
+                    visibleCount++;
                 } else {
-                    if (cardSubj.includes(targetSubj)) {
-                        card.style.display = 'flex';
-                        visibleCount++;
-                    } else {
-                        card.style.display = 'none';
-                    }
+                    card.style.display = 'none';
                 }
-            });
-            const noTestMsg = document.getElementById('noTestMsg');
-            if (noTestMsg) noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
-        }
-
-        let pendingTestUrl = '';
-        function openLoadingNotice(url) {
-            pendingTestUrl = url;
-            document.getElementById('loadingNoticeModal').style.display = 'flex';
-        }
-        function proceedToTest() {
-            if (pendingTestUrl) window.location.href = pendingTestUrl;
-        }
-
-        function inviteFriendWhatsApp() {
-            const num = document.getElementById('friend_invite_phone').value.trim();
-            if(!/^[6-9][0-9]{9}$/.test(num)) {
-                alert("कृपया वैध १० अंकी मोबाईल नंबर टाका!");
-                return;
+            } else {
+                if (cardSubj.includes(targetSubj)) {
+                    card.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
             }
-            const link = window.location.origin + "/?ref=" + num;
-            const text = encodeURIComponent("मित्रा, महाराष्ट्र पोलीस भरती २०२६ ची अतिसंभाव्य टेस्ट सोडव आणि आपला रँक तपास: " + link);
-            window.open("https://wa.me/91" + num + "?text=" + text, "_blank");
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const firstActive = document.querySelector('.tab-btn.active') || document.querySelector('.tab-btn');
-            if (firstActive) firstActive.click();
         });
+        const noTestMsg = document.getElementById('noTestMsg');
+        if (noTestMsg) noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
+    }
 
-        setInterval(function() {
-            fetch('/api/heartbeat', {method: 'POST'}).catch(() => {});
-        }, 60000);
-    </script>
-    <link rel="manifest" href="/static/manifest.json?v=2">
+    let pendingTestUrl = '';
+    function openLoadingNotice(url) {
+        pendingTestUrl = url;
+        const modal = document.getElementById('loadingNoticeModal');
+        if (modal) modal.style.display = 'flex';
+    }
+    
+    function proceedToTest() {
+        if (pendingTestUrl) window.location.href = pendingTestUrl;
+    }
+
+    function inviteFriendWhatsApp() {
+        const num = document.getElementById('friend_invite_phone').value.trim();
+        if(!/^[6-9][0-9]{9}$/.test(num)) {
+            alert("कृपया वैध १० अंकी मोबाईल नंबर टाका!");
+            return;
+        }
+        const link = window.location.origin + "/?ref=" + num;
+        const text = encodeURIComponent("मित्रा, महाराष्ट्र पोलीस भरती २०२६ ची अतिसंभाव्य टेस्ट सोडव आणि आपला रँक तपास: " + link);
+        window.open("https://wa.me/91" + num + "?text=" + text, "_blank");
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstActive = document.querySelector('.tab-btn.active') || document.querySelector('.tab-btn');
+        if (firstActive) firstActive.click();
+    });
+
+    setInterval(function() {
+        fetch('/api/heartbeat', {method: 'POST'}).catch(() => {});
+    }, 60000);
+</script>
+       <link rel="manifest" href="/static/manifest.json?v=2">
 <link rel="apple-touch-icon" href="/static/icon-512.png?v=2">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-512.png?v=2">
 <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png?v=2">
