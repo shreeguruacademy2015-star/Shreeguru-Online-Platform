@@ -195,9 +195,9 @@ def get_razorpay_client():
             pass
 
     if not key_id:
-        key_id = "rzp_test_TmenVmrQI8nTRA"
+        key_id = ""
     if not key_secret:
-        key_secret = "FfaDgcHGbqNKGd15kiI2TP7v"
+        key_secret = ""
       
     if key_id and key_secret:
         try:
