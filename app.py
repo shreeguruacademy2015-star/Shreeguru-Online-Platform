@@ -1086,21 +1086,6 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- पानाच्या अगदी शेवटी: अस्वीकरण आणि नियम व अटी -->
-<div style="text-align: center; margin-top: 40px; padding: 25px 15px 35px 15px; border-top: 1px solid #334155; background-color: rgba(15, 23, 42, 0.6);">
-
-  <!-- १. अस्वीकरण (Disclaimer) -->
-  <div style="max-width: 900px; margin: 0 auto 12px auto; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; padding: 12px 16px; border-radius: 8px; line-height: 1.6; font-size: 11px; color: #cbd5e1;">
-    <strong style="color: #cbd5e1;">अस्वीकरण (Disclaimer):</strong> हे पोर्टल एक खाजगी सराव व शैक्षणिक व्यासपीठ आहे. याचा कोणत्याही शासकीय विभाग किंवा महाराष्ट्र पोलीस भरती मंडळाशी कोणताही अधिकृत संबंध नाही. सर्व सराव प्रश्न विद्यार्थ्यांच्या लेखी परीक्षा सरावासाठी तयार केलेले आहेत.
-  </div>
-
-  <!-- २. कॉपीराइट आणि नियम व अटी -->
-  <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;">
-    <span>© 2026 महाराष्ट्र पोलीस भरती संभाव्य टेस्ट पोर्टल | </span>
-    <a href="/terms-and-conditions" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: bold;">नियम व अटी (Terms & Conditions)</a>
-  </div>
-
-</div>
 <!-- ========================================== -->
     <!-- 1. App Install Button (PWA Download) -->
     <!-- ========================================== -->
@@ -1143,7 +1128,23 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         <h4 style="color:#38bdf8; margin:0 0 10px 0;">📱 मोबाईलवर सोडवण्यासाठी स्कॅन करा</h4>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://shreeguru-online-platform.onrender.com" alt="Portal QR Code" style="border-radius:8px; border:2px solid #38bdf8; background:white; padding:5px;">
         <p style="color:#94a3b8; font-size:12px; margin:8px 0 0 0;">कॅमेऱ्याने स्कॅन करा आणि थेट चाचणी सुरू करा</p>
+        
     </div>
+     <!-- पानाच्या अगदी शेवटी: अस्वीकरण आणि नियम व अटी -->
+<div style="text-align: center; margin-top: 40px; padding: 25px 15px 35px 15px; border-top: 1px solid #334155; background-color: rgba(15, 23, 42, 0.6);">
+
+  <!-- १. अस्वीकरण (Disclaimer) -->
+  <div style="max-width: 900px; margin: 0 auto 12px auto; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; padding: 12px 16px; border-radius: 8px; line-height: 1.6; font-size: 11px; color: #cbd5e1;">
+    <strong style="color: #cbd5e1;">अस्वीकरण (Disclaimer):</strong> हे पोर्टल एक खाजगी सराव व शैक्षणिक व्यासपीठ आहे. याचा कोणत्याही शासकीय विभाग किंवा महाराष्ट्र पोलीस भरती मंडळाशी कोणताही अधिकृत संबंध नाही. सर्व सराव प्रश्न विद्यार्थ्यांच्या लेखी परीक्षा सरावासाठी तयार केलेले आहेत.
+  </div>
+
+  <!-- २. कॉपीराइट आणि नियम व अटी -->
+  <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;">
+    <span>© 2026 महाराष्ट्र पोलीस भरती संभाव्य टेस्ट पोर्टल | </span>
+    <a href="/terms-and-conditions" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: bold;">नियम व अटी (Terms & Conditions)</a>
+  </div>
+
+</div>
 
     <!-- PWA Install Script -->
     <script>
