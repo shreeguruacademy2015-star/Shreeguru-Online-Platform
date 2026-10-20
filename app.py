@@ -3508,7 +3508,13 @@ def submit_test(test_id):
         main_portal_url = request.host_url.rstrip('/')
         result_url = main_portal_url + url_for('detailed_answers', token=result_token)
         battle_invite_url = f"{main_portal_url}/take_test/{test_id}?battle_id={lead_id}"
-        ego_msg = f"महाराष्ट्र पोलीस भरती महासराव टेस्टमध्ये मला {score}/{total} गुण व रँक #{category_rank} मिळाला! बघू तू माझ्या आधी किंवा जास्त गुणांनी सोडवतोस का: {battle_invite_url}"
+        ego_msg = (
+        f"🎯 *महाराष्ट्र पोलीस भरती १०० गुणांचा अतिसंभाव्य महासराव पेपर*\n\n"
+        f"मित्रा, ही प्रश्नपत्रिका अतिशय दर्जेदार आणि परीक्षाभिमुख आहे! "
+        f"पोलीस भरती लेखी परीक्षेसाठी यातील प्रश्न खूपच महत्त्वाचे आणि संभाव्य आहेत. 👌✨\n\n"
+        f"मी हा संपूर्ण पेपर सोडवला, तुझा अभ्यास किती झालाय हे तपासण्यासाठी तूही ही टेस्ट नक्की सोडवून बघ!\n\n"
+        f"👇 *थेट मोफत टेस्ट सोडवण्यासाठी येथे क्लिक कर:* \n{battle_invite_url}"
+        )
         ego_share_encoded = urllib.parse.quote(ego_msg)
 
         return render_template_string(
