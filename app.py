@@ -3234,6 +3234,17 @@ RESULT_SUMMARY_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>चाचणी निकाल व गुणवत्ता विश्लेषण</title>
+    <!-- WhatsApp & Social Media Preview Card -->
+    <meta property="og:title" content="🎯 महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल">
+    <meta property="og:description" content="मिशन खाकी २०२६ | दर्जेदार संभाव्य प्रश्नपत्रिका, राज्यस्तरीय गुणवत्ता यादी आणि सविस्तर विश्लेषण. आत्ताच टेस्ट सोडवा!">
+    <meta property="og:image" content="{{ request.host_url.rstrip('/') }}/static/icon-512.png?v=3">
+    <meta property="og:image:secure_url" content="{{ request.host_url.rstrip('/') }}/static/icon-512.png?v=3">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
