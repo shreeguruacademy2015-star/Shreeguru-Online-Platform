@@ -788,13 +788,21 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 
 <div class="top-bar">
     <div style="font-weight:bold; font-size:13.5px; color:#a7f3d0; display:flex; align-items:center; gap:8px;">
-        <span class="badge-live">LIVE</span> 🕒 81M मिशन खाकी २०२६ सराव कक्ष
+        <span class="badge-live">LIVE</span> 🕒 मिशन खाकी २०२६ सराव कक्ष
     </div>
-    <div style="display:flex; gap:8px; align-items:center;">
-        <button type="button" onclick="triggerDirectInstall()" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: #ffffff; border: 1px solid #ffffff; padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
-    📲 ॲप डाऊनलोड
-</button>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        
+        <!-- हे नवीन WhatsApp बटण इथे जोडा -->
+        {% if wa_active_link %}
+        <a href="{{ wa_active_link }}" target="_blank" style="background: #25D366; color: #ffffff; text-decoration: none; padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: inline-flex; align-items: center; gap: 4px;">
+            👥 WhatsApp ग्रुप जॉईन व्हा
         </a>
+        {% endif %}
+
+        <!-- हे तुमचे आधीचे बटण -->
+        <button type="button" onclick="triggerDirectInstall()" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: #ffffff; border: 1px solid #ffffff; padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            📲 ॲप डाऊनलोड
+        </button>
     </div>
 </div>
 
@@ -1019,15 +1027,16 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <div class="footer">
-    <p style="font-size: 11.5px; color: #94a3b8; max-width: 750px; margin: 0 auto 10px; line-height: 1.5;">
-        ⚠️ <b>अस्वीकरण (Disclaimer):</b> हे पोर्टल एक खाजगी सराव व शैक्षणिक व्यासपीठ आहे. याचा महाराष्ट्र शासन, गृह विभाग किंवा महाराष्ट्र पोलीस भरती मंडळाशी कोणताही अधिकृत संबंध नाही. सर्व सराव संच केवळ विद्यार्थ्यांच्या लेखी परीक्षा सरावासाठी तयार केलेले आहेत.
-    </p>
-    <span>© २०२६ महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल | </span>
-    <a href="/terms-and-conditions" target="_blank" style="color:#38bdf8;">नियम व अटी (Terms & Conditions)</a>
-</div>
-</div>
-</body>
+    <!-- Sarvat Shevati: Footer & Disclaimer -->
+    <div class="footer" style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 30px; border-top: 1px solid #334155; padding-top: 20px; padding-bottom: 30px;">
+        <div style="max-width: 850px; margin: 0 auto 15px auto; background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 12px 16px; font-size: 12px; line-height: 1.6; color: #94a3b8; text-align: center;">
+            ⚠️ <strong style="color: #cbd5e1;">अस्वीकरण (Disclaimer):</strong> हे पोर्टल एक खाजगी सराव व शैक्षणिक व्यासपीठ आहे[span_3](start_span)[span_3](end_span). याचा महाराष्ट्र शासन, गृह विभाग किंवा महाराष्ट्र पोलीस भरती मंडळाशी कोणताही अधिकृत संबंध नाही[span_4](start_span)[span_4](end_span). सर्व सराव संच केवळ विद्यार्थ्यांच्या लेखी परीक्षा सरावासाठी तयार केलेले आहेत[span_5](start_span)[span_5](end_span).
+        </div>
+        <div>
+            <span>© २०२६ महाराष्ट्र पोलीस भरती संभाव्य टेस्ट पोर्टल | </span>
+            <a href="/terms-and-conditions" target="_blank" style="color:#38bdf8; text-decoration:none;">नियम व अटी (Terms & Conditions)</a>
+        </div>
+    </div>
 <!-- ========================================== -->
     <!-- 1. App Install Button (PWA Download) -->
     <!-- ========================================== -->
@@ -2977,7 +2986,11 @@ def home_tests_list():
             for k in raw_keys:
                 lbl = custom_tabs_rows.get(k) or default_tab_names.get(k) or k.capitalize()
                 parsed_home_tabs.append({'key': k, 'label': lbl})
-                    
+
+            # WhatsApp Group Link Settings मधून मिळवणे
+            raw_wa = settings.get('wa_groups_multiline', '').strip()
+            wa_active_link = raw_wa.split('\n')[0].strip() if raw_wa else 'https://chat.whatsapp.com'
+
             return render_template_string(
                 HOME_TEMPLATE,
                 tests=tests,
@@ -2987,7 +3000,8 @@ def home_tests_list():
                 live_district_battles=live_district_battles,
                 help_phone=settings.get('help_phone', '9921111960'),
                 help_address=settings.get('help_address', 'महाराष्ट्र पोलीस भरती सराव केंद्र, कोल्हापूर'),
-                active_students_count=active_students_count
+                active_students_count=active_students_count,
+                wa_active_link=wa_active_link
             )
 
 @app.route('/terms-and-conditions')
