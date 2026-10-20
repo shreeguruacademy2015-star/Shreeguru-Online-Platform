@@ -663,12 +663,28 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             }
         }
 
-        function filterTab(category, btn) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            if(btn) btn.classList.add('active');
+        function filterTab(categoryKey) {
+    // महासंग्राम माहिती बॉक्स मिळवणे
+    const mahasangramBox = document.getElementById('mahasangram-info-box');
+    
+    // जर महासंग्राम टॅब क्लिक केला तरच बॅनर दाखवा
+    if (categoryKey === 'mahasangram' || categoryKey.includes('sangram') || categoryKey.includes('100')) {
+        if (mahasangramBox) mahasangramBox.style.display = 'block';
+    } else {
+        // इतर टॅबवर क्लिक केल्यास हा बॅनर लपवून ठेवा
+        if (mahasangramBox) mahasangramBox.style.display = 'none';
+    }
 
-            var paidCard = document.getElementById('paidHeroCard');
-            if (paidCard) paidCard.style.display = (category === 'paid' || category === 'live') ? 'block' : 'none';
+    // टेस्ट कार्ड्स फिल्टर करणे
+    const cards = document.querySelectorAll('.test-card');
+    cards.forEach(card => {
+        if (categoryKey === 'all' || card.getAttribute('data-category') === categoryKey) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
 
             var subjBox = document.getElementById('subjectsFilterBox');
             if (subjBox) subjBox.style.display = (category === 'subjects') ? 'block' : 'none';
