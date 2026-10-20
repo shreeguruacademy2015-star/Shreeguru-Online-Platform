@@ -664,28 +664,57 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         }
 
         function filterTab(categoryKey) {
-    // महासंग्राम माहिती बॉक्स मिळवणे
+    // १. महासंग्राम माहिती बॉक्स दाखवणे किंवा लपवणे
     const mahasangramBox = document.getElementById('mahasangram-info-box');
-    
-    // जर महासंग्राम टॅब क्लिक केला तरच बॅनर दाखवा
-    if (categoryKey === 'mahasangram' || categoryKey.includes('sangram') || categoryKey.includes('100')) {
-        if (mahasangramBox) mahasangramBox.style.display = 'block';
-    } else {
-        // इतर टॅबवर क्लिक केल्यास हा बॅनर लपवून ठेवा
-        if (mahasangramBox) mahasangramBox.style.display = 'none';
+    if (mahasangramBox) {
+        if (categoryKey === 'mahasangram' || (categoryKey && (categoryKey.indexOf('sangram') !== -1 || categoryKey.indexOf('100') !== -1))) {
+            mahasangramBox.style.display = 'block';
+        } else {
+            mahasangramBox.style.display = 'none';
+        }
     }
 
-    // टेस्ट कार्ड्स फिल्टर करणे
+    // २. टेस्ट्स योग्य टॅबनुसार फिल्टर करणे
     const cards = document.querySelectorAll('.test-card');
-    cards.forEach(card => {
-        if (categoryKey === 'all' || card.getAttribute('data-category') === categoryKey) {
+    cards.forEach(function(card) {
+        const cType = (card.getAttribute('data-type') || '').toLowerCase();
+        const cCat = (card.getAttribute('data-category') || '').toLowerCase();
+        const cTitle = (card.innerText || '').toLowerCase();
+        const key = (categoryKey || '').toLowerCase();
+
+        if (key === 'all' || key === 'guide' || key === 'सर्व माहिती' || key === '') {
             card.style.display = 'block';
+        } else if (key.indexOf('rapid') !== -1 || key.indexOf('रॅपिड') !== -1 || key.indexOf('20') !== -1) {
+            // रॅपिड फायर टेस्ट्स
+            if (cType.indexOf('rapid') !== -1 || cCat.indexOf('rapid') !== -1 || cTitle.indexOf('रॅपिड') !== -1) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        } else if (key.indexOf('free') !== -1 || key.indexOf('मोफत') !== -1) {
+            // १०० प्रश्नांचा मोफत सराव पेपर
+            if ((cType.indexOf('free') !== -1 || cCat.indexOf('free') !== -1 || cTitle.indexOf('मोफत') !== -1) && cTitle.indexOf('रॅपिड') === -1) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        } else if (key.indexOf('sangram') !== -1 || key.indexOf('महासंग्राम') !== -1 || key.indexOf('100') !== -1) {
+            // मिशन खाकी महासंग्राम टेस्ट्स
+            if (cType.indexOf('paid') !== -1 || cType.indexOf('sangram') !== -1 || cCat.indexOf('sangram') !== -1 || cTitle.indexOf('महासंग्राम') !== -1) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
         } else {
-            card.style.display = 'none';
+            // इतर विशिष्ट विषय किंवा टॅब
+            if (cCat === key || cType === key || cTitle.indexOf(key) !== -1) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
         }
     });
 }
-
             var subjBox = document.getElementById('subjectsFilterBox');
             if (subjBox) subjBox.style.display = (category === 'subjects') ? 'block' : 'none';
 
