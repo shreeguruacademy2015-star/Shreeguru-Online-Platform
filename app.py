@@ -832,27 +832,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- Mahasangram Banner -->
-    <div id="paidHeroCard" class="paid-hero-card">
-        <h3>🎯 अतिसंभाव्य महासंग्राम टेस्ट संच (Mission Khaki 2026)</h3>
-        <p>🔥 <b>एका कप चहाच्या किमतीत १०० प्रश्नांची प्रश्नपत्रिका सोडवून राज्यात, जिल्ह्यात व संवर्गनिहाय रँक तपासा!</b><br>
-        गेल्या भरतीत १ मार्काने खाकी वर्दी हुकली होती का? एका मार्काची किंमत १ वर्षाची मेहनत असते! लेखी परीक्षेत ९०+ गुण मिळवण्यासाठी दर्जात्मक प्रश्नांचा सराव अत्यंत महत्त्वाचा आहे.</p>
-        
-        <div class="package-box">
-            <span style="color:#fde047; font-weight:800; font-size:16px;"></span><br>
-            <small style="color:#94a3b8;">(सोमवार ते रविवार कधीही सोडवा आणि रविवारी संध्याकाळी ७:०० वाजता संपूर्ण महाराष्ट्रातील गुणवत्ता यादी पहा!)</small>
-        </div>
-
-        <div class="unlock-badge" style="cursor: pointer; line-height: 1.6; display: inline-block; padding: 12px 20px; text-align: center;" onclick="document.getElementById('friend_invite_phone').focus(); window.scrollTo({top: 180, behavior: 'smooth'});">
-            <div>🎁 <b>विशेष ऑफर:</b> ३ मित्रांना मोफत टेस्ट शेअर करा; त्यांनी टेस्ट सोडवताच तुम्हाला २ महासंग्राम टेस्ट्स १००% मोफत मिळतील!</div>
-            <div style="margin-top: 8px;">
-                <span style="background: #022c22; color: #a7f3d0; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid #059669; display: inline-block;">
-                    📲 येथे क्लिक करून लिंक पाठवा ➔
-                </span>
-            </div>
-        </div>
-    </div>
-
+    
     <!-- Tabs Navigation -->
     <div class="tabs-wrapper">
         {% for tab_item in parsed_home_tabs %}
@@ -880,6 +860,27 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             <button class="subj-btn" onclick="filterBySubjectSpecific('संगणक', this)">संगणक ज्ञान</button>
             <button class="subj-btn" onclick="filterBySubjectSpecific('माहिती अधिकार', this)">माहिती अधिकार कायदा २००५</button>
             <button class="subj-btn" onclick="filterBySubjectSpecific('इंग्रजी', this)">इंग्रजी व्याकरण</button>
+        </div>
+    </div>
+
+    <!-- Mahasangram Banner -->
+    <div id="paidHeroCard" class="paid-hero-card">
+        <h3>🎯 अतिसंभाव्य महासंग्राम टेस्ट संच (Mission Khaki 2026)</h3>
+        <p>🔥 <b>एका कप चहाच्या किमतीत १०० प्रश्नांची प्रश्नपत्रिका सोडवून राज्यात, जिल्ह्यात व संवर्गनिहाय रँक तपासा!</b><br>
+        गेल्या भरतीत १ मार्काने खाकी वर्दी हुकली होती का? एका मार्काची किंमत १ वर्षाची मेहनत असते! लेखी परीक्षेत ९०+ गुण मिळवण्यासाठी दर्जात्मक प्रश्नांचा सराव अत्यंत महत्त्वाचा आहे.</p>
+        
+        <div class="package-box">
+            <span style="color:#fde047; font-weight:800; font-size:16px;"></span><br>
+            <small style="color:#94a3b8;">(सोमवार ते रविवार कधीही सोडवा आणि रविवारी संध्याकाळी ७:०० वाजता संपूर्ण महाराष्ट्रातील गुणवत्ता यादी पहा!)</small>
+        </div>
+
+        <div class="unlock-badge" style="cursor: pointer; line-height: 1.6; display: inline-block; padding: 12px 20px; text-align: center;" onclick="document.getElementById('friend_invite_phone').focus(); window.scrollTo({top: 180, behavior: 'smooth'});">
+            <div>🎁 <b>विशेष ऑफर:</b> ३ मित्रांना मोफत टेस्ट शेअर करा; त्यांनी टेस्ट सोडवताच तुम्हाला २ महासंग्राम टेस्ट्स १००% मोफत मिळतील!</div>
+            <div style="margin-top: 8px;">
+                <span style="background: #022c22; color: #a7f3d0; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid #059669; display: inline-block;">
+                    📲 येथे क्लिक करून लिंक पाठवा ➔
+                </span>
+            </div>
         </div>
     </div>
 
