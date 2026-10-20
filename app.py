@@ -454,8 +454,8 @@ def init_master_db():
                     ('admin_tab_order', 'leads,power,payments,special,questions,subject_mgmt,launch,analytics,audit,blocked,leaderboard,feedback,notices,trash,settings'),
                     ('recruitment_pdf', ''),
                     ('eligibility_pdf', ''),
-                    ('razorpay_key_id', 'rzp_test_TmenVmrQI8nTRA'),
-                    ('razorpay_key_secret', 'FfaDgcHGbqNKGd15kiI2TP7v')
+                    ('razorpay_key_id', ''),
+                    ('razorpay_key_secret', '')
                 ]
                 for k, v in default_settings:
                     cur.execute("""
