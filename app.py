@@ -1647,6 +1647,8 @@ setInterval(function() {
 }, 1000);
 
 document.getElementById('rzp-button').onclick = function(e){
+    e.preventDefault();
+    
     fetch('/create_razorpay_order/{{ test.id }}', {method: 'POST'})
     .then(res => res.json())
     .then(data => {
@@ -1661,6 +1663,25 @@ document.getElementById('rzp-button').onclick = function(e){
             "name": "महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल",
             "description": "{{ test.test_title }}",
             "order_id": data.order_id,
+            "config": {
+                "display": {
+                    "blocks": {
+                        "upi": {
+                            "name": "Pay via UPI App",
+                            "instruments": [
+                                {
+                                    "method": "upi",
+                                    "flows": ["intent"]
+                                }
+                            ]
+                        }
+                    },
+                    "sequence": ["block.upi"],
+                    "preferences": {
+                        "show_default_blocks": true
+                    }
+                }
+            },
             "handler": function (response){
                 window.location.href = "/verify_razorpay_payment?order_id=" + response.razorpay_order_id + "&payment_id=" + response.razorpay_payment_id + "&signature=" + response.razorpay_signature + "&test_id={{ test.id }}";
             },
@@ -1672,8 +1693,7 @@ document.getElementById('rzp-button').onclick = function(e){
     .catch(err => {
         alert("पेमेंट गेटवे सुरू करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.");
     });
-    e.preventDefault();
-}
+};
 </script>
 </body>
 </html>'''
