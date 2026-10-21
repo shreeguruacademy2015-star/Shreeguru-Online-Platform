@@ -3199,6 +3199,8 @@ def take_test(test_id):
                         if datetime.now() <= expires_at:
                             token_valid = True
 
+            if session.get(f'paid_test_{test_id}') is True:
+                token_valid = True
             if has_free_pass or token_valid:
                 cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
                 questions = cur.fetchall()
