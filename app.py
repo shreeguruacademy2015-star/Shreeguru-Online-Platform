@@ -933,7 +933,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         
         <div class="package-box">
             <span style="color:#fde047; font-weight:800; font-size:16px;"></span><br>
-            <small style="color:#94a3b8;">(सोमवार ते रविवार कधीही सोडवा आणि रविवारी संध्याकाळी ७:०० वाजता संपूर्ण महाराष्ट्रातील गुणवत्ता यादी पहा!)</small>
+            <small style="color:#94a3b8;">(महासंग्राम टेस्ट सोडवा आणि संपूर्ण महाराष्ट्रातील गुणवत्ता यादी पहा!)</small>
         </div>
 
         <div class="unlock-badge" style="cursor: pointer; line-height: 1.6; display: inline-block; padding: 12px 20px; text-align: center;" onclick="document.getElementById('friend_invite_phone').focus(); window.scrollTo({top: 180, behavior: 'smooth'});">
