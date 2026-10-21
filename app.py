@@ -1930,9 +1930,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("✅ अभिनंदन! " + data.inserted_count + " नवीन सराव प्रश्न यशस्वीपणे सेव्ह झाले!");
-                    window.location.href = '/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id=' + testId;
-                } else {
+                alert("✅ अभिनंदन! " + (data.inserted_count || '') + " नवीन सराव प्रश्न यशस्वीपणे तयार झाले!");
+                window.location.href = '/admin/dashboard?tab=questions&q_subtab=ai&filter_test_id=' + testId;
+            } else {
                     alert("⚠️ सूचना: " + (data.error || 'प्रश्न तयार करताना त्रुटी आली. Render Environment मध्ये API Key तपासली आहे का?'));
                     btn.innerText = '🤖 डिजिटल स्मार्ट प्रश्न जनरेट करा व सेव्ह करा';
                     btn.disabled = false;
