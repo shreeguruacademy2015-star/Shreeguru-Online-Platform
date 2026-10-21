@@ -665,18 +665,17 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 
     function filterTab(category, btnElement) {
         try {
-            // टॅब बटण ॲक्टिव्ह करणे
             if (btnElement) {
                 document.querySelectorAll('.tab-btn, .filter-tab-btn').forEach(b => b.classList.remove('active'));
                 btnElement.classList.add('active');
             }
 
-            const key = (category || '').toString().toLowerCase();
+            const key = (category || '').toString().toLowerCase().trim();
 
-            // १. महासंग्राम माहिती बॉक्स दाखवणे किंवा लपवणे
-            const mahasangramBox = document.getElementById('mahasangram-info-box');
+            // १. महासंग्राम माहिती बॉक्स फक्त महासंग्राम (live) टॅबवरच दाखवणे
+            const mahasangramBox = document.getElementById('paidHeroCard');
             if (mahasangramBox) {
-                if (key.indexOf('sangram') !== -1 || key.indexOf('महासंग्राम') !== -1 || key.indexOf('100') !== -1) {
+                if (key === 'live' || key.indexOf('sangram') !== -1 || key.indexOf('महासंग्राम') !== -1) {
                     mahasangramBox.style.display = 'block';
                 } else {
                     mahasangramBox.style.display = 'none';
@@ -687,7 +686,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             var subjBox = document.getElementById('subjectsFilterBox');
             if (subjBox) subjBox.style.display = (key === 'subjects' || key.indexOf('विषय') !== -1) ? 'block' : 'none';
 
-            // ३. सर्व कंटेनर्स लपवणे
+            // ३. सर्व अतिरिक्त कंटेनर्स लपवणे
             const containers = ['testsContainer', 'battleContainer', 'docsContainer', 'helpContainer', 'aboutContainer', 'guideContainer'];
             containers.forEach(id => {
                 const el = document.getElementById(id);
@@ -715,37 +714,42 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                 if (el) el.style.display = 'grid';
                 filterBySubjectSpecific('all', document.querySelector('.subj-btn'));
             } else {
-                // ५. टेस्ट्सचे अचूक फिल्टरिंग (मोफत, रॅपिड फायर, महासंग्राम, सर्व)
+                // ५. टेस्ट्सचे काटेकोर वर्गीकरण
                 const testsCont = document.getElementById('testsContainer');
                 if (testsCont) testsCont.style.display = 'grid';
 
                 let visibleCount = 0;
                 document.querySelectorAll('.test-card').forEach(function(card) {
-                    const cType = (card.getAttribute('data-type') || card.getAttribute('data-cat') || '').toLowerCase();
-                    const cCat = (card.getAttribute('data-category') || '').toLowerCase();
+                    const cCat = (card.getAttribute('data-cat') || '').toLowerCase().trim();
+                    const cType = (card.getAttribute('data-type') || '').toLowerCase().trim();
                     const cTitle = (card.innerText || '').toLowerCase();
 
                     let isMatch = false;
 
-                    if (key === 'all' || key === '' || key.indexOf('सर्व') !== -1) {
+                    if (key === 'all' || key === '') {
                         isMatch = true;
-                    } else if (key.indexOf('rapid') !== -1 || key.indexOf('रॅपिड') !== -1 || key.indexOf('20') !== -1) {
-                        // फक्त २० गुण रॅपिड फायर टेस्ट
-                        if (cType.indexOf('rapid') !== -1 || cCat.indexOf('rapid') !== -1 || cTitle.indexOf('रॅपिड') !== -1) {
+                    } else if (key === 'rapid' || key.indexOf('रॅपिड') !== -1) {
+                        // फक्त २० गुण रॅपिड फायर
+                        if (cCat === 'rapid' || cTitle.indexOf('रॅपिड') !== -1) {
                             isMatch = true;
                         }
-                    } else if (key.indexOf('free') !== -1 || key.indexOf('मोफत') !== -1) {
-                        // १०० प्रश्नांचा मोफत सराव पेपर (यात रॅपिड येणार नाही)
-                        if ((cType.indexOf('free') !== -1 || cCat.indexOf('free') !== -1 || cTitle.indexOf('मोफत') !== -1) && cTitle.indexOf('रॅपिड') === -1) {
+                    } else if (key === 'free' || key.indexOf('मोफत') !== -1) {
+                        // फक्त मोफत सराव टेस्ट्स (रॅपिड वगळून)
+                        if (cCat === 'free' && cTitle.indexOf('रॅपिड') === -1) {
                             isMatch = true;
                         }
-                    } else if (key.indexOf('sangram') !== -1 || key.indexOf('महासंग्राम') !== -1 || key.indexOf('100') !== -1) {
-                        // महासंग्राम टेस्ट्स
-                        if (cType.indexOf('paid') !== -1 || cType.indexOf('sangram') !== -1 || cCat.indexOf('sangram') !== -1 || cTitle.indexOf('महासंग्राम') !== -1) {
+                    } else if (key === 'live' || key.indexOf('महासंग्राम') !== -1) {
+                        // फक्त मिशन खाकी महासंग्राम
+                        if (cCat === 'live' || cTitle.indexOf('महासंग्राम') !== -1) {
+                            isMatch = true;
+                        }
+                    } else if (key === 'paid' || key.indexOf('अतिसंभाव्य') !== -1) {
+                        // फक्त अतिसंभाव्य १०० गुण संच (महासंग्राम वगळून)
+                        if (cCat === 'paid' && cTitle.indexOf('महासंग्राम') === -1) {
                             isMatch = true;
                         }
                     } else {
-                        if (cCat === key || cType === key || cTitle.indexOf(key) !== -1) {
+                        if (cCat === key) {
                             isMatch = true;
                         }
                     }
