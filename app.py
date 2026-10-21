@@ -951,7 +951,24 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         {% for t in tests %}
         <div class="test-card" data-id="{{ t.id }}" data-type="{{ t.test_type }}" data-cat="{{ t.category or 'free' }}" data-subject="{{ t.subject or '' }}">
             <div>
-                <h4 class="test-title">{{ t.test_title }}</h4>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+    <h4 class="test-title" style="margin: 0;">{{ t.test_title }}</h4>
+    
+    <!-- किंमत बॅज (नावाच्या लगेच पुढे) -->
+    {% if t.price and t.price|int > 0 %}
+        <span style="background: #e11d48; color: #ffffff; font-size: 13px; font-weight: bold; padding: 2px 10px; border-radius: 12px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.4); border: 1px solid #fda4af;">
+            ₹{{ t.price }}
+        </span>
+    {% elif t.test_fee and t.test_fee|int > 0 %}
+        <span style="background: #e11d48; color: #ffffff; font-size: 13px; font-weight: bold; padding: 2px 10px; border-radius: 12px; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.4); border: 1px solid #fda4af;">
+            ₹{{ t.test_fee }}
+        </span>
+    {% else %}
+        <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 12px; border: 1px solid #10b981;">
+            मोफत
+        </span>
+    {% endif %}
+</div>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                     {% if t.subject %}
                         <span class="badge-subj">📚 {{ t.subject }}</span>
