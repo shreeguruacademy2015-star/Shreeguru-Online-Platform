@@ -4614,7 +4614,12 @@ def admin_ai_generate_advanced():
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, generated_list)
                 conn.commit()
-        return jsonify({"success": True, "inserted_count": len(generated_list)})
+        return jsonify({
+            "success": True, 
+            "inserted_count": len(generated_list),
+            "test_id": test_id,
+            "redirect_url": f"/admin/dashboard?tab=questions&q_subtab=ai&filter_test_id={test_id}"
+        })
 
     return jsonify({"success": False, "error": "कोणतेही प्रश्न तयार झाले नाहीत."}), 400
 
