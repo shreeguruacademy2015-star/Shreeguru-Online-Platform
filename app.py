@@ -982,13 +982,13 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                     {% endif %}
                     <span class="badge-rapid">⏱️ {{ t.duration_minutes }} मिनिटे</span>
                     {% if t.is_locked and t.category == 'rapid' %}
-                    <span style="font-size:12px; color:#fbbf24;">⏳ पुढील टेस्ट दुसऱ्या दिवशी सकाळी १०:०० वाजता अनलॉक होईल</span>
+                    <span style="font-size:12px; color:#fbbf24;">⏳ रोज सकाळी १०:०० वाजता पुढील नवीन रॅपिड फायर टेस्ट अनलॉक होईल</span>
                     {% endif %}
                 </div>
             </div>
             <div>
                 {% if t.is_locked %}
-                    <span class="btn-locked">🔒 सकाळी १०:०० ला उघडेल</span>
+                    <span class="btn-locked">🔒 रोज सकाळी १०:०० ला उघडेल</span>
                 {% elif t.category in ['live', 'paid'] %}
                     <a href="/take_test/{{ t.id }}" class="btn-pay-unlock">🔓 अनलॉक करा / सोडवा</a>
                 {% else %}
