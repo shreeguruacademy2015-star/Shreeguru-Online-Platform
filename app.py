@@ -627,11 +627,15 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .phonebook-btn { background: #0284c7; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
     </style>
     <script>
-    window.onpageshow = function(event) {
-        var modal = document.getElementById('loadingNoticeModal');
-        if (modal) modal.style.display = 'none';
-    };
-
+    document.addEventListener('DOMContentLoaded', function() {
+    // कोणताही लोडर किंवा स्प्लॅश असल्यास त्वरित नष्ट करणे
+    const loader = document.getElementById('loadingNoticeModal');
+    if (loader) loader.remove();
+    
+    // थेट पहिला टॅब सक्रिय करणे
+    const firstActive = document.querySelector('.tab-btn.active') || document.querySelector('.tab-btn');
+    if (firstActive) firstActive.click();
+});
     let isInternalNav = false;
 
     document.addEventListener('click', function(e) {
