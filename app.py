@@ -626,19 +626,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .modal-content { background: #162036; border: 2px solid #10b981; border-radius: 16px; padding: 30px 20px; max-width: 480px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.6); }
         .phonebook-btn { background: #0284c7; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
         /* अतिशय आकर्षक व ऊर्जा देणारा वेलकम स्क्रीन */
-#portalWelcomeSplash {
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(circle at center, #111e38 0%, #080d1a 100%);
-    z-index: 999999;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 24px;
-    transition: opacity 0.6s ease, visibility 0.6s ease;
-}
+
 
 /* लोगोला आकर्षक गोल्डन पल्स ग्लो */
 .splash-logo-vip {
