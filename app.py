@@ -625,49 +625,74 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .loading-modal { display: none; position: fixed; inset: 0; background: rgba(11,19,41,0.95); z-index: 9999; justify-content: center; align-items: center; padding: 15px; }
         .modal-content { background: #162036; border: 2px solid #10b981; border-radius: 16px; padding: 30px 20px; max-width: 480px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.6); }
         .phonebook-btn { background: #0284c7; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        /* वेलकम स्प्लॅश स्क्रीन डिझाईन */
+        /* अतिशय आकर्षक व ऊर्जा देणारा वेलकम स्क्रीन */
 #portalWelcomeSplash {
     position: fixed;
     inset: 0;
-    background: #0b1329;
+    background: radial-gradient(circle at center, #111e38 0%, #080d1a 100%);
     z-index: 999999;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 20px;
-    transition: opacity 0.5s ease, visibility 0.5s ease;
+    padding: 24px;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
 }
 
-.splash-logo {
-    width: 105px;
-    height: 105px;
+/* लोगोला आकर्षक गोल्डन पल्स ग्लो */
+.splash-logo-vip {
+    width: 115px;
+    height: 115px;
     border-radius: 50%;
-    border: 3px solid #10b981;
-    box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
-    margin-bottom: 20px;
-    animation: pulseLogo 2s infinite ease-in-out;
+    border: 3.5px solid #fbbf24;
+    box-shadow: 0 0 35px rgba(251, 191, 36, 0.45), 0 0 15px rgba(16, 185, 129, 0.3);
+    margin-bottom: 18px;
+    animation: vipPulse 2s infinite ease-in-out;
 }
 
-@keyframes pulseLogo {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+@keyframes vipPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(251, 191, 36, 0.4); }
+    50% { transform: scale(1.06); box-shadow: 0 0 45px rgba(251, 191, 36, 0.7); }
 }
 
-.splash-spinner {
-    width: 36px;
-    height: 36px;
-    border: 3.5px solid rgba(255, 255, 255, 0.15);
-    border-top: 3.5px solid #10b981;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 15px 0 10px 0;
+/* खाकी स्पेशल बॅज */
+.khaki-badge {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.3));
+    border: 1px solid #f59e0b;
+    color: #fef3c7;
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.2);
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+/* आधुनिक स्मूथ प्रोग्रेस बार */
+.splash-progress-track {
+    width: 220px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 16px 0 12px 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.splash-progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #38bdf8, #fbbf24);
+    border-radius: 10px;
+    animation: loadBar 1.8s ease-in-out forwards;
+}
+
+@keyframes loadBar {
+    0% { width: 0%; }
+    50% { width: 65%; }
+    100% { width: 100%; }
 }
     </style>
     <script>
