@@ -625,6 +625,50 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .loading-modal { display: none; position: fixed; inset: 0; background: rgba(11,19,41,0.95); z-index: 9999; justify-content: center; align-items: center; padding: 15px; }
         .modal-content { background: #162036; border: 2px solid #10b981; border-radius: 16px; padding: 30px 20px; max-width: 480px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.6); }
         .phonebook-btn { background: #0284c7; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        /* वेलकम स्प्लॅश स्क्रीन डिझाईन */
+#portalWelcomeSplash {
+    position: fixed;
+    inset: 0;
+    background: #0b1329;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.splash-logo {
+    width: 105px;
+    height: 105px;
+    border-radius: 50%;
+    border: 3px solid #10b981;
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+    margin-bottom: 20px;
+    animation: pulseLogo 2s infinite ease-in-out;
+}
+
+@keyframes pulseLogo {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.splash-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3.5px solid rgba(255, 255, 255, 0.15);
+    border-top: 3.5px solid #10b981;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 15px 0 10px 0;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
     </style>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -645,13 +689,17 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         }
     });
 
-    window.addEventListener('beforeunload', function (e) {
-        if (!isInternalNav) {
-            e.preventDefault();
-            e.returnValue = 'आपण टेस्ट पोर्टलवरून बाहेर पडू इच्छिता का?';
-            return e.returnValue;
+    window.addEventListener('load', function() {
+    setTimeout(function() {
+        const splash = document.getElementById('portalWelcomeSplash');
+        if (splash) {
+            splash.style.opacity = '0';
+            setTimeout(function() {
+                splash.style.display = 'none';
+            }, 500);
         }
-    });
+    }, 1500);
+});
 
     async function selectContact(targetId) {
         if ('contacts' in navigator && 'ContactsManager' in window) {
@@ -840,16 +888,22 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png?v=2">
 </head>
 <body>
-<div id="loadingNoticeModal" class="loading-modal">
-    <div class="modal-content">
-        <h3 style="color:#34d399; margin:0 0 10px; font-size:20px;">🛡️ परीक्षा कक्ष सुरू होत आहे...</h3>
-        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0 0 20px;">
-            ⏳ <b>महाराष्ट्र पोलीस भरती संभाव्य टेस्ट पोर्टलवर आपले स्वागत आहे!</b><br>आपले प्रश्नपत्र पेज लोड होत आहे, कृपया पुढे जाण्यासाठी बटण दाबा.
-        </p>
-        <button onclick="proceedToTest()" style="background:linear-gradient(135deg, #10b981, #059669); color:#022c22; border:none; padding:12px 28px; border-radius:8px; font-weight:800; font-size:15px; cursor:pointer; width:100%;">
-            🚀 पुढे चला (कंटिन्यू) ➔
-        </button>
-    </div>
+<!-- सुरुवातीचा लोगो व वेटिंग मेसेज स्क्रीन -->
+<div id="portalWelcomeSplash">
+    <img src="/static/icon-512.png?v=2" alt="Logo" class="splash-logo">
+
+    <h2 style="color: #34d399; font-size: 21px; margin: 0 0 8px 0; font-weight: 800;">
+        महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल सुरू होत आहे...
+    </h2>
+
+    <div class="splash-spinner"></div>
+
+    <p style="color: #cbd5e1; font-size: 14px; margin: 4px 0 0 0;">
+        ⏳ कृपया काही सेकंद प्रतीक्षा करा, परीक्षा कक्ष लोड होत आहे...
+    </p>
+    <small style="color: #94a3b8; font-size: 12px; margin-top: 6px;">
+        ⚔️ मिशन खाकी २०२६ — तुमची जिद्द, आमचे मार्गदर्शन! 🌟
+    </small>
 </div>
 
 <div class="top-bar">
