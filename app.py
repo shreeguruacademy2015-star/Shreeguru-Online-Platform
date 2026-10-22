@@ -876,19 +876,19 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         if (noTestMsg) noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
     }
 
-    // स्वागत स्क्रीन ३ सेकंद थांबवून मग स्मूथपणे टेस्ट होम पेज दाखवणे
-window.addEventListener('load', function() {
+    // स्वागत स्क्रीन ३.५ सेकंद स्थिर ठेवणे
+(function() {
     setTimeout(function() {
-        const splash = document.getElementById('portalWelcomeSplash');
+        var splash = document.getElementById('portalWelcomeSplash');
         if (splash) {
-            splash.style.transition = 'opacity 0.6s ease';
+            splash.style.transition = 'opacity 0.8s ease';
             splash.style.opacity = '0';
             setTimeout(function() {
                 splash.style.display = 'none';
-            }, 600);
+            }, 800);
         }
-    }, 3000); // पूर्ण ३ सेकंद वेळ (विद्यार्थ्यांना वाचण्यासाठी)
-});
+    }, 3500); // पूर्ण ३.५ सेकंद वेळ (विद्यार्थ्यांना शांतपणे वाचता येईल)
+})();
 
     function inviteFriendWhatsApp() {
         const num = document.getElementById('friend_invite_phone').value.trim();
@@ -917,7 +917,7 @@ window.addEventListener('load', function() {
 </head>
 <body>
 <!-- सुरुवातीचा अत्यंत आकर्षक व ऊर्जा देणारा वेलकम स्क्रीन -->
-<div id="portalWelcomeSplash">
+<div id="portalWelcomeSplash" style="position:fixed; inset:0; background:radial-gradient(circle at center, #111e38 0%, #080d1a 100%); z-index:999999; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:24px;">
     <!-- १. व्हीआयपी ग्लो असलेला लोगो -->
     <img src="/static/icon-512.png?v=2" alt="Logo" class="splash-logo-vip">
 
