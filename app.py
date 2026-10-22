@@ -913,24 +913,43 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png?v=2">
 </head>
 <body>
-<!-- सुरुवातीचा लोगो व वेटिंग मेसेज स्क्रीन -->
+<!-- सुरुवातीचा अत्यंत आकर्षक व ऊर्जा देणारा वेलकम स्क्रीन -->
 <div id="portalWelcomeSplash">
-    <img src="/static/icon-512.png?v=2" alt="Logo" class="splash-logo">
+    <!-- १. व्हीआयपी ग्लो असलेला लोगो -->
+    <img src="/static/icon-512.png?v=2" alt="Logo" class="splash-logo-vip">
 
-    <h2 style="color: #34d399; font-size: 21px; margin: 0 0 8px 0; font-weight: 800;">
-        महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल सुरू होत आहे...
-    </h2>
+    <!-- २. खाकी वर्दी स्पेशल बॅज -->
+    <div class="khaki-badge">
+        🎯 महाराष्ट्र पोलीस भरती २०२६ सराव मिशन
+    </div>
 
-    <div class="splash-spinner"></div>
+    <!-- ३. मुख्य मोठे व ठळक शीर्षक -->
+    <h1 style="color: #ffffff; font-size: 26px; margin: 0 0 10px 0; font-weight: 900; line-height: 1.35; text-shadow: 0 3px 15px rgba(56, 189, 248, 0.4);">
+        महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टलवर <span style="color: #38bdf8;">आपले स्वागत आहे!</span>
+    </h1>
 
-    <p style="color: #cbd5e1; font-size: 14px; margin: 4px 0 0 0;">
-        ⏳ कृपया काही सेकंद प्रतीक्षा करा, परीक्षा कक्ष लोड होत आहे...
+    <!-- ४. उपशीर्षक -->
+    <p style="color: #34d399; font-size: 16px; margin: 0; font-weight: 800; letter-spacing: 0.3px;">
+        ⚡ आजचा सराव, उद्याची खाकी वर्दी!
     </p>
-    <small style="color: #94a3b8; font-size: 12px; margin-top: 6px;">
-        ⚔️ मिशन खाकी २०२६ — तुमची जिद्द, आमचे मार्गदर्शन! 🌟
-    </small>
-</div>
 
+    <!-- ५. प्रोग्रेस बार -->
+    <div class="splash-progress-track">
+        <div class="splash-progress-fill"></div>
+    </div>
+
+    <!-- ६. सराव कक्ष लोडिंग मेसेज -->
+    <p style="color: #cbd5e1; font-size: 13.5px; margin: 4px 0 0 0; font-weight: 500;">
+        ⏳ प्रश्नपत्रिका कक्ष लोड होत आहे, सज्ज राहा...
+    </p>
+
+    <!-- ७. आत्मविश्वास देणारे ब्रीदवाक्य -->
+    <div style="margin-top: 15px; padding: 6px 14px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border-left: 3px solid #fbbf24;">
+        <small style="color: #fef08a; font-size: 12.5px; font-weight: 700;">
+            🔥 "जिद्द, चिकाटी आणि कठोर परिश्रम — वर्दी आमचीच!" 🔥
+        </small>
+    </div>
+</div>
 <div class="top-bar">
     <div style="font-weight:bold; font-size:13.5px; color:#a7f3d0; display:flex; align-items:center; gap:8px;">
         <span class="badge-live">LIVE</span> 🕒 मिशन खाकी २०२६ सराव कक्ष
