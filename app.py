@@ -876,16 +876,19 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         if (noTestMsg) noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
     }
 
-    let pendingTestUrl = '';
-    function openLoadingNotice(url) {
-        pendingTestUrl = url;
-        const modal = document.getElementById('loadingNoticeModal');
-        if (modal) modal.style.display = 'flex';
-    }
-    
-    function proceedToTest() {
-        if (pendingTestUrl) window.location.href = pendingTestUrl;
-    }
+    // स्वागत स्क्रीन ३ सेकंद थांबवून मग स्मूथपणे टेस्ट होम पेज दाखवणे
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        const splash = document.getElementById('portalWelcomeSplash');
+        if (splash) {
+            splash.style.transition = 'opacity 0.6s ease';
+            splash.style.opacity = '0';
+            setTimeout(function() {
+                splash.style.display = 'none';
+            }, 600);
+        }
+    }, 3000); // पूर्ण ३ सेकंद वेळ (विद्यार्थ्यांना वाचण्यासाठी)
+});
 
     function inviteFriendWhatsApp() {
         const num = document.getElementById('friend_invite_phone').value.trim();
