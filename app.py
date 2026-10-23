@@ -863,7 +863,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                 splash.style.display = 'none';
             }, 800);
         }
-    }, 3000   ); // पूर्ण  ३   सेकंद वेळ (विद्यार्थ्यांना शांतपणे वाचता येईल)
+    }, 0   ); // पूर्ण  ०   सेकंद वेळ (विद्यार्थ्यांना शांतपणे वाचता येईल)
 })();
 
     function inviteFriendWhatsApp() {
