@@ -1270,11 +1270,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     }
     </script>
     <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
-    }
+    
     // थेट इन्स्टॉल पॉपअप उघडण्यासाठी नवीन फंक्शन
     function triggerDirectInstall() {
         if (deferredPrompt) {
@@ -3062,9 +3058,10 @@ def home_tests_list():
                 if 'visited_site' not in session:
                     session['visited_site'] = True
                     cur.execute("""
-                        INSERT INTO site_stats (id, total_visits) VALUES (1, 1)
-                        ON CONFLICT (id) DO UPDATE SET total_visits = site_stats.total_visits + 1;
-                    """)
+                    INSERT INTO site_stats (id, total_visits) VALUES (1, 1546)
+                    ON CONFLICT (id) DO UPDATE SET total_visits = site_stats.total_visits + 1;
+                """)
+                conn.commit()
 
                 # २. ऑनलाईन विद्यार्थी ट्रॅक करणे
                 if 'user_sid' not in session:
