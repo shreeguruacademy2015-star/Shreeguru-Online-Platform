@@ -702,18 +702,6 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         }
     });
 
-    window.addEventListener('load', function() {
-    setTimeout(function() {
-        const splash = document.getElementById('portalWelcomeSplash');
-        if (splash) {
-            splash.style.opacity = '0';
-            setTimeout(function() {
-                splash.style.display = 'none';
-            }, 500);
-        }
-    }, 1500);
-});
-
     async function selectContact(targetId) {
         if ('contacts' in navigator && 'ContactsManager' in window) {
             try {
@@ -899,9 +887,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     }, 60000);
 </script>
        
-<link rel="apple-touch-icon" href="/static/icon-512.png?v=2">
-<link rel="icon" type="image/png" sizes="192x192" href="/static/icon-512.png?v=2">
-<link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png?v=2">
+<link rel="shortcut icon" href="/static/icon-512.png" type="image/png">
 </head>
 <body>
 <!-- ब्राऊझर उघडताच एका मिलीसेकंदात सुरू होणारा वेलकम स्क्रीन -->
@@ -4102,26 +4088,13 @@ def admin_dashboard():
             total_visits_count = 0
 
             try:
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS active_sessions (
-                        session_id VARCHAR(100) PRIMARY KEY,
-                        last_seen BIGINT
-                    );
-                    CREATE TABLE IF NOT EXISTS site_stats (
-                        id INT PRIMARY KEY,
-                        total_visits INT DEFAULT 0
-                    );
-                    INSERT INTO site_stats (id, total_visits) VALUES (1, 0) ON CONFLICT (id) DO NOTHING;
-                """)
-                conn.commit()
-
-                cur.execute("SELECT COUNT(*) AS c FROM active_sessions WHERE last_seen > %s;", (now_ts - 120,))
+                cur.execute("SELECT COUNT(*) AS c FROM live_heartbeats WHERE last_seen > NOW() - INTERVAL '5 minutes';")
                 row_live = cur.fetchone()
                 live_now_count = row_live['c'] if row_live else 0
 
-                cur.execute("SELECT total_visits FROM site_stats WHERE id = 1;")
+                cur.execute("SELECT COUNT(*) AS v FROM mock_test_leads WHERE is_deleted=0;")
                 row_v = cur.fetchone()
-                total_visits_count = row_v['total_visits'] if row_v else 0
+                total_visits_count = row_v['v'] if row_v else 0
             except Exception:
                 conn.rollback()
                 live_now_count = 0
@@ -5587,5 +5560,3 @@ def admin_test_paper_view(test_id):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
-init_master_db()
