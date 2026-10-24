@@ -4593,9 +4593,9 @@ def admin_dashboard():
                 filter_test_id = available_tests[0]['id']
 
             if filter_test_id:
-                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id DESC", (filter_test_id,))
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (filter_test_id,))
             else:
-                cur.execute("SELECT * FROM questions WHERE is_deleted=0 ORDER BY id DESC")
+                cur.execute("SELECT * FROM questions WHERE is_deleted=0 ORDER BY id ASC")
             all_questions = cur.fetchall()
 
             selected_test_title = "निवडलेली टेस्ट"
@@ -5872,19 +5872,14 @@ def admin_test_paper_view(test_id):
             if not test:
                 return "टेस्ट सापडली नाही!", 404
                 
-            # २. प्रश्नांची यादी मिळवणे
-            try:
-                cur.execute("SELECT * FROM paper_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
-                questions = cur.fetchall()
-            except Exception:
-                conn.rollback()
-                try:
-                    cur.execute("SELECT * FROM test_questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
-                    questions = cur.fetchall()
-                except Exception:
-                    conn.rollback()
-                    cur.execute("SELECT * FROM questions WHERE test_id = %s ORDER BY id ASC", (test_id,))
-                    questions = cur.fetchall()
+            # २. मुख्य 'questions' टेबलमधूनच थेट सलग क्रमाने (१, २, ३...) प्रश्न मिळवणे
+            cur.execute("""
+                SELECT id, question, opt_a, opt_b, opt_c, opt_d, correct AS correct_opt, explanation 
+                FROM questions 
+                WHERE test_id = %s AND is_deleted = 0 
+                ORDER BY id ASC
+            """, (test_id,))
+            questions = cur.fetchall()
 
     return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
         
