@@ -3405,7 +3405,7 @@ def home_tests_list():
                 if row and row['cnt'] > 0:
                     active_students_count = row['cnt'] + 25
 
-                cur.execute("SELECT DISTINCT ON (test_title) * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY test_title, sequence_order ASC, id ASC")
+                cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY id ASC")
                 raw_tests_db = cur.fetchall()
 
                 # --- RAPID FIRE जागतिक कॅलेंडरनुसार अनलॉक (आज ४ थी टेस्ट अनलॉक) ---
@@ -3453,6 +3453,8 @@ def home_tests_list():
                 else:
                     t_dict['is_locked'] = False
                     tests.append(t_dict)
+                    # १, २, ३... असा नैसर्गिक संख्यात्मक क्रम लावण्यासाठी
+            tests = sorted(tests, key=lambda x: int(''.join(filter(str.isdigit, str(x.get('sequence_order') or x.get('test_title') or '0'))) or 0))
 
             cur.execute("""
                 SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
