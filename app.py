@@ -3083,25 +3083,15 @@ def home_tests_list():
                 cur.execute("SELECT DISTINCT ON (test_title) * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY test_title, sequence_order ASC, id ASC")
                 raw_tests_db = cur.fetchall()
 
-                # --- RAPID FIRE SEQUENTIAL DAILY 10 AM UNLOCK LOGIC ---
+                # --- RAPID FIRE जागतिक कॅलेंडरनुसार अनलॉक (आज ४ थी टेस्ट अनलॉक) ---
                 from datetime import timezone
                 ist_tz = timezone(timedelta(hours=5, minutes=30))
                 now_ist = datetime.now(ist_tz)
                 today_date = now_ist.date()
 
-                user_created_date = session.get('user_created_at')
-                if user_created_date:
-                    if isinstance(user_created_date, str):
-                        try:
-                            user_start_date = datetime.strptime(user_created_date[:10], '%Y-%m-%d').date()
-                        except Exception:
-                            user_start_date = today_date
-                    else:
-                        user_start_date = user_created_date.date()
-                else:
-                    user_start_date = today_date
-                    session['user_created_at'] = str(today_date)
-
+                # सिरीज सुरू झालेली तारीख (२१ ऑक्टोबर २०२६ पासून ४ था दिवस)
+                series_start_date = date(2026, 10, 21)
+                
                 unlock_time = time(10, 0, 0)
                 if now_ist.time() < unlock_time:
                     effective_date = today_date - timedelta(days=1)
@@ -3110,8 +3100,8 @@ def home_tests_list():
                     effective_date = today_date
                     is_today_unlocked = True
 
-                days_diff = (effective_date - user_start_date).days
-                target_seq = 1 if days_diff < 0 else days_diff + 1
+                days_passed = (effective_date - series_start_date).days
+                current_unlocked_seq = max(1, days_passed + 1)
 
             except Exception as e:
                 conn.rollback()
@@ -3125,9 +3115,15 @@ def home_tests_list():
 
                 if is_rapid:
                     test_seq = int(t_dict.get('sequence_order') or 1)
-                    if test_seq == target_seq:
+                    if test_seq < current_unlocked_seq:
+                        t_dict['is_locked'] = False
+                        tests.append(t_dict)
+                    elif test_seq == current_unlocked_seq:
                         t_dict['is_locked'] = not is_today_unlocked
                         t_dict['is_locked_10am'] = not is_today_unlocked
+                        tests.append(t_dict)
+                    else:
+                        t_dict['is_locked'] = True
                         tests.append(t_dict)
                 else:
                     t_dict['is_locked'] = False
