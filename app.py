@@ -3462,12 +3462,65 @@ def home_tests_list():
             tests = sorted(tests, key=lambda x: int(''.join(filter(str.isdigit, str(x.get('sequence_order') or x.get('test_title') or '0'))) or 0))
 
             cur.execute("""
+                UPDATE mock_test_leads SET district = 
+                    CASE 
+                        WHEN LOWER(district) IN ('kolhapur', 'kholapur', 'kop', 'hupari', 'आडूर', 'कळे') OR district ILIKE '%kolhapur%' THEN 'कोल्हापूर'
+                        WHEN LOWER(district) IN ('pune', 'pun', 'poona') OR district ILIKE '%pune%' THEN 'पुणे'
+                        WHEN LOWER(district) IN ('sangli', 'san') OR district ILIKE '%sangli%' THEN 'सांगली'
+                        WHEN LOWER(district) IN ('satara', 'sat') OR district ILIKE '%satara%' THEN 'सातारा'
+                        WHEN LOWER(district) IN ('solapur', 'sholapur') OR district ILIKE '%solapur%' THEN 'सोलापूर'
+                        WHEN LOWER(district) IN ('ahmednagar', 'ahmadnagar', 'nagar', 'ahilyanagar') OR district ILIKE '%ahmednagar%' OR district ILIKE '%अहिल्यानगर%' THEN 'अहमदनगर'
+                        WHEN LOWER(district) IN ('akola') OR district ILIKE '%akola%' THEN 'अकोला'
+                        WHEN LOWER(district) IN ('amravati') OR district ILIKE '%amravati%' THEN 'अमरावती'
+                        WHEN LOWER(district) IN ('aurangabad', 'sambhajinagar', 'csn') OR district ILIKE '%sambhajinagar%' OR district ILIKE '%aurangabad%' THEN 'छत्रपती संभाजीनगर'
+                        WHEN LOWER(district) IN ('beed', 'bid') OR district ILIKE '%beed%' THEN 'बीड'
+                        WHEN LOWER(district) IN ('bhandara') OR district ILIKE '%bhandara%' THEN 'भंडारा'
+                        WHEN LOWER(district) IN ('buldhana', 'buldana') OR district ILIKE '%buldhana%' THEN 'बुलढाणा'
+                        WHEN LOWER(district) IN ('chandrapur', 'chanda') OR district ILIKE '%chandrapur%' THEN 'चंद्रपूर'
+                        WHEN LOWER(district) IN ('dhule') OR district ILIKE '%dhule%' THEN 'धुळे'
+                        WHEN LOWER(district) IN ('gadchiroli') OR district ILIKE '%gadchiroli%' THEN 'गडचिरोली'
+                        WHEN LOWER(district) IN ('gondia') OR district ILIKE '%gondia%' THEN 'गोंदिया'
+                        WHEN LOWER(district) IN ('hingoli') OR district ILIKE '%hingoli%' THEN 'हिंगोली'
+                        WHEN LOWER(district) IN ('jalgaon') OR district ILIKE '%jalgaon%' THEN 'जळगाव'
+                        WHEN LOWER(district) IN ('jalna') OR district ILIKE '%jalna%' THEN 'जालना'
+                        WHEN LOWER(district) IN ('latur') OR district ILIKE '%latur%' THEN 'लातूर'
+                        WHEN LOWER(district) IN ('mumbai', 'mumbai city', 'south mumbai') OR district ILIKE '%mumbai city%' THEN 'मुंबई शहर'
+                        WHEN LOWER(district) IN ('mumbai suburban', 'suburban') OR district ILIKE '%suburban%' THEN 'मुंबई उपनगर'
+                        WHEN LOWER(district) IN ('nagpur') OR district ILIKE '%nagpur%' THEN 'नागपूर'
+                        WHEN LOWER(district) IN ('nanded') OR district ILIKE '%nanded%' THEN 'नांदेड'
+                        WHEN LOWER(district) IN ('nandurbar') OR district ILIKE '%nandurbar%' THEN 'नंदुरबार'
+                        WHEN LOWER(district) IN ('nashik', 'nasik') OR district ILIKE '%nashik%' THEN 'नाशिक'
+                        WHEN LOWER(district) IN ('dharashiv', 'osmanabad') OR district ILIKE '%dharashiv%' OR district ILIKE '%osmanabad%' THEN 'धाराशिव'
+                        WHEN LOWER(district) IN ('palghar') OR district ILIKE '%palghar%' THEN 'पालघर'
+                        WHEN LOWER(district) IN ('parbhani') OR district ILIKE '%parbhani%' THEN 'परभणी'
+                        WHEN LOWER(district) IN ('raigad', 'alibag') OR district ILIKE '%raigad%' THEN 'रायगड'
+                        WHEN LOWER(district) IN ('ratnagiri') OR district ILIKE '%ratnagiri%' THEN 'रत्नागिरी'
+                        WHEN LOWER(district) IN ('sindhudurg') OR district ILIKE '%sindhudurg%' THEN 'सिंधुदुर्ग'
+                        WHEN LOWER(district) IN ('thane') OR district ILIKE '%thane%' THEN 'ठाणे'
+                        WHEN LOWER(district) IN ('wardha') OR district ILIKE '%wardha%' THEN 'वर्धा'
+                        WHEN LOWER(district) IN ('washim') OR district ILIKE '%washim%' THEN 'वाशिम'
+                        WHEN LOWER(district) IN ('yavatmal') OR district ILIKE '%yavatmal%' THEN 'यवतमाळ'
+                        ELSE district
+                    END
+                WHERE is_deleted = 0;
+            """)
+            conn.commit()
+
+            # २. केवळ ३६ अधिकृत जिल्ह्यांचीच यादी तयार करणे (एकूण विद्यार्थी संख्या व एकत्रित सरासरी गुण)
+            cur.execute("""
                 SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
                 FROM mock_test_leads
-                WHERE district IS NOT NULL AND district != '' AND is_deleted=0
+                WHERE is_deleted = 0 AND district IN (
+                    'अहमदनगर', 'अकोला', 'अमरावती', 'छत्रपती संभाजीनगर', 'बीड', 'भंडारा', 
+                    'बुलढाणा', 'चंद्रपूर', 'धुळे', 'गडचिरोली', 'गोंदिया', 'हिंगोली', 
+                    'जळगाव', 'जालना', 'कोल्हापूर', 'लातूर', 'मुंबई शहर', 'मुंबई उपनगर', 
+                    'नागपूर', 'नांदेड', 'नंदुरबार', 'नाशिक', 'धाराशिव', 'पालघर', 
+                    'परभणी', 'पुणे', 'रायगड', 'रत्नागिरी', 'सांगली', 'सातारा', 
+                    'सिंधुदुर्ग', 'सोलापूर', 'ठाणे', 'वर्धा', 'वाशिम', 'यवतमाळ'
+                )
                 GROUP BY district
                 ORDER BY avg_score DESC, total_students DESC
-                LIMIT 15
+                LIMIT 36
             """)
             live_district_battles = cur.fetchall()
 
@@ -3932,6 +3985,28 @@ def submit_test(test_id):
     try:
         student_name = request.form.get('student_name', '').strip()
         district = request.form.get('district', '').strip()
+        # विद्यार्थ्याने इंग्रजीत किंवा स्पेलिंग मिस्टेकसह टाईप केले तरी अधिकृत ३६ मराठी जिल्ह्यात बदलणे
+        dist_clean = district.lower().strip()
+        dist_dict = {
+            'kolhapur': 'कोल्हापूर', 'kholapur': 'कोल्हापूर', 'kop': 'कोल्हापूर', 'hupari': 'कोल्हापूर',
+            'pune': 'पुणे', 'pun': 'पुणे', 'poona': 'पुणे',
+            'sangli': 'सांगली', 'satara': 'सातारा', 'solapur': 'सोलापूर', 'sholapur': 'सोलापूर',
+            'ahmednagar': 'अहमदनगर', 'ahilyanagar': 'अहमदनगर', 'nagar': 'अहमदनगर',
+            'akola': 'अकोला', 'amravati': 'अमरावती', 'aurangabad': 'छत्रपती संभाजीनगर',
+            'sambhajinagar': 'छत्रपती संभाजीनगर', 'beed': 'बीड', 'bhandara': 'भंडारा',
+            'buldhana': 'बुलढाणा', 'chandrapur': 'चंद्रपूर', 'dhule': 'धुळे',
+            'gadchiroli': 'गडचिरोली', 'gondia': 'गोंदिया', 'hingoli': 'हिंगोली',
+            'jalgaon': 'जळगाव', 'jalna': 'जालना', 'latur': 'लातूर',
+            'mumbai': 'मुंबई शहर', 'mumbai city': 'मुंबई शहर', 'mumbai suburban': 'मुंबई उपनगर',
+            'nagpur': 'नागपूर', 'nanded': 'नांदेड', 'nandurbar': 'नंदुरबार', 'nashik': 'नाशिक',
+            'osmanabad': 'धाराशिव', 'dharashiv': 'धाराशिव', 'palghar': 'पालघर', 'parbhani': 'परभणी',
+            'raigad': 'रायगड', 'ratnagiri': 'रत्नागिरी', 'sindhudurg': 'सिंधुदुर्ग',
+            'thane': 'ठाणे', 'wardha': 'वर्धा', 'washim': 'वाशिम', 'yavatmal': 'यवतमाळ'
+        }
+        for k, v in dist_dict.items():
+            if k in dist_clean:
+                district = v
+                break
         caste_category = request.form.get('caste_category', 'OPEN').strip().upper()
         phone = request.form.get('phone', '').strip()
         time_taken = int(request.form.get('time_taken_seconds', 0) or 0)
