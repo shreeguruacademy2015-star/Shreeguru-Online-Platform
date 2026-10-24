@@ -968,7 +968,9 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         🏠 मुख्य पानावर जा
     </a>
     <div class="hero-banner">
-        <h1>⚔️ महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल</h1>
+        <h1 style="color:#ffffff; font-size:25px; font-weight:900; line-height:1.35; text-shadow:0 3px 15px rgba(56, 189, 248, 0.4); font-family:system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; margin:0 0 10px 0;">
+            ⚔️ महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल
+        </h1>
         <div class="quote-box">
             🔥 "मैदानावर खाकीची जिद्द दाखवली, आता लेखी परीक्षेत तुमची तयारी किती आहे ते सिद्ध करा!" 🌟
         </div>
