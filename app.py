@@ -1641,48 +1641,45 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         }
 
         function validateAndReady() {
-            const name = document.getElementById('s_name').value.trim();
-            const dist = document.getElementById('s_dist').value.trim();
-            const phone = document.getElementById('s_phone').value.trim();
+            const nameEl = document.getElementById('s_name');
+            const distEl = document.getElementById('s_dist');
+            const phoneEl = document.getElementById('s_phone');
             const submitBtn = document.getElementById('submitBtn');
+
+            if (!nameEl || !distEl || !phoneEl || !submitBtn) return;
+
+            const name = nameEl.value.trim();
+            const dist = distEl.value.trim();
+            const phone = phoneEl.value.trim();
             const indianPhoneRegex = /^[6-9][0-9]{9}$/;
 
             if (name !== "" && dist !== "" && indianPhoneRegex.test(phone)) {
                 submitBtn.disabled = false;
+                submitBtn.removeAttribute('disabled');
                 submitBtn.innerText = "🏆 टेस्ट सबमिट करा व निकाल पहा";
                 submitBtn.style.opacity = "1";
+                submitBtn.style.cursor = "pointer";
+                submitBtn.style.background = "linear-gradient(135deg, #10b981, #059669)";
             } else {
                 submitBtn.disabled = true;
-                submitBtn.innerText = "⚠️ नाव, जिल्हा व १० अंकी WhatsApp नंबर भरा";
+                submitBtn.setAttribute('disabled', 'disabled');
+                submitBtn.innerText = "⚠️ नाव, जिल्हा व WhatsApp नंबर भरा";
                 submitBtn.style.opacity = "0.6";
+                submitBtn.style.cursor = "not-allowed";
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('examForm').addEventListener('submit', function(e) {
-                isFormSubmitted = true;
-                localStorage.removeItem(testStorageKey);
-                localStorage.removeItem(timerStorageKey);
-                
-                let timeTaken = Math.floor((Date.now() - testStartTime) / 1000);
-                document.getElementById('time_taken_input').value = timeTaken;
-
-                let overlay = document.getElementById('submittingOverlay');
-                if (!overlay) {
-                    overlay = document.createElement('div');
-                    overlay.id = 'submittingOverlay';
-                    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(11,19,41,0.96); z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; padding:20px;';
-                    overlay.innerHTML = '<div style="font-size:45px; margin-bottom:15px;">⏳</div><h3 style="color:#34d399; margin:0 0 10px; font-size:22px;">तुमची टेस्ट सबमिट होत आहे...</h3><p style="color:#cbd5e1; font-size:14.5px; margin:0;">कृपया प्रतीक्षा करा, उत्तरपत्रिका तपासली जात आहे!</p>';
-                    document.body.appendChild(overlay);
-                }
-            });
+        // माहिती टाईप करताना, पेस्ट करताना किंवा बदलताना बटण लगेच चालू करणे
+        document.addEventListener('input', function(e) {
+            if (['s_name', 's_dist', 's_phone'].includes(e.target.id)) {
+                validateAndReady();
+            }
         });
-
-        window.onload = function() {
-            restoreAnswerProgress();
-            startTimer();
-            validateAndReady();
-        };
+        document.addEventListener('change', function(e) {
+            if (['s_name', 's_dist', 's_phone'].includes(e.target.id)) {
+                validateAndReady();
+            }
+        });
     </script>
 </head>
 <body>
@@ -1744,8 +1741,8 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
                 ⚠️ अचूक राज्य रँक आणि संवर्ग रँक मिळवण्यासाठी खालील सर्व माहिती योग्य भरा.
             </p>
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
-                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">पूर्ण नाव *:</label><input type="text" name="student_name" id="s_name" placeholder="उदा. राहुल पाटील" onkeyup="validateAndReady()" required></div>
-                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">जिल्हा *:</label><input type="text" name="district" id="s_dist" placeholder="उदा. कोल्हापूर" onkeyup="validateAndReady()" required></div>
+                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">पूर्ण नाव *:</label><input type="text" name="student_name" id="s_name" placeholder="उदा. राहुल पाटील" oninput="validateAndReady()" onchange="validateAndReady()" required></div>
+                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">जिल्हा *:</label><input type="text" name="district" id="s_dist" placeholder="उदा. कोल्हापूर" oninput="validateAndReady()" onchange="validateAndReady()" required></div>
                 <div>
                     <label style="font-size:13px; font-weight:600; color:#cbd5e1;">प्रवर्ग (Caste Category) *:</label>
                     <select name="caste_category" id="s_cat" required>
@@ -1761,7 +1758,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
                 <div>
                     <label style="font-size:13px; font-weight:600; color:#cbd5e1;">WhatsApp मोबाईल नंबर *:</label>
                     <div style="display:flex; gap:6px;">
-                        <input type="tel" name="phone" id="s_phone" placeholder="10 अंकी मोबाईल नंबर" maxlength="10" onkeyup="validateAndReady()" required>
+                        <input type="tel" name="phone" id="s_phone" placeholder="10 अंकी मोबाईल नंबर" maxlength="10" oninput="validateAndReady()" onchange="validateAndReady()" required>
                         <button type="button" onclick="selectExamPhonebook('s_phone')" style="background:#0284c7; color:white; border:none; border-radius:8px; padding:0 12px; cursor:pointer; font-size:13px; font-weight:bold; height:45px; margin-top:5px;">📖</button>
                     </div>
                 </div>
