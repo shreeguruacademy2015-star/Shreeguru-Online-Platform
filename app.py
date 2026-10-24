@@ -984,6 +984,20 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         fetch('/api/heartbeat', {method: 'POST'}).catch(() => {});
     }, 20000);
 </script>
+
+<!-- होमपेजवरून बॅक जाताना मराठीत विचारणे -->
+<script>
+    window.addEventListener('load', function() {
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () {
+            if (confirm("तुम्ही बाहेर पडू इच्छिता का?")) {
+                history.back();
+            } else {
+                history.pushState(null, null, location.href);
+            }
+        };
+    });
+</script>
        
 <link rel="shortcut icon" href="/static/icon-512.png" type="image/png">
 </head>
@@ -1472,20 +1486,33 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         let isFormSubmitted = false;
         let testStartTime = Date.now();
 
+        let isFormSubmitted = false;
+
+        // १. वरच्या 'बाहेर पडा' बटणावर क्लिक केल्यावर मराठीत विचारणे
         function exitToHome() {
-            if (confirm("तुम्ही खरंच परीक्षा सोडून होम पेजवर जाऊ इच्छिता का? चाचणी सबमिट केल्याशिवाय लॉक होणार नाही.")) {
+            if (confirm("तुम्ही बाहेर पडू इच्छिता का?")) {
                 isFormSubmitted = true;
+                window.onbeforeunload = null;
                 window.location.replace('/');
             }
         }
 
-        window.addEventListener('beforeunload', function (e) {
+        // २. मोबाईलचे Back बटण दाबल्यास मराठीत विचारणे
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () {
             if (!isFormSubmitted) {
-                e.preventDefault();
-                e.returnValue = 'तुम्ही परीक्षा सोडून जात आहात का?';
-                return e.returnValue;
+                if (confirm("तुम्ही बाहेर पडू इच्छिता का?")) {
+                    isFormSubmitted = true;
+                    window.onbeforeunload = null;
+                    window.location.replace('/');
+                } else {
+                    history.pushState(null, null, location.href);
+                }
             }
-        });
+        };
+
+        // ब्राऊझरचा डीफॉल्ट इंग्रजी पॉपअप पूर्णपणे बंद ठेवणे
+        window.onbeforeunload = null;
 
         document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
         document.addEventListener('keydown', function(e) {
@@ -1688,7 +1715,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 </div>
 
 <div class="box">
-    <form id="examForm" method="POST" action="/submit_test/{{ test.id }}">
+    <form id="examForm" method="POST" action="/submit_test/{{ test.id }}" onsubmit="isFormSubmitted = true; window.onbeforeunload = null;">
         <input type="hidden" name="time_taken_seconds" id="time_taken_input" value="0">
         <input type="hidden" name="battle_partner_id" value="{{ battle_partner_id or 0 }}">
         <div id="questionsArea">
@@ -4497,22 +4524,22 @@ def admin_dashboard():
             total_visits_count = 0
 
             try:
-                # १. सध्या ऑनलाईन विद्यार्थी (गेल्या ५ मिनिटांतील सक्रिय)
-                cur.execute("SELECT COUNT(*) AS c FROM live_heartbeats WHERE last_seen > NOW() - INTERVAL '5 minutes';")
+                # १. १००% खराखुरा लाईव्ह आकडा (गेल्या ३ मिनिटांत प्रत्यक्ष सक्रिय असलेले युझर्स)
+                cur.execute("SELECT COUNT(DISTINCT session_id) AS c FROM live_heartbeats WHERE last_seen > NOW() - INTERVAL '3 minutes';")
                 row_live = cur.fetchone()
-                live_now_count = (row_live['c'] if row_live else 0) + 1
+                live_now_count = row_live['c'] if row_live and row_live['c'] else 0
 
                 # २. एकूण व्हिजिट्स संख्या (site_stats मधून)
                 cur.execute("SELECT total_visits FROM site_stats WHERE id = 1;")
                 row_v = cur.fetchone()
-                if row_v and row_v.get('total_visits') and row_v['total_visits'] > 43:
+                if row_v and row_v.get('total_visits'):
                     total_visits_count = row_v['total_visits']
                 else:
-                    total_visits_count = 1545
+                    total_visits_count = 1778
             except Exception:
                 conn.rollback()
-                live_now_count = 1
-                total_visits_count = 1545
+                live_now_count = 0
+                total_visits_count = 1778
 
             # १. पॉवर सर्च (विद्यार्थी ३६०° प्रोफाईल व संपूर्ण इतिहास)
             power_html = ""
