@@ -852,19 +852,19 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         if (noTestMsg) noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
     }
 
-    // स्वागत स्क्रीन ३.५ सेकंद स्थिर ठेवणे
-(function() {
-    setTimeout(function() {
-        var splash = document.getElementById('portalWelcomeSplash');
-        if (splash) {
-            splash.style.transition = 'opacity 0.8s ease';
-            splash.style.opacity = '0';
-            setTimeout(function() {
-                splash.style.display = 'none';
-            }, 800);
-        }
-    }, 1000   ); // पूर्ण  १   सेकंद वेळ (विद्यार्थ्यांना शांतपणे वाचता येईल)
-})();
+    // स्वागत पडदा बरोबर ३ सेकंद स्थिर ठेवणे
+    (function() {
+        setTimeout(function() {
+            var splash = document.getElementById('portalWelcomeSplash');
+            if (splash) {
+                splash.style.transition = 'opacity 0.8s ease';
+                splash.style.opacity = '0';
+                setTimeout(function() {
+                    splash.style.display = 'none';
+                }, 800);
+            }
+        }, 3000); // पूर्ण ३ सेकंद वेळ
+    })();
 
     function inviteFriendWhatsApp() {
         const num = document.getElementById('friend_invite_phone').value.trim();
@@ -890,10 +890,10 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 <link rel="shortcut icon" href="/static/icon-512.png" type="image/png">
 </head>
 <body>
-<!-- ब्राऊझर उघडताच एका मिलीसेकंदात सुरू होणारा वेलकम स्क्रीन -->
-<div id="portalWelcomeSplash" style="position:fixed !important; top:0; left:0; width:100vw; height:100vh; background:radial-gradient(circle at center, #111e38 0%, #080d1a 100%) !important; z-index:99999999 !important; display:flex !important; flex-direction:column !important; justify-content:center !important; align-items:center !important; text-align:center !important; padding:20px; box-sizing:border-box;">
+<!-- सुरुवातीची ब्लॅक स्क्रीन रोखणारा व झटपट लोड होणारा स्वागत पडदा -->
+<div id="portalWelcomeSplash" style="position:fixed !important; inset:0 !important; width:100vw !important; height:100vh !important; background:radial-gradient(circle at center, #111e38 0%, #080d1a 100%) !important; z-index:99999999 !important; display:flex !important; flex-direction:column !important; justify-content:center !important; align-items:center !important; text-align:center !important; padding:20px; box-sizing:border-box;">
     
-    <!-- १. व्हीआयपी ग्लो असलेला लोगो -->
+    <!-- १. व्हीआयपी ग्लो लोगो -->
     <img src="/static/icon-512.png?v=2" alt="Logo" class="splash-logo-vip">
 
     <!-- २. खाकी वर्दी स्पेशल बॅज -->
