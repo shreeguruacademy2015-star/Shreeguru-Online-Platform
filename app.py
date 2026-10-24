@@ -580,6 +580,21 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaina+2:wght@500;700;800&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* शून्य सेकंदात स्वागत पडदा डोळ्यासमोर आणण्यासाठी */
+    #portalWelcomeSplash {
+        display: flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: radial-gradient(circle at center, #111e38 0%, #080d1a 100%) !important;
+        z-index: 999999999 !important;
+    }
+    #portalWelcomeSplash * {
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+    }
         * { box-sizing: border-box; font-family: 'Poppins', 'Baloo Bhaina 2', sans-serif; transition: all 0.2s ease; }
         body { margin: 0; background: #0f172a; color: #f8fafc; padding: 12px; }
         .top-bar { max-width: 950px; margin: 0 auto 15px; display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 12px 18px; border-radius: 12px; border: 1px solid #334155; }
