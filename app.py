@@ -1662,6 +1662,221 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         <button type="submit" id="submitBtn" class="btn-submit" disabled>⚠️ नाव, जिल्हा व WhatsApp नंबर भरा</button>
     </form>
 </div>
+<!-- निकाल व स्पष्टीकरण पाहण्यासाठी स्मार्ट पॉप-अप फॉर्म -->
+<div id="resultLeadModal" style="display:none; position:fixed; inset:0; background:rgba(2,6,23,0.88); backdrop-filter:blur(6px); z-index:9999999; justify-content:center; align-items:center; padding:15px;">
+    <div style="background:#0f172a; border:2px solid #38bdf8; border-radius:16px; max-width:400px; width:100%; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,0.7); text-align:center; box-sizing:border-box;">
+        
+        <div style="font-size:36px; margin-bottom:6px;">🎯</div>
+        <h3 style="color:#ffffff; font-size:19px; font-weight:800; margin:0 0 6px 0;">अभिनंदन! टेस्ट पूर्ण झाली!</h3>
+        <p style="color:#38bdf8; font-size:13px; font-weight:700; margin:0 0 16px 0; background:rgba(56,189,248,0.12); padding:8px 10px; border-radius:8px; line-height:1.4;">
+            📊 तुमचे गुण, रँक व अचूक स्पष्टीकरण पाहण्यासाठी खालील माहिती भरा:
+        </p>
+
+        <form id="leadCaptureForm" onsubmit="event.preventDefault(); submitExamWithDetails();">
+            <div style="text-align:left; margin-bottom:12px;">
+                <label style="color:#cbd5e1; font-size:12.5px; font-weight:600; display:block; margin-bottom:4px;">विद्यार्थ्याचे पूर्ण नाव *</label>
+                <input type="text" id="lead_name" required placeholder="उदा. सचिन चौगले" style="width:100%; padding:9px 12px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:#ffffff; font-size:14px; box-sizing:border-box;">
+            </div>
+
+            <div style="text-align:left; margin-bottom:12px;">
+                <label style="color:#cbd5e1; font-size:12.5px; font-weight:600; display:block; margin-bottom:4px;">मोबाईल नंबर (WhatsApp) *</label>
+                <input type="tel" id="lead_phone" required pattern="[0-9]{10}" maxlength="10" placeholder="१० अंकी मोबाईल नंबर टाका" style="width:100%; padding:9px 12px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:#ffffff; font-size:14px; box-sizing:border-box;">
+            </div>
+
+            <!-- ३६ जिल्ह्यांचा स्मार्ट ऑटो-सर्च -->
+            <div style="text-align:left; margin-bottom:16px; position:relative;">
+                <label style="color:#cbd5e1; font-size:12.5px; font-weight:600; display:block; margin-bottom:4px;">
+                    जिल्हा निवडा (इंग्रजी किंवा मराठीत टाईप करा) *
+                </label>
+                <input type="text" id="district_search_input" autocomplete="off" required 
+                       placeholder="उदा. k किंवा क टाईप करा..." 
+                       oninput="searchDistrict(this.value)"
+                       style="width:100%; padding:9px 12px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:#ffffff; font-size:14px; box-sizing:border-box;">
+                
+                <input type="hidden" id="final_student_district" name="district" required>
+
+                <div id="district_suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#0f172a; border:1px solid #38bdf8; border-radius:8px; max-height:180px; overflow-y:auto; z-index:999999; margin-top:4px; box-shadow:0 8px 20px rgba(0,0,0,0.8);">
+                </div>
+            </div>
+
+            <button type="submit" style="width:100%; padding:11px; background:linear-gradient(135deg, #10b981, #059669); color:#ffffff; font-size:15px; font-weight:800; border:none; border-radius:8px; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.3);">
+                🔥 निकाल व स्पष्टीकरण पहा ➔
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+var MAHARASHTRA_DISTRICTS = [
+    { marathi: "अहमदनगर", aliases: ["अहमदनगर", "ahmednagar", "ahmadnagar", "nagar", "a"] },
+    { marathi: "अकोला", aliases: ["अकोला", "akola", "ak"] },
+    { marathi: "अमरावती", aliases: ["अमरावती", "amravati", "am"] },
+    { marathi: "छत्रपती संभाजीनगर", aliases: ["छत्रपती संभाजीनगर", "संभाजीनगर", "औरंगाबाद", "chhatrapati sambhajinagar", "sambhajinagar", "aurangabad", "csn", "au"] },
+    { marathi: "बीड", aliases: ["बीड", "beed", "bid", "b"] },
+    { marathi: "भंडारा", aliases: ["भंडारा", "bhandara", "bh"] },
+    { marathi: "बुलढाणा", aliases: ["बुलढाणा", "buldhana", "buldana", "bu"] },
+    { marathi: "चंद्रपूर", aliases: ["चंद्रपूर", "chandrapur", "chanda", "c", "ch"] },
+    { marathi: "धुळे", aliases: ["धुळे", "dhule", "dh"] },
+    { marathi: "गडचिरोली", aliases: ["गडचिरोली", "gadchiroli", "g"] },
+    { marathi: "गोंदिया", aliases: ["गोंदिया", "gondia", "go"] },
+    { marathi: "हिंगोली", aliases: ["हिंगोली", "hingoli", "h"] },
+    { marathi: "जळगाव", aliases: ["जळगाव", "jalgaon", "jal"] },
+    { marathi: "जालना", aliases: ["जालना", "jalna", "jn"] },
+    { marathi: "कोल्हापूर", aliases: ["कोल्हापूर", "kolhapur", "kop", "k", "क"] },
+    { marathi: "लातूर", aliases: ["लातूर", "latur", "l"] },
+    { marathi: "मुंबई शहर", aliases: ["मुंबई शहर", "mumbai city", "south mumbai", "mc"] },
+    { marathi: "मुंबई उपनगर", aliases: ["मुंबई उपनगर", "mumbai suburban", "mumbai", "suburban", "mu"] },
+    { marathi: "नागपूर", aliases: ["नागपूर", "nagpur", "ngp", "n"] },
+    { marathi: "नांदेड", aliases: ["नांदेड", "nanded", "nd"] },
+    { marathi: "नंदुरबार", aliases: ["नंदुरबार", "nandurbar", "ndb"] },
+    { marathi: "नाशिक", aliases: ["नाशिक", "nashik", "nasik", "nsk"] },
+    { marathi: "धाराशिव", aliases: ["धाराशिव", "उस्मानाबाद", "dharashiv", "osmanabad", "dh", "os"] },
+    { marathi: "पालघर", aliases: ["पालघर", "palghar", "pal"] },
+    { marathi: "परभणी", aliases: ["परभणी", "parbhani", "prb"] },
+    { marathi: "पुणे", aliases: ["पुणे", "pune", "pun", "p", "पु"] },
+    { marathi: "रायगड", aliases: ["रायगड", "raigad", "alibag", "rai", "r"] },
+    { marathi: "रत्नागिरी", aliases: ["रत्नागिरी", "ratnagiri", "rtg"] },
+    { marathi: "सांगली", aliases: ["सांगली", "sangli", "san", "s"] },
+    { marathi: "सातारा", aliases: ["सातारा", "satara", "sat"] },
+    { marathi: "सिंधुदुर्ग", aliases: ["सिंधुदुर्ग", "sindhudurg", "sin"] },
+    { marathi: "सोलापूर", aliases: ["सोलापूर", "solapur", "sholapur", "sol"] },
+    { marathi: "ठाणे", aliases: ["ठाणे", "thane", "th"] },
+    { marathi: "वर्धा", aliases: ["वर्धा", "wardha", "war", "w"] },
+    { marathi: "वाशिम", aliases: ["वाशिम", "washim", "was"] },
+    { marathi: "यवतमाळ", aliases: ["यवतमाळ", "yavatmal", "yeotmal", "y"] }
+];
+
+function searchDistrict(val) {
+    var query = val.trim().toLowerCase();
+    var box = document.getElementById('district_suggestions');
+    var hiddenInput = document.getElementById('final_student_district');
+    hiddenInput.value = '';
+    box.innerHTML = '';
+
+    if (!query) { box.style.display = 'none'; return; }
+
+    var matches = MAHARASHTRA_DISTRICTS.filter(function(d) {
+        if (d.marathi.toLowerCase().indexOf(query) !== -1) return true;
+        return d.aliases.some(function(alias) {
+            return alias.toLowerCase().startsWith(query) || alias.toLowerCase().indexOf(query) !== -1;
+        });
+    });
+
+    if (matches.length === 0) {
+        box.innerHTML = '<div style="padding:10px; color:#f87171; font-size:13px;">❌ महाराष्ट्रातील ३६ अधिकृत जिल्ह्यांपैकी निवडा!</div>';
+        box.style.display = 'block';
+        return;
+    }
+
+    matches.forEach(function(item) {
+        var div = document.createElement('div');
+        div.style.padding = '10px 14px';
+        div.style.cursor = 'pointer';
+        div.style.borderBottom = '1px solid #1e293b';
+        div.style.color = '#f1f5f9';
+        div.style.fontSize = '14px';
+        div.style.textAlign = 'left';
+        div.innerHTML = '📍 <b>' + item.marathi + '</b> <span style="font-size:12px; color:#94a3b8;">(' + item.aliases[1] + ')</span>';
+
+        div.onmouseover = function() { this.style.background = '#1e293b'; };
+        div.onmouseout = function() { this.style.background = 'transparent'; };
+        div.onclick = function() { selectDistrict(item.marathi); };
+        box.appendChild(div);
+    });
+    box.style.display = 'block';
+}
+
+function selectDistrict(marathiName) {
+    document.getElementById('district_search_input').value = marathiName;
+    document.getElementById('final_student_district').value = marathiName;
+    document.getElementById('district_suggestions').style.display = 'none';
+}
+
+function validateAndGetDistrict() {
+    var rawInput = document.getElementById('district_search_input').value.trim().toLowerCase();
+    var hiddenVal = document.getElementById('final_student_district').value;
+    if (hiddenVal) return hiddenVal;
+
+    var matched = MAHARASHTRA_DISTRICTS.find(function(d) {
+        return d.marathi.toLowerCase() === rawInput || d.aliases.some(function(a) { return a.toLowerCase() === rawInput; });
+    });
+    if (matched) {
+        document.getElementById('final_student_district').value = matched.marathi;
+        return matched.marathi;
+    }
+    return null;
+}
+
+function interceptAndShowModal() {
+    var savedPhone = localStorage.getItem('user_phone');
+    if (savedPhone && savedPhone.length === 10) {
+        triggerRealSubmit();
+    } else {
+        var modal = document.getElementById('resultLeadModal');
+        if(modal) modal.style.display = 'flex';
+        else triggerRealSubmit();
+    }
+}
+
+function submitExamWithDetails() {
+    var name = document.getElementById('lead_name').value.trim();
+    var phone = document.getElementById('lead_phone').value.trim();
+    var district = validateAndGetDistrict();
+
+    if (!name) { alert('कृपया विद्यार्थ्याचे पूर्ण नाव टाका!'); return; }
+    if (!phone || phone.length !== 10 || isNaN(phone)) { alert('कृपया १० अंकी वैध मोबाईल नंबर टाका!'); return; }
+    if (!district) {
+        alert('⚠️ कृपया महाराष्ट्रातील ३६ अधिकृत जिल्ह्यांपैकीच योग्य जिल्हा निवडा!');
+        document.getElementById('district_search_input').focus();
+        return;
+    }
+
+    localStorage.setItem('user_name', name);
+    localStorage.setItem('user_phone', phone);
+    localStorage.setItem('user_district', district);
+
+    var form = document.getElementById('examForm') || document.querySelector('form');
+    if(form) {
+        var createOrSet = function(n, val) {
+            var el = form.querySelector('input[name="' + n + '"]');
+            if(!el) {
+                el = document.createElement('input');
+                el.type = 'hidden';
+                el.name = n;
+                form.appendChild(el);
+            }
+            el.value = val;
+        };
+        createOrSet('student_name', name);
+        createOrSet('phone', phone);
+        createOrSet('district', district);
+    }
+
+    document.getElementById('resultLeadModal').style.display = 'none';
+    triggerRealSubmit();
+}
+
+function triggerRealSubmit() {
+    if (typeof submitExam === 'function') {
+        submitExam();
+    } else if (typeof finalSubmit === 'function') {
+        finalSubmit();
+    } else {
+        var f = document.getElementById('examForm') || document.querySelector('form');
+        if(f) f.submit();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var submitBtns = document.querySelectorAll('button[type="submit"], .btn-submit, #submitBtn');
+    submitBtns.forEach(function(btn) {
+        if (!btn.closest('#resultLeadModal')) {
+            btn.type = 'button';
+            btn.setAttribute('onclick', 'interceptAndShowModal()');
+        }
+    });
+});
+</script>
 </body>
 </html>'''
 # =============================================================================
