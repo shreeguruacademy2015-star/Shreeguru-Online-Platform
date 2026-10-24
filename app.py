@@ -3469,6 +3469,7 @@ def home_tests_list():
                         WHEN LOWER(district) IN ('sangli', 'san') OR district ILIKE '%sangli%' THEN 'सांगली'
                         WHEN LOWER(district) IN ('satara', 'sat') OR district ILIKE '%satara%' THEN 'सातारा'
                         WHEN LOWER(district) IN ('solapur', 'sholapur') OR district ILIKE '%solapur%' THEN 'सोलापूर'
+                        UPDATE mock_test_leads SET district = 'अहिल्यानगर' WHERE district = 'अहमदनगर';
                         WHEN LOWER(district) IN ('ahilyanagar', 'ahilyanagar', 'nagar', 'ahilyanagar') OR district ILIKE '%ahilyanagar%' OR district ILIKE '%अहिल्यानगर%' THEN 'अहिल्यानगर'
                         WHEN LOWER(district) IN ('akola') OR district ILIKE '%akola%' THEN 'अकोला'
                         WHEN LOWER(district) IN ('amravati') OR district ILIKE '%amravati%' THEN 'अमरावती'
@@ -3511,7 +3512,7 @@ def home_tests_list():
                 SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
                 FROM mock_test_leads
                 WHERE is_deleted = 0 AND district IN (
-                    'अहिल्यानगर', 'अकोला', 'अमरावती', 'छत्रपती संभाजीनगर', 'बीड', 'भंडारा', 
+                    'अहिल्यानगर', 'अहमदनगर', 'अकोला', 'अमरावती', 'छत्रपती संभाजीनगर', 'बीड', 'भंडारा', 
                     'बुलढाणा', 'चंद्रपूर', 'धुळे', 'गडचिरोली', 'गोंदिया', 'हिंगोली', 
                     'जळगाव', 'जालना', 'कोल्हापूर', 'लातूर', 'मुंबई शहर', 'मुंबई उपनगर', 
                     'नागपूर', 'नांदेड', 'नंदुरबार', 'नाशिक', 'धाराशिव', 'पालघर', 
@@ -3991,7 +3992,7 @@ def submit_test(test_id):
             'kolhapur': 'कोल्हापूर', 'kholapur': 'कोल्हापूर', 'kop': 'कोल्हापूर', 'hupari': 'कोल्हापूर',
             'pune': 'पुणे', 'pun': 'पुणे', 'poona': 'पुणे',
             'sangli': 'सांगली', 'satara': 'सातारा', 'solapur': 'सोलापूर', 'sholapur': 'सोलापूर',
-            'ahilyanagar': 'अहिल्यानागर', 'ahilyanagar': 'अहिल्यानागर', 'nagar': 'अहिल्यानागर',
+            'ahmednagar': 'अहिल्यानगर', 'ahilyanagar': 'अहिल्यानगर', 'nagar': 'अहिल्यानगर', 'अहमदनगर': 'अहिल्यानगर',
             'akola': 'अकोला', 'amravati': 'अमरावती', 'aurangabad': 'छत्रपती संभाजीनगर',
             'sambhajinagar': 'छत्रपती संभाजीनगर', 'beed': 'बीड', 'bhandara': 'भंडारा',
             'buldhana': 'बुलढाणा', 'chandrapur': 'चंद्रपूर', 'dhule': 'धुळे',
