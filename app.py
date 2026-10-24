@@ -4261,7 +4261,7 @@ def admin_dashboard():
 
             cur.execute("SELECT DISTINCT district FROM mock_test_leads WHERE district != '' AND is_deleted=0")
             all_districts = [r['district'] for r in cur.fetchall()]
-            test_order_sql = "CAST(COALESCE(NULLIF(sequence_order, ''), '0') AS INTEGER) ASC, id ASC"
+            test_order_sql = "id ASC"
             all_dynamic_subjects = cur.fetchall() 
 
             # ३. टेस्ट्स यादी व शेड्युलिंग
@@ -5090,7 +5090,7 @@ def admin_resequence_tests():
     
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT id FROM test_papers WHERE is_deleted = 0 ORDER BY CAST(COALESCE(NULLIF(sequence_order, ''), '0') AS INTEGER) ASC, id ASC")
+            cur.execute("SELECT id FROM test_papers WHERE is_deleted = 0 ORDER BY id ASC")
             all_tests = cur.fetchall()
             
             for new_seq, t in enumerate(all_tests, start=1):
