@@ -2163,9 +2163,14 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             <button type="submit" class="btn" style="background:#dc2626; padding:6px 12px; font-size:12px;">🗑️ निवडलेले लीड्स डिलीट करा</button>
         </div>
         <table>
-            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'lead-cb')"></th><th>दिनांक</th><th>नाव</th><th>जिल्हा</th><th>प्रवर्ग</th><th>WhatsApp</th><th>टेस्ट</th><th>गुण</th><th>हॉलतिकीट</th><th>कृती</th></tr>
-            {% for l in leads %}
             <tr>
+                <th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'q-cb')"></th>
+                <th style="width:70px; text-align:center;">क्र.</th>
+                <th style="width:70px;">ID</th>
+                <th>प्रश्न</th>
+                <th>अचूक</th>
+                <th>कृती</th>
+            </tr>
                 <td><input type="checkbox" name="lead_ids" value="{{ l.id }}" class="lead-cb"></td>
                 <td>{{ l.test_date }}</td>
                 <td><b>{{ l.student_name }}</b></td>
@@ -2442,7 +2447,12 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             {% for q in all_questions %}
             <tr>
                 <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="q-cb"></td>
-                <td>{{ q.id }}</td><td><b>{{ q.question }}</b></td><td style="color:green; font-weight:bold;">{{ q.correct }}</td>
+                <td style="text-align:center; font-weight:bold; color:#0284c7; background:#f0f9ff;">
+                    #{{ loop.index }}
+                </td>
+                <td style="color:#64748b; font-size:12px;">{{ q.id }}</td>
+                <td><b>प्र. {{ loop.index }}. {{ q.question }}</b></td>
+                <td style="color:green; font-weight:bold; text-align:center;">{{ q.correct }}</td>
                 <td style="white-space:nowrap;">
                     <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
                     <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे?');">🗑️</a>
