@@ -3384,11 +3384,9 @@ def home_tests_list():
                     );
                 """)
 
-                # १. एकूण व्हिजिट +१ करणे
-                if 'visited_site' not in session:
-                    session['visited_site'] = True
-                    cur.execute("""
-                    INSERT INTO site_stats (id, total_visits) VALUES (1, 1546)
+                # १. प्रत्येक भेटीची अचूक नोंद होण्यासाठी
+                cur.execute("""
+                    INSERT INTO site_stats (id, total_visits) VALUES (1, 1780)
                     ON CONFLICT (id) DO UPDATE SET total_visits = site_stats.total_visits + 1;
                 """)
                 conn.commit()
@@ -3405,10 +3403,15 @@ def home_tests_list():
                 """, (u_sid, now_ts, now_ts, now_ts - 300))
                 conn.commit()
                 # ----------------------------------------------------
-                cur.execute("SELECT COUNT(*) as cnt FROM live_heartbeats")
-                row = cur.fetchone()
-                if row and row['cnt'] > 0:
-                    active_students_count = row['cnt'] + 25
+                import random
+
+            # गेल्या १५ मिनिटांतील सक्रिय विद्यार्थी + पोर्टलवरील उत्साही सरासरी
+            cur.execute("SELECT COUNT(*) AS c FROM live_heartbeats WHERE last_seen > NOW() - INTERVAL '15 minutes';")
+            row_live = cur.fetchone()
+            db_active = row_live['c'] if row_live else 0
+
+            # पोर्टलवर चैतन्य दिसावे म्हणून किमान १८ ते ३२ विद्यार्थी नेहमी सक्रिय दिसतील
+            live_now_count = max(db_active + random.randint(18, 32), 19)
 
                 cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY id ASC")
                 raw_tests_db = cur.fetchall()
