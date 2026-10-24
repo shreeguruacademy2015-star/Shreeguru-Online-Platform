@@ -582,15 +582,17 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     <style>
         /* शून्य सेकंदात स्वागत पडदा डोळ्यासमोर आणण्यासाठी */
     #portalWelcomeSplash {
-        display: flex !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        position: fixed !important;
-        inset: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        background: radial-gradient(circle at center, #111e38 0%, #080d1a 100%) !important;
-        z-index: 999999999 !important;
+        display: flex;
+        opacity: 1;
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        background: radial-gradient(circle at center, #111e38 0%, #080d1a 100%);
+        z-index: 999999999;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
     }
     #portalWelcomeSplash * {
         font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
@@ -867,19 +869,19 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         if (noTestMsg) noTestMsg.style.display = (visibleCount === 0) ? 'block' : 'none';
     }
 
-    // स्वागत पडदा बरोबर ३ सेकंद स्थिर ठेवणे
-    (function() {
+    // स्वागत पडदा ३ सेकंद दाखवून कायमचा नष्ट करणे
+    window.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() {
             var splash = document.getElementById('portalWelcomeSplash');
             if (splash) {
-                splash.style.transition = 'opacity 0.8s ease';
-                splash.style.opacity = '0';
+                splash.style.setProperty('transition', 'opacity 0.6s ease', 'important');
+                splash.style.setProperty('opacity', '0', 'important');
                 setTimeout(function() {
-                    splash.style.display = 'none';
-                }, 800);
+                    splash.remove(); // स्क्रीनवरून कायमचा डिलीट करणे
+                }, 600);
             }
-        }, 3000); // पूर्ण ३ सेकंद वेळ
-    })();
+        }, 3000);
+    });
 
     function inviteFriendWhatsApp() {
         const num = document.getElementById('friend_invite_phone').value.trim();
