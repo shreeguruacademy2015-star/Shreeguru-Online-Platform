@@ -1788,7 +1788,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 
 <script>
 var MAHARASHTRA_DISTRICTS = [
-    { marathi: "अहमदनगर", aliases: ["अहमदनगर", "ahmednagar", "ahmadnagar", "nagar", "a"] },
+    { marathi: "अहिल्यानगर", aliases: ["अहिल्यानगर", "ahilyangar", "ahilyanagar", "nagar", "a"] },
     { marathi: "अकोला", aliases: ["अकोला", "akola", "ak"] },
     { marathi: "अमरावती", aliases: ["अमरावती", "amravati", "am"] },
     { marathi: "छत्रपती संभाजीनगर", aliases: ["छत्रपती संभाजीनगर", "संभाजीनगर", "औरंगाबाद", "chhatrapati sambhajinagar", "sambhajinagar", "aurangabad", "csn", "au"] },
@@ -3469,7 +3469,7 @@ def home_tests_list():
                         WHEN LOWER(district) IN ('sangli', 'san') OR district ILIKE '%sangli%' THEN 'सांगली'
                         WHEN LOWER(district) IN ('satara', 'sat') OR district ILIKE '%satara%' THEN 'सातारा'
                         WHEN LOWER(district) IN ('solapur', 'sholapur') OR district ILIKE '%solapur%' THEN 'सोलापूर'
-                        WHEN LOWER(district) IN ('ahmednagar', 'ahmadnagar', 'nagar', 'ahilyanagar') OR district ILIKE '%ahmednagar%' OR district ILIKE '%अहिल्यानगर%' THEN 'अहमदनगर'
+                        WHEN LOWER(district) IN ('ahilyanagar', 'ahilyanagar', 'nagar', 'ahilyanagar') OR district ILIKE '%ahilyanagar%' OR district ILIKE '%अहिल्यानगर%' THEN 'अहिल्यानगर'
                         WHEN LOWER(district) IN ('akola') OR district ILIKE '%akola%' THEN 'अकोला'
                         WHEN LOWER(district) IN ('amravati') OR district ILIKE '%amravati%' THEN 'अमरावती'
                         WHEN LOWER(district) IN ('aurangabad', 'sambhajinagar', 'csn') OR district ILIKE '%sambhajinagar%' OR district ILIKE '%aurangabad%' THEN 'छत्रपती संभाजीनगर'
@@ -3511,7 +3511,7 @@ def home_tests_list():
                 SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
                 FROM mock_test_leads
                 WHERE is_deleted = 0 AND district IN (
-                    'अहमदनगर', 'अकोला', 'अमरावती', 'छत्रपती संभाजीनगर', 'बीड', 'भंडारा', 
+                    'अहिल्यानगर', 'अकोला', 'अमरावती', 'छत्रपती संभाजीनगर', 'बीड', 'भंडारा', 
                     'बुलढाणा', 'चंद्रपूर', 'धुळे', 'गडचिरोली', 'गोंदिया', 'हिंगोली', 
                     'जळगाव', 'जालना', 'कोल्हापूर', 'लातूर', 'मुंबई शहर', 'मुंबई उपनगर', 
                     'नागपूर', 'नांदेड', 'नंदुरबार', 'नाशिक', 'धाराशिव', 'पालघर', 
@@ -3991,7 +3991,7 @@ def submit_test(test_id):
             'kolhapur': 'कोल्हापूर', 'kholapur': 'कोल्हापूर', 'kop': 'कोल्हापूर', 'hupari': 'कोल्हापूर',
             'pune': 'पुणे', 'pun': 'पुणे', 'poona': 'पुणे',
             'sangli': 'सांगली', 'satara': 'सातारा', 'solapur': 'सोलापूर', 'sholapur': 'सोलापूर',
-            'ahmednagar': 'अहमदनगर', 'ahilyanagar': 'अहमदनगर', 'nagar': 'अहमदनगर',
+            'ahilyanagar': 'अहिल्यानागर', 'ahilyanagar': 'अहिल्यानागर', 'nagar': 'अहिल्यानागर',
             'akola': 'अकोला', 'amravati': 'अमरावती', 'aurangabad': 'छत्रपती संभाजीनगर',
             'sambhajinagar': 'छत्रपती संभाजीनगर', 'beed': 'बीड', 'bhandara': 'भंडारा',
             'buldhana': 'बुलढाणा', 'chandrapur': 'चंद्रपूर', 'dhule': 'धुळे',
