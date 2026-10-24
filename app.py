@@ -4496,7 +4496,7 @@ def admin_dashboard():
             test_query += f" ORDER BY {test_order_sql}"
             cur.execute(test_query, tuple(test_params))
             tests = cur.fetchall()
-
+            tests = sorted(tests, key=lambda x: int(''.join(filter(str.isdigit, str(x.get('sequence_order') or x.get('test_title') or '0'))) or 0))
             cur.execute("SELECT * FROM test_papers WHERE is_deleted=0 ORDER BY category ASC, id ASC")
             available_tests = cur.fetchall()
 
