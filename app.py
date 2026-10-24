@@ -1087,12 +1087,12 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             </div>
             <div>
                 {% if t.is_locked %}
-                    <span class="btn-locked">🔒 रोज सकाळी १०:०० ला उघडेल</span>
-                {% elif t.category in ['live', 'paid'] %}
-                    <a href="/take_test/{{ t.id }}" class="btn-pay-unlock">🔓 अनलॉक करा / सोडवा</a>
-                {% else %}
-                    <button onclick="openLoadingNotice('/take_test/{{ t.id }}')" class="btn-start">🚀 टेस्ट सोडवा</button>
-                {% endif %}
+    <span class="btn-locked">🔒 रोज सकाळी ०९:०० ला उघडेल</span>
+{% elif t.category in ['live', 'paid'] %}
+    <a href="/take_test/{{ t.id }}" class="btn-pay-unlock">🔒 अनलॉक करा / सोडवा</a>
+{% else %}
+    <a href="/take_test/{{ t.id }}" class="btn-start" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">🚀 टेस्ट सोडवा</a>
+{% endif %}
             </div>
         </div>
         {% endfor %}
@@ -4261,7 +4261,7 @@ def admin_dashboard():
 
             cur.execute("SELECT DISTINCT district FROM mock_test_leads WHERE district != '' AND is_deleted=0")
             all_districts = [r['district'] for r in cur.fetchall()]
-            cur.execute("SELECT * FROM subjects WHERE is_deleted=0 ORDER BY sequence_order ASC, id ASC")
+            test_order_sql = "CAST(COALESCE(NULLIF(sequence_order, ''), '0') AS INTEGER) ASC, id ASC"
             all_dynamic_subjects = cur.fetchall() 
 
             # ३. टेस्ट्स यादी व शेड्युलिंग
@@ -5090,7 +5090,7 @@ def admin_resequence_tests():
     
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT id FROM test_papers WHERE is_deleted = 0 ORDER BY sequence_order ASC, id ASC")
+            cur.execute("SELECT id FROM test_papers WHERE is_deleted = 0 ORDER BY CAST(COALESCE(NULLIF(sequence_order, ''), '0') AS INTEGER) ASC, id ASC")
             all_tests = cur.fetchall()
             
             for new_seq, t in enumerate(all_tests, start=1):
