@@ -3430,19 +3430,6 @@ def home_tests_list():
                     DELETE FROM active_sessions WHERE last_seen < %s;
                 """, (u_sid, now_ts, now_ts, now_ts - 300))
                 conn.commit()
-                # ----------------------------------------------------
-                import random
-
-            # गेल्या १५ मिनिटांतील सक्रिय विद्यार्थी + पोर्टलवरील उत्साही सरासरी
-            cur.execute("SELECT COUNT(*) AS c FROM live_heartbeats WHERE last_seen > NOW() - INTERVAL '15 minutes';")
-            
-            # १. १००% खराखुरा लाईव्ह आकडा (गेल्या ३ मिनिटांत प्रत्यक्ष सक्रिय असलेले युझर्स)
-                cur.execute("SELECT COUNT(DISTINCT session_id) AS c FROM live_heartbeats WHERE last_seen > NOW() - INTERVAL '3 minutes';")
-                row_live = cur.fetchone()
-                live_now_count = row_live['c'] if row_live and row_live['c'] else 0
-
-            # पोर्टलवर चैतन्य दिसावे म्हणून किमान १८ ते ३२ विद्यार्थी नेहमी सक्रिय दिसतील
-            live_now_count = max(db_active + random.randint(18, 32), 19)
 
                 cur.execute("SELECT * FROM test_papers WHERE status='Active' AND is_deleted=0 ORDER BY id ASC")
                 raw_tests_db = cur.fetchall()
@@ -4536,6 +4523,10 @@ def admin_dashboard():
                     total_visits_count = row_v['total_visits']
                 else:
                     total_visits_count = 1778
+            except Exception:
+                conn.rollback()
+                live_now_count = 0
+                total_visits_count = 1778
             except Exception:
                 conn.rollback()
                 live_now_count = 0
