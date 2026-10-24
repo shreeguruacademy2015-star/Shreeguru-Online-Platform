@@ -604,7 +604,88 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .box { max-width: 950px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 25px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border-top: 5px solid #10b981; }
         .hero-banner { text-align: center; margin-bottom: 22px; }
-        .hero-banner h1 { margin: 0 0 8px; color: #34d399; font-size: 26px; font-weight: 800; }
+        .hero-banner { text-align: center; margin-bottom: 24px; padding: 10px 0; }
+        .hero-banner h1 { 
+            margin: 0 0 10px; 
+            color: #38bdf8; 
+            font-size: 32px; 
+            font-weight: 900; 
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 25px rgba(56, 189, 248, 0.6), 0 4px 10px rgba(0,0,0,0.8);
+            line-height: 1.35;
+        }
+
+        /* रंगीबेरंगी, चमकदार आणि आधुनिक टॅब बटणे */
+        .tabs-wrapper { 
+            display: flex; 
+            gap: 10px; 
+            overflow-x: auto; 
+            padding: 10px 5px 16px 5px; 
+            scrollbar-width: none; 
+            -webkit-overflow-scrolling: touch;
+            justify-content: flex-start;
+        }
+        .tabs-wrapper::-webkit-scrollbar { display: none; }
+
+        .tab-btn { 
+            background: #1e293b; 
+            color: #f1f5f9; 
+            border: 1.5px solid rgba(255,255,255,0.15); 
+            padding: 10px 20px; 
+            border-radius: 30px; 
+            font-size: 13.5px; 
+            font-weight: 800; 
+            cursor: pointer; 
+            white-space: nowrap; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+            transition: all 0.25s ease;
+        }
+
+        /* १. महासंग्राम टॅब - धगधगता लाल/मॅजेन्टा ग्रेडियंट */
+        .tab-btn:nth-child(1), .tab-btn[onclick*="live"] {
+            background: linear-gradient(135deg, #b91c1c, #ef4444) !important;
+            border-color: #fca5a5 !important;
+            color: #ffffff !important;
+        }
+
+        /* २. अतिसंभाव्य १०० गुण संच टॅब - जांभळा/शाही ग्रेडियंट */
+        .tab-btn:nth-child(2), .tab-btn[onclick*="paid"] {
+            background: linear-gradient(135deg, #6b21a8, #a855f7) !important;
+            border-color: #d8b4fe !important;
+            color: #ffffff !important;
+        }
+
+        /* ३. मोफत टेस्ट्स टॅब - ताजी हिरवीगार चमक */
+        .tab-btn:nth-child(3), .tab-btn[onclick*="free"] {
+            background: linear-gradient(135deg, #065f46, #10b981) !important;
+            border-color: #6ee7b7 !important;
+            color: #ffffff !important;
+        }
+
+        /* ४. रॅपिड फायर टॅब - तेजस्वी नारंगी/गोल्डन ग्रेडियंट */
+        .tab-btn:nth-child(4), .tab-btn[onclick*="rapid"] {
+            background: linear-gradient(135deg, #c2410c, #f59e0b) !important;
+            border-color: #fde047 !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4) !important;
+        }
+
+        /* ५. सर्व विषय टॅब - गडद निळा ग्रेडियंट */
+        .tab-btn:nth-child(5), .tab-btn[onclick*="subjects"] {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6) !important;
+            border-color: #93c5fd !important;
+            color: #ffffff !important;
+        }
+
+        /* टॅब ॲक्टिव्ह असताना किंवा माऊस नेल्यावर उठून दिसणारी मोठी चमक */
+        .tab-btn:hover, .tab-btn.active { 
+            transform: translateY(-3px) scale(1.05); 
+            filter: brightness(1.2); 
+            box-shadow: 0 8px 22px rgba(255,255,255,0.3) !important;
+        }
         .quote-box { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,95,70,0.2)); border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 8px; font-size: 14.5px; color: #a7f3d0; font-weight: 600; margin-bottom: 20px; text-align: center; }
         
         .paid-hero-card { display: none; background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(15,23,42,0.95)); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin-bottom: 22px; text-align: center; box-shadow: 0 10px 25px rgba(245,158,11,0.15); }
