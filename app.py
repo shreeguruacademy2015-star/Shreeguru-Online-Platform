@@ -603,7 +603,6 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         .badge-live { background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .box { max-width: 950px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 25px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border-top: 5px solid #10b981; }
-        .hero-banner { text-align: center; margin-bottom: 22px; }
         .hero-banner { text-align: center; margin-bottom: 24px; padding: 10px 0; }
         .hero-banner h1 { 
             margin: 0 0 10px; 
@@ -2460,13 +2459,19 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
         <table>
             <tr>
-                <th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'q-cb')"></th>
-                <th style="width:70px; text-align:center;">क्र.</th>
-                <th style="width:70px;">ID</th>
-                <th>प्रश्न</th>
-                <th>अचूक</th>
-                <th>कृती</th>
+                <th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'lead-cb')"></th>
+                <th>दिनांक</th>
+                <th>विद्यार्थ्याचे नाव</th>
+                <th>जिल्हा</th>
+                <th>प्रवर्ग</th>
+                <th>WhatsApp</th>
+                <th>टेस्ट नाव</th>
+                <th>गुण</th>
+                <th>हॉलतिकीट</th>
+                <th>हटवा</th>
             </tr>
+            {% for l in leads %}
+            <tr>
                 <td><input type="checkbox" name="lead_ids" value="{{ l.id }}" class="lead-cb"></td>
                 <td>{{ l.test_date }}</td>
                 <td><b>{{ l.student_name }}</b></td>
@@ -4559,11 +4564,12 @@ def admin_dashboard():
 
             cur.execute("SELECT DISTINCT district FROM mock_test_leads WHERE district != '' AND is_deleted=0")
             all_districts = [r['district'] for r in cur.fetchall()]
-            test_order_sql = "id ASC"
+            
+            cur.execute("SELECT * FROM subjects WHERE is_deleted=0 ORDER BY sequence_order ASC")
             all_dynamic_subjects = cur.fetchall() 
 
             # ३. टेस्ट्स यादी व शेड्युलिंग
-            test_order_sql = "sequence_order ASC, id ASC"
+            test_order_sql = "id ASC"
             if sort_by == 'name':
                 test_order_sql = "test_title ASC"
             elif sort_by == 'id':
