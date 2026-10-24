@@ -1486,9 +1486,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         let isFormSubmitted = false;
         let testStartTime = Date.now();
 
-        let isFormSubmitted = false;
-
-        // १. वरच्या 'बाहेर पडा' बटणावर क्लिक केल्यावर मराठीत विचारणे
+        // १. बाहेर पडताना मराठीत विचारणे
         function exitToHome() {
             if (confirm("तुम्ही बाहेर पडू इच्छिता का?")) {
                 isFormSubmitted = true;
@@ -1511,48 +1509,10 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             }
         };
 
-        // ब्राऊझरचा डीफॉल्ट इंग्रजी पॉपअप पूर्णपणे बंद ठेवणे
+        // ब्राऊझरचा Leave site पॉपअप बंद ठेवणे
         window.onbeforeunload = null;
 
         document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-        document.addEventListener('keydown', function(e) {
-            if (e.key === "PrintScreen") {
-                navigator.clipboard.writeText('');
-                alert('⚠️ सुरक्षेच्या कारणास्तव परीक्षेदरम्यान स्क्रीनशॉट काढण्यास सक्त बंदी आहे!');
-            }
-            if (e.ctrlKey && ['c', 'u', 's', 'p'].includes(e.key.toLowerCase())) {
-                e.preventDefault();
-                alert("सुरक्षा कारणास्तव कॉपी किंवा सेव्ह करण्यास सक्त मनाई आहे!");
-            }
-            if (e.key === "F12" || (e.ctrlKey && e.shiftKey && ['i', 'j'].includes(e.key.toLowerCase()))) {
-                e.preventDefault();
-            }
-        });
-
-        function triggerProtection(enable) {
-            const shield = document.getElementById("security-shield");
-            if (enable) {
-                document.body.classList.add("screen-protected");
-                if (shield) shield.style.display = "block";
-            } else {
-                document.body.classList.remove("screen-protected");
-                if (shield) shield.style.display = "none";
-            }
-        }
-
-        document.addEventListener("visibilitychange", function() {
-            if (!isFormSubmitted) {
-                triggerProtection(document.hidden);
-            }
-        });
-        window.addEventListener("blur", function() {
-            if (!isFormSubmitted) {
-                triggerProtection(true);
-            }
-        });
-        window.addEventListener("focus", function() {
-            triggerProtection(false);
-        });
 
         const testStorageKey = 'police_saved_answers_{{ test.id }}';
         const timerStorageKey = 'police_saved_timer_{{ test.id }}';
@@ -1562,6 +1522,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 
         function startTimer() {
             const timerDisplay = document.getElementById('time-left');
+            if (!timerDisplay) return;
             let timer = setInterval(function () {
                 let minutes = parseInt(timeLeft / 60, 10);
                 let seconds = parseInt(timeLeft % 60, 10);
@@ -1583,8 +1544,10 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             const totalQuestions = {{ questions|length }};
             const answeredCount = document.querySelectorAll('#questionsArea input[type="radio"]:checked').length;
             const percentage = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
-            document.getElementById('progressFill').style.width = percentage + '%';
-            document.getElementById('progressText').innerText = answeredCount + ' / ' + totalQuestions + ' सोडवले';
+            const pFill = document.getElementById('progressFill');
+            const pText = document.getElementById('progressText');
+            if (pFill) pFill.style.width = percentage + '%';
+            if (pText) pText.innerText = answeredCount + ' / ' + totalQuestions + ' सोडवले';
         }
 
         function saveAnswerProgress() {
@@ -1640,6 +1603,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             }
         }
 
+        // माहिती भरताच बटण हिरवे करणे
         function validateAndReady() {
             const nameEl = document.getElementById('s_name');
             const distEl = document.getElementById('s_dist');
@@ -1650,35 +1614,40 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 
             const name = nameEl.value.trim();
             const dist = distEl.value.trim();
-            const phone = phoneEl.value.trim();
-            const indianPhoneRegex = /^[6-9][0-9]{9}$/;
+            const phone = phoneEl.value.trim().replace(/[^0-9]/g, '');
 
-            if (name !== "" && dist !== "" && indianPhoneRegex.test(phone)) {
+            if (name.length >= 2 && dist.length >= 2 && phone.length === 10) {
                 submitBtn.disabled = false;
                 submitBtn.removeAttribute('disabled');
                 submitBtn.innerText = "🏆 टेस्ट सबमिट करा व निकाल पहा";
-                submitBtn.style.opacity = "1";
-                submitBtn.style.cursor = "pointer";
-                submitBtn.style.background = "linear-gradient(135deg, #10b981, #059669)";
+                submitBtn.style.setProperty('background', 'linear-gradient(135deg, #10b981, #059669)', 'important');
+                submitBtn.style.setProperty('color', '#022c22', 'important');
+                submitBtn.style.setProperty('cursor', 'pointer', 'important');
+                submitBtn.style.setProperty('opacity', '1', 'important');
             } else {
                 submitBtn.disabled = true;
                 submitBtn.setAttribute('disabled', 'disabled');
                 submitBtn.innerText = "⚠️ नाव, जिल्हा व WhatsApp नंबर भरा";
-                submitBtn.style.opacity = "0.6";
-                submitBtn.style.cursor = "not-allowed";
+                submitBtn.style.setProperty('background', '#334155', 'important');
+                submitBtn.style.setProperty('color', '#64748b', 'important');
+                submitBtn.style.setProperty('cursor', 'not-allowed', 'important');
+                submitBtn.style.setProperty('opacity', '0.7', 'important');
             }
         }
 
-        // माहिती टाईप करताना, पेस्ट करताना किंवा बदलताना बटण लगेच चालू करणे
-        document.addEventListener('input', function(e) {
-            if (['s_name', 's_dist', 's_phone'].includes(e.target.id)) {
-                validateAndReady();
-            }
-        });
-        document.addEventListener('change', function(e) {
-            if (['s_name', 's_dist', 's_phone'].includes(e.target.id)) {
-                validateAndReady();
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            startTimer();
+            restoreAnswerProgress();
+
+            ['s_name', 's_dist', 's_phone'].forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', validateAndReady);
+                    el.addEventListener('change', validateAndReady);
+                    el.addEventListener('keyup', validateAndReady);
+                }
+            });
+            validateAndReady();
         });
     </script>
 </head>
