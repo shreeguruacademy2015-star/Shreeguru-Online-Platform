@@ -1162,7 +1162,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                     {% endif %}
                     <span class="badge-rapid">⏱️ {{ t.duration_minutes }} मिनिटे</span>
                     {% if t.is_locked and t.category == 'rapid' %}
-                    <span style="font-size:12px; color:#fbbf24;">⏳ रोज सकाळी १०:०० वाजता पुढील नवीन रॅपिड फायर टेस्ट अनलॉक होईल</span>
+                    <span style="font-size:12px; color:#fbbf24;">⏳ रोज सकाळी ९:०० वाजता पुढील नवीन रॅपिड फायर टेस्ट अनलॉक होईल</span>
                     {% endif %}
                 </div>
             </div>
@@ -3453,7 +3453,7 @@ def home_tests_list():
                 else:
                     t_dict['is_locked'] = False
                     tests.append(t_dict)
-                    # १, २, ३... असा नैसर्गिक संख्यात्मक क्रम लावण्यासाठी
+                # १, २, ३... असा नैसर्गिक संख्यात्मक क्रम लावण्यासाठी
             tests = sorted(tests, key=lambda x: int(''.join(filter(str.isdigit, str(x.get('sequence_order') or x.get('test_title') or '0'))) or 0))
 
             cur.execute("""
