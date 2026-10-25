@@ -2847,6 +2847,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     <option value="paid" {% if cat_tab=='paid' %}selected{% endif %}>🎯 अतिसंभाव्य संच (₹९९)</option>
                     <option value="live" {% if cat_tab=='live' %}selected{% endif %}>🔴 मिशन खाकी महासंग्राम</option>
                     <option value="rapid" {% if cat_tab=='rapid' %}selected{% endif %}>⚡ २० गुण रॅपिड फायर</option>
+                    <option value="subjects" {% if cat_tab=='subjects' %}selected{% endif %}>📚 सर्व विषय टेस्ट्स (Subject-wise)</option>
                     {% for ct in custom_tabs_list %}
                     <option value="{{ ct.key }}">{{ ct.label }}</option>
                     {% endfor %}
