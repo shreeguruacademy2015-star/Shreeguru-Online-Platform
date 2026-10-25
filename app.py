@@ -1262,10 +1262,17 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </div>
 
     <div id="battleContainer" class="section-box">
-        <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा मुकाबला (लाईव्ह लीड्स व सरासरी गुण)</h3>
-        <p style="font-size:13px; color:#94a3b8; margin:0 0 15px;">विद्यार्थ्यांनी प्रत्यक्ष सोडवलेल्या टेस्ट्सवरून तयार झालेली लाईव्ह गुणवत्ता यादी:</p>
+        <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा मुकाबला (⚡ रॅपिड फायर लाईव्ह रँक)</h3>
+        <p style="font-size:13px; color:#94a3b8; margin:0 0 15px;">
+            केवळ <b>२० गुण रॅपिड फायर टेस्ट</b> सोडवणाऱ्या विद्यार्थ्यांच्या आधारावर तयार झालेली ३६ जिल्ह्यांची लाईव्ह गुणवत्ता यादी:
+        </p>
         <table class="rank-table">
-            <tr><th>रँक</th><th>जिल्हा</th><th>टेस्ट देणारे विद्यार्थी</th><th>सरासरी गुण</th></tr>
+            <tr>
+                <th>रँक</th>
+                <th>जिल्हा</th>
+                <th>रॅपिड टेस्ट देणारे एकूण विद्यार्थी</th>
+                <th>जिल्ह्याची सरासरी (२० पैकी)</th>
+            </tr>
             {% for dist in live_district_battles %}
             <tr>
                 <td><b>#{{ loop.index }}</b></td>
@@ -1274,7 +1281,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
                 <td style="color:#34d399; font-weight:bold;">{{ dist.avg_score }} गुण</td>
             </tr>
             {% else %}
-            <tr><td colspan="4" style="text-align:center; color:#94a3b8;">विद्यार्थ्यांनी टेस्ट सोडवल्यानंतर जिल्ह्यांची लाईव्ह क्रमवारी येथे दिसेल.</td></tr>
+            <tr><td colspan="4" style="text-align:center; color:#94a3b8;">विद्यार्थ्यांनी रॅपिड टेस्ट सोडवल्यानंतर जिल्ह्यांची लाईव्ह क्रमवारी येथे दिसेल.</td></tr>
             {% endfor %}
         </table>
     </div>
@@ -3328,10 +3335,22 @@ def home_tests_list():
             conn.commit()
 
             # २. होमपेजवर ३६ अधिकृत मराठी जिल्ह्यांचीच रँक लिस्ट दाखवणे
+```[span_1](start_span)[span_1](end_span)
+
+तिथे असलेली `cur.execute(""" ... """)` ही संपूर्ण क्वेरी काढून त्या जागी हा **रॅपिड फायर स्पेसिफिक कोड** पेस्ट करा[span_2](start_span)[span_2](end_span):
+
+```python
+            # २. होमपेजवर ३६ अधिकृत मराठी जिल्ह्यांचीच रँक लिस्ट (केवळ रॅपिड फायर टेस्ट सोडवलेले विद्यार्थी व सरासरी)
             cur.execute("""
-                SELECT district, COUNT(id) as total_students, ROUND(AVG(score)::numeric, 1) as avg_score
-                FROM mock_test_leads
-                WHERE is_deleted = 0 AND district IN (
+                SELECT 
+                    mtl.district, 
+                    COUNT(mtl.id) as total_students, 
+                    ROUND(AVG(mtl.score)::numeric, 1) as avg_score
+                FROM mock_test_leads mtl
+                JOIN test_papers tp ON mtl.test_id = tp.id
+                WHERE mtl.is_deleted = 0 
+                  AND (tp.category = 'rapid' OR tp.test_title ILIKE '%रॅपिड%')
+                  AND mtl.district IN (
                     'अहिल्यानगर', 'अकोला', 'अमरावती', 'छत्रपती संभाजीनगर', 'बीड', 'भंडारा', 
                     'बुलढाणा', 'चंद्रपूर', 'धुळे', 'गडचिरोली', 'गोंदिया', 'हिंगोली', 
                     'जळगाव', 'जालना', 'कोल्हापूर', 'लातूर', 'मुंबई शहर', 'मुंबई उपनगर', 
@@ -3339,7 +3358,7 @@ def home_tests_list():
                     'परभणी', 'पुणे', 'रायगड', 'रत्नागिरी', 'सांगली', 'सातारा', 
                     'सिंधुदुर्ग', 'सोलापूर', 'ठाणे', 'वर्धा', 'वाशिम', 'यवतमाळ'
                 )
-                GROUP BY district
+                GROUP BY mtl.district
                 ORDER BY avg_score DESC, total_students DESC
                 LIMIT 36
             """)
