@@ -1486,7 +1486,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
         let isFormSubmitted = false;
         let testStartTime = Date.now();
 
-        // १. बाहेर पडताना मराठीत विचारणे
+        // १. वरच्या 'बाहेर पडा' बटणावर क्लिक केल्यावर मराठीत विचारणे
         function exitToHome() {
             if (confirm("तुम्ही बाहेर पडू इच्छिता का?")) {
                 isFormSubmitted = true;
@@ -1509,10 +1509,23 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             }
         };
 
-        // ब्राऊझरचा Leave site पॉपअप बंद ठेवणे
+        // ब्राऊझरचा डीफॉल्ट इंग्रजी पॉपअप बंद ठेवणे
         window.onbeforeunload = null;
 
         document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === "PrintScreen") {
+                navigator.clipboard.writeText('');
+                alert('⚠️ सुरक्षेच्या कारणास्तव परीक्षेदरम्यान स्क्रीनशॉट काढण्यास सक्त बंदी आहे!');
+            }
+            if (e.ctrlKey && ['c', 'u', 's', 'p'].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+                alert("सुरक्षा कारणास्तव कॉपी किंवा सेव्ह करण्यास सक्त मनाई आहे!");
+            }
+            if (e.key === "F12" || (e.ctrlKey && e.shiftKey && ['i', 'j'].includes(e.key.toLowerCase()))) {
+                e.preventDefault();
+            }
+        });
 
         const testStorageKey = 'police_saved_answers_{{ test.id }}';
         const timerStorageKey = 'police_saved_timer_{{ test.id }}';
@@ -1603,8 +1616,10 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             }
         }
 
-        // माहिती भरताच बटण हिरवे करणे
+        // माहिती भरताच बटण तात्काळ हिरवे करणे
         function validateAndReady() {
+            if (isFormSubmitted) return;
+
             const nameEl = document.getElementById('s_name');
             const distEl = document.getElementById('s_dist');
             const phoneEl = document.getElementById('s_phone');
@@ -1631,29 +1646,41 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
                 submitBtn.style.setProperty('background', '#334155', 'important');
                 submitBtn.style.setProperty('color', '#64748b', 'important');
                 submitBtn.style.setProperty('cursor', 'not-allowed', 'important');
-                submitBtn.style.setProperty('opacity', '0.7', 'important');
+                submitBtn.style.setProperty('opacity', '0.6', 'important');
             }
         }
 
-        function handleExamSubmit() {
-            if (isFormSubmitted) {
+        // बटणावर बोट टेकवताच बटण त्वरित लॉक करणे आणि मेसेज बदलणे
+        function handleBtnClick(btn) {
+            if (isFormSubmitted) return false;
+
+            const name = (document.getElementById('s_name')?.value || '').trim();
+            const dist = (document.getElementById('s_dist')?.value || '').trim();
+            const phone = (document.getElementById('s_phone')?.value || '').trim().replace(/[^0-9]/g, '');
+
+            if (name.length < 2 || dist.length < 2 || phone.length !== 10) {
+                alert("⚠️ कृपया पूर्ण नाव, जिल्हा आणि १० अंकी मोबाईल नंबर अचूक भरा!");
                 return false;
             }
+
             isFormSubmitted = true;
             window.onbeforeunload = null;
 
-            const submitBtn = document.getElementById('submitBtn');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.setAttribute('disabled', 'disabled');
-                submitBtn.innerText = "⏳ आपली टेस्ट सबमिट होत आहे, निकालाच्या पानासाठी कृपया थोडा वेळ वाट पहा...";
-                submitBtn.style.setProperty('background', '#475569', 'important');
-                submitBtn.style.setProperty('color', '#cbd5e1', 'important');
-                submitBtn.style.setProperty('cursor', 'not-allowed', 'important');
-                submitBtn.style.setProperty('opacity', '0.7', 'important');
-            }
-            return true;
+            btn.disabled = true;
+            btn.setAttribute('disabled', 'disabled');
+            btn.innerText = "⏳ आपली टेस्ट सबमिट होत आहे, निकालाच्या पानासाठी कृपया थोडा वेळ वाट पहा...";
+            btn.style.setProperty('background', '#475569', 'important');
+            btn.style.setProperty('color', '#f8fafc', 'important');
+            btn.style.setProperty('cursor', 'not-allowed', 'important');
+            btn.style.setProperty('opacity', '0.85', 'important');
+
+            localStorage.removeItem(testStorageKey);
+            localStorage.removeItem(timerStorageKey);
+
+            document.getElementById('examForm').submit();
+            return false;
         }
+
         document.addEventListener('DOMContentLoaded', function() {
             startTimer();
             restoreAnswerProgress();
@@ -1669,307 +1696,6 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             validateAndReady();
         });
     </script>
-</head>
-<body>
-
-<div id="security-shield">
-    <div style="background: #1e293b; display: inline-block; padding: 25px 35px; border-radius: 12px; border: 2px solid #ef4444; max-width: 90%;">
-        <h2 style="color: #ef4444; margin: 0; font-size: 22px;">⚠️ सुरक्षा इशारा: स्क्रीन सुरक्षित केली आहे!</h2>
-        <p style="font-size: 15px; margin: 12px 0 8px 0; color: #f1f5f9;">स्क्रीन रेकॉर्डिंग, स्क्रीनशॉट किंवा विंडो बदलण्यास सक्त मनाई आहे.</p>
-        <p style="color: #94a3b8; font-size: 13px; margin: 0;">चालू टेस्टवर परत जाण्यासाठी येथे क्लिक करा.</p>
-    </div>
-</div>
-
-<div class="exam-watermark">
-    {{ session.get('user_phone', '') }} - SGA MOCK TEST
-</div>
-
-<div class="exam-header">
-    <div>
-        <h3 style="margin:0; font-size:16.5px; color:#34d399;">⚔️ {{ test.test_title }}</h3>
-        <small id="progressText" style="color:#94a3b8; font-weight:600;">० / {{ questions|length }} सोडवले</small>
-    </div>
-    <div style="display:flex; gap:10px; align-items:center;">
-        <div class="timer-box">⏳ <span id="time-left">00:00</span></div>
-        <button onclick="exitToHome()" class="btn-exit-home">🏠 बाहेर पडा</button>
-    </div>
-</div>
-
-<div class="progress-bar-container">
-    <div id="progressFill" class="progress-bar-fill"></div>
-</div>
-
-<div class="box">
-    <form id="examForm" method="POST" action="/submit_test/{{ test.id }}" onsubmit="return handleExamSubmit();">
-        <input type="hidden" name="time_taken_seconds" id="time_taken_input" value="0">
-        <input type="hidden" name="battle_partner_id" value="{{ battle_partner_id or 0 }}">
-        <div id="questionsArea">
-            {% for q in questions %}
-            <div class="q-item">
-                <div class="q-text">प्र. {{ loop.index }}. {{ q.question }}</div>
-                {% if q.image_url %}
-                <div style="margin-bottom:12px; text-align:center;">
-                    <img src="{{ q.image_url }}" alt="Question Image" style="max-width:100%; max-height:280px; border-radius:8px;">
-                </div>
-                {% endif %}
-                <label class="opt-label"><input type="radio" name="q_{{ q.id }}" value="A"> A) {{ q.opt_a }}</label>
-                <label class="opt-label"><input type="radio" name="q_{{ q.id }}" value="B"> B) {{ q.opt_b }}</label>
-                <label class="opt-label"><input type="radio" name="q_{{ q.id }}" value="C"> C) {{ q.opt_c }}</label>
-                <label class="opt-label"><input type="radio" name="q_{{ q.id }}" value="D"> D) {{ q.opt_d }}</label>
-                <div style="text-align:right;">
-                    <button type="button" class="btn-report" onclick="reportQuestion({{ q.id }})">⚠️ प्रश्नात चूक वाटते का? कळवा</button>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <div class="bottom-submission-card">
-            <h3 style="margin:0 0 6px; color:#34d399; font-size:18px;">🎯 निकाल व संवर्ग गुणवत्ता यादीसाठी माहिती भरा:</h3>
-            <p style="font-size:13px; color:#cbd5e1; margin:0 0 14px;">
-                ⚠️ अचूक राज्य रँक आणि संवर्ग रँक मिळवण्यासाठी खालील सर्व माहिती योग्य भरा.
-            </p>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
-                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">पूर्ण नाव *:</label><input type="text" name="student_name" id="s_name" placeholder="उदा. राहुल पाटील" oninput="validateAndReady()" onchange="validateAndReady()" required></div>
-                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">जिल्हा *:</label><input type="text" name="district" id="s_dist" placeholder="उदा. कोल्हापूर" oninput="validateAndReady()" onchange="validateAndReady()" required></div>
-                <div>
-                    <label style="font-size:13px; font-weight:600; color:#cbd5e1;">प्रवर्ग (Caste Category) *:</label>
-                    <select name="caste_category" id="s_cat" required>
-                        <option value="OPEN">OPEN (खुला प्रवर्ग)</option>
-                        <option value="OBC">OBC (इतर मागासवर्ग)</option>
-                        <option value="EWS">EWS (आर्थिक दुर्बल घटक)</option>
-                        <option value="SC">SC (अनुसूचित जाती)</option>
-                        <option value="ST">ST (अनुसूचित जमाती)</option>
-                        <option value="VJ/NT">VJ/NT (विमुक्त जाती / भटक्या जमाती)</option>
-                        <option value="SBC">SBC (विशेष मागास प्रवर्ग)</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:13px; font-weight:600; color:#cbd5e1;">WhatsApp मोबाईल नंबर *:</label>
-                    <div style="display:flex; gap:6px;">
-                        <input type="tel" name="phone" id="s_phone" placeholder="10 अंकी मोबाईल नंबर" maxlength="10" oninput="validateAndReady()" onchange="validateAndReady()" required>
-                        <button type="button" onclick="selectExamPhonebook('s_phone')" style="background:#0284c7; color:white; border:none; border-radius:8px; padding:0 12px; cursor:pointer; font-size:13px; font-weight:bold; height:45px; margin-top:5px;">📖</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button type="submit" id="submitBtn" class="btn-submit" disabled>⚠️ नाव, जिल्हा व WhatsApp नंबर भरा</button>
-    </form>
-</div>
-<!-- निकाल व स्पष्टीकरण पाहण्यासाठी स्मार्ट पॉप-अप फॉर्म -->
-<div id="resultLeadModal" style="display:none; position:fixed; inset:0; background:rgba(2,6,23,0.88); backdrop-filter:blur(6px); z-index:9999999; justify-content:center; align-items:center; padding:15px;">
-    <div style="background:#0f172a; border:2px solid #38bdf8; border-radius:16px; max-width:400px; width:100%; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,0.7); text-align:center; box-sizing:border-box;">
-        
-        <div style="font-size:36px; margin-bottom:6px;">🎯</div>
-        <h3 style="color:#ffffff; font-size:19px; font-weight:800; margin:0 0 6px 0;">अभिनंदन! टेस्ट पूर्ण झाली!</h3>
-        <p style="color:#38bdf8; font-size:13px; font-weight:700; margin:0 0 16px 0; background:rgba(56,189,248,0.12); padding:8px 10px; border-radius:8px; line-height:1.4;">
-            📊 तुमचे गुण, रँक व अचूक स्पष्टीकरण पाहण्यासाठी खालील माहिती भरा:
-        </p>
-
-        <form id="leadCaptureForm" onsubmit="event.preventDefault(); submitExamWithDetails();">
-            <div style="text-align:left; margin-bottom:12px;">
-                <label style="color:#cbd5e1; font-size:12.5px; font-weight:600; display:block; margin-bottom:4px;">विद्यार्थ्याचे पूर्ण नाव *</label>
-                <input type="text" id="lead_name" required placeholder="उदा. सचिन चौगले" style="width:100%; padding:9px 12px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:#ffffff; font-size:14px; box-sizing:border-box;">
-            </div>
-
-            <div style="text-align:left; margin-bottom:12px;">
-                <label style="color:#cbd5e1; font-size:12.5px; font-weight:600; display:block; margin-bottom:4px;">मोबाईल नंबर (WhatsApp) *</label>
-                <input type="tel" id="lead_phone" required pattern="[0-9]{10}" maxlength="10" placeholder="१० अंकी मोबाईल नंबर टाका" style="width:100%; padding:9px 12px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:#ffffff; font-size:14px; box-sizing:border-box;">
-            </div>
-
-            <!-- ३६ जिल्ह्यांचा स्मार्ट ऑटो-सर्च -->
-            <div style="text-align:left; margin-bottom:16px; position:relative;">
-                <label style="color:#cbd5e1; font-size:12.5px; font-weight:600; display:block; margin-bottom:4px;">
-                    जिल्हा निवडा (इंग्रजी किंवा मराठीत टाईप करा) *
-                </label>
-                <input type="text" id="district_search_input" autocomplete="off" required 
-                       placeholder="उदा. k किंवा क टाईप करा..." 
-                       oninput="searchDistrict(this.value)"
-                       style="width:100%; padding:9px 12px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:#ffffff; font-size:14px; box-sizing:border-box;">
-                
-                <input type="hidden" id="final_student_district" name="district" required>
-
-                <div id="district_suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#0f172a; border:1px solid #38bdf8; border-radius:8px; max-height:180px; overflow-y:auto; z-index:999999; margin-top:4px; box-shadow:0 8px 20px rgba(0,0,0,0.8);">
-                </div>
-            </div>
-
-            <button type="submit" style="width:100%; padding:11px; background:linear-gradient(135deg, #10b981, #059669); color:#ffffff; font-size:15px; font-weight:800; border:none; border-radius:8px; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.3);">
-                🔥 निकाल व स्पष्टीकरण पहा ➔
-            </button>
-        </form>
-    </div>
-</div>
-
-<script>
-var MAHARASHTRA_DISTRICTS = [
-    { marathi: "अहिल्यानगर", aliases: ["अहिल्यानगर", "ahilyangar", "ahilyanagar", "nagar", "a"] },
-    { marathi: "अकोला", aliases: ["अकोला", "akola", "ak"] },
-    { marathi: "अमरावती", aliases: ["अमरावती", "amravati", "am"] },
-    { marathi: "छत्रपती संभाजीनगर", aliases: ["छत्रपती संभाजीनगर", "संभाजीनगर", "औरंगाबाद", "chhatrapati sambhajinagar", "sambhajinagar", "aurangabad", "csn", "au"] },
-    { marathi: "बीड", aliases: ["बीड", "beed", "bid", "b"] },
-    { marathi: "भंडारा", aliases: ["भंडारा", "bhandara", "bh"] },
-    { marathi: "बुलढाणा", aliases: ["बुलढाणा", "buldhana", "buldana", "bu"] },
-    { marathi: "चंद्रपूर", aliases: ["चंद्रपूर", "chandrapur", "chanda", "c", "ch"] },
-    { marathi: "धुळे", aliases: ["धुळे", "dhule", "dh"] },
-    { marathi: "गडचिरोली", aliases: ["गडचिरोली", "gadchiroli", "g"] },
-    { marathi: "गोंदिया", aliases: ["गोंदिया", "gondia", "go"] },
-    { marathi: "हिंगोली", aliases: ["हिंगोली", "hingoli", "h"] },
-    { marathi: "जळगाव", aliases: ["जळगाव", "jalgaon", "jal"] },
-    { marathi: "जालना", aliases: ["जालना", "jalna", "jn"] },
-    { marathi: "कोल्हापूर", aliases: ["कोल्हापूर", "kolhapur", "kop", "k", "क"] },
-    { marathi: "लातूर", aliases: ["लातूर", "latur", "l"] },
-    { marathi: "मुंबई शहर", aliases: ["मुंबई शहर", "mumbai city", "south mumbai", "mc"] },
-    { marathi: "मुंबई उपनगर", aliases: ["मुंबई उपनगर", "mumbai suburban", "mumbai", "suburban", "mu"] },
-    { marathi: "नागपूर", aliases: ["नागपूर", "nagpur", "ngp", "n"] },
-    { marathi: "नांदेड", aliases: ["नांदेड", "nanded", "nd"] },
-    { marathi: "नंदुरबार", aliases: ["नंदुरबार", "nandurbar", "ndb"] },
-    { marathi: "नाशिक", aliases: ["नाशिक", "nashik", "nasik", "nsk"] },
-    { marathi: "धाराशिव", aliases: ["धाराशिव", "उस्मानाबाद", "dharashiv", "osmanabad", "dh", "os"] },
-    { marathi: "पालघर", aliases: ["पालघर", "palghar", "pal"] },
-    { marathi: "परभणी", aliases: ["परभणी", "parbhani", "prb"] },
-    { marathi: "पुणे", aliases: ["पुणे", "pune", "pun", "p", "पु"] },
-    { marathi: "रायगड", aliases: ["रायगड", "raigad", "alibag", "rai", "r"] },
-    { marathi: "रत्नागिरी", aliases: ["रत्नागिरी", "ratnagiri", "rtg"] },
-    { marathi: "सांगली", aliases: ["सांगली", "sangli", "san", "s"] },
-    { marathi: "सातारा", aliases: ["सातारा", "satara", "sat"] },
-    { marathi: "सिंधुदुर्ग", aliases: ["सिंधुदुर्ग", "sindhudurg", "sin"] },
-    { marathi: "सोलापूर", aliases: ["सोलापूर", "solapur", "sholapur", "sol"] },
-    { marathi: "ठाणे", aliases: ["ठाणे", "thane", "th"] },
-    { marathi: "वर्धा", aliases: ["वर्धा", "wardha", "war", "w"] },
-    { marathi: "वाशिम", aliases: ["वाशिम", "washim", "was"] },
-    { marathi: "यवतमाळ", aliases: ["यवतमाळ", "yavatmal", "yeotmal", "y"] }
-];
-
-function searchDistrict(val) {
-    var query = val.trim().toLowerCase();
-    var box = document.getElementById('district_suggestions');
-    var hiddenInput = document.getElementById('final_student_district');
-    hiddenInput.value = '';
-    box.innerHTML = '';
-
-    if (!query) { box.style.display = 'none'; return; }
-
-    var matches = MAHARASHTRA_DISTRICTS.filter(function(d) {
-        if (d.marathi.toLowerCase().indexOf(query) !== -1) return true;
-        return d.aliases.some(function(alias) {
-            return alias.toLowerCase().startsWith(query) || alias.toLowerCase().indexOf(query) !== -1;
-        });
-    });
-
-    if (matches.length === 0) {
-        box.innerHTML = '<div style="padding:10px; color:#f87171; font-size:13px;">❌ महाराष्ट्रातील ३६ अधिकृत जिल्ह्यांपैकी निवडा!</div>';
-        box.style.display = 'block';
-        return;
-    }
-
-    matches.forEach(function(item) {
-        var div = document.createElement('div');
-        div.style.padding = '10px 14px';
-        div.style.cursor = 'pointer';
-        div.style.borderBottom = '1px solid #1e293b';
-        div.style.color = '#f1f5f9';
-        div.style.fontSize = '14px';
-        div.style.textAlign = 'left';
-        div.innerHTML = '📍 <b>' + item.marathi + '</b> <span style="font-size:12px; color:#94a3b8;">(' + item.aliases[1] + ')</span>';
-
-        div.onmouseover = function() { this.style.background = '#1e293b'; };
-        div.onmouseout = function() { this.style.background = 'transparent'; };
-        div.onclick = function() { selectDistrict(item.marathi); };
-        box.appendChild(div);
-    });
-    box.style.display = 'block';
-}
-
-function selectDistrict(marathiName) {
-    document.getElementById('district_search_input').value = marathiName;
-    document.getElementById('final_student_district').value = marathiName;
-    document.getElementById('district_suggestions').style.display = 'none';
-}
-
-function validateAndGetDistrict() {
-    var rawInput = document.getElementById('district_search_input').value.trim().toLowerCase();
-    var hiddenVal = document.getElementById('final_student_district').value;
-    if (hiddenVal) return hiddenVal;
-
-    var matched = MAHARASHTRA_DISTRICTS.find(function(d) {
-        return d.marathi.toLowerCase() === rawInput || d.aliases.some(function(a) { return a.toLowerCase() === rawInput; });
-    });
-    if (matched) {
-        document.getElementById('final_student_district').value = matched.marathi;
-        return matched.marathi;
-    }
-    return null;
-}
-
-function interceptAndShowModal() {
-    var savedPhone = localStorage.getItem('user_phone');
-    if (savedPhone && savedPhone.length === 10) {
-        triggerRealSubmit();
-    } else {
-        var modal = document.getElementById('resultLeadModal');
-        if(modal) modal.style.display = 'flex';
-        else triggerRealSubmit();
-    }
-}
-
-function submitExamWithDetails() {
-    var name = document.getElementById('lead_name').value.trim();
-    var phone = document.getElementById('lead_phone').value.trim();
-    var district = validateAndGetDistrict();
-
-    if (!name) { alert('कृपया विद्यार्थ्याचे पूर्ण नाव टाका!'); return; }
-    if (!phone || phone.length !== 10 || isNaN(phone)) { alert('कृपया १० अंकी वैध मोबाईल नंबर टाका!'); return; }
-    if (!district) {
-        alert('⚠️ कृपया महाराष्ट्रातील ३६ अधिकृत जिल्ह्यांपैकीच योग्य जिल्हा निवडा!');
-        document.getElementById('district_search_input').focus();
-        return;
-    }
-
-    localStorage.setItem('user_name', name);
-    localStorage.setItem('user_phone', phone);
-    localStorage.setItem('user_district', district);
-
-    var form = document.getElementById('examForm') || document.querySelector('form');
-    if(form) {
-        var createOrSet = function(n, val) {
-            var el = form.querySelector('input[name="' + n + '"]');
-            if(!el) {
-                el = document.createElement('input');
-                el.type = 'hidden';
-                el.name = n;
-                form.appendChild(el);
-            }
-            el.value = val;
-        };
-        createOrSet('student_name', name);
-        createOrSet('phone', phone);
-        createOrSet('district', district);
-    }
-
-    document.getElementById('resultLeadModal').style.display = 'none';
-    triggerRealSubmit();
-}
-
-function triggerRealSubmit() {
-    if (typeof submitExam === 'function') {
-        submitExam();
-    } else if (typeof finalSubmit === 'function') {
-        finalSubmit();
-    } else {
-        var f = document.getElementById('examForm') || document.querySelector('form');
-        if(f) f.submit();
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    var submitBtns = document.querySelectorAll('button[type="submit"], .btn-submit, #submitBtn');
-    submitBtns.forEach(function(btn) {
-        if (!btn.closest('#resultLeadModal')) {
-            btn.type = 'button';
-            btn.setAttribute('onclick', 'interceptAndShowModal()');
-        }
-    });
-});
-</script>
 </body>
 </html>'''
 # =============================================================================
