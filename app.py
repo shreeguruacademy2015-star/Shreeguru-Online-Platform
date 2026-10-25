@@ -3409,7 +3409,7 @@ def home_tests_list():
                 # सिरीज सुरू झालेली तारीख (२१ ऑक्टोबर २०२६ पासून ४ था दिवस)
                 series_start_date = date(2026, 10, 21)
                 
-                unlock_time = time(10, 0, 0)
+                unlock_time = time(9, 0, 0)
                 if now_ist.time() < unlock_time:
                     effective_date = today_date - timedelta(days=1)
                     is_today_unlocked = False
