@@ -1696,6 +1696,93 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             validateAndReady();
         });
     </script>
+</head>
+<body>
+
+<div id="security-shield">
+    <div style="background: #1e293b; display: inline-block; padding: 25px 35px; border-radius: 12px; border: 2px solid #ef4444; max-width: 90%;">
+        <h2 style="color: #ef4444; margin: 0; font-size: 22px;">⚠️ सुरक्षा इशारा: स्क्रीन सुरक्षित केली आहे!</h2>
+        <p style="font-size: 15px; margin: 12px 0 8px 0; color: #f1f5f9;">स्क्रीन रेकॉर्डिंग, स्क्रीनशॉट किंवा विंडो बदलण्यास सक्त मनाई आहे.</p>
+        <p style="color: #94a3b8; font-size: 13px; margin: 0;">चालू टेस्टवर परत जाण्यासाठी येथे क्लिक करा.</p>
+    </div>
+</div>
+
+<div class="exam-watermark">
+    {{ session.get('user_phone', '') }} - SGA MOCK TEST
+</div>
+
+<div class="exam-header">
+    <div>
+        <h3 style="margin:0; font-size:16.5px; color:#34d399;">⚔️ {{ test.test_title }}</h3>
+        <small id="progressText" style="color:#94a3b8; font-weight:600;">० / {{ questions|length }} सोडवले</small>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <div class="timer-box">⏳ <span id="time-left">00:00</span></div>
+        <button onclick="exitToHome()" class="btn-exit-home">🏠 बाहेर पडा</button>
+    </div>
+</div>
+
+<div class="progress-bar-container">
+    <div id="progressFill" class="progress-bar-fill"></div>
+</div>
+
+<div class="box">
+    <form id="examForm" method="POST" action="/submit_test/{{ test.id }}">
+        <input type="hidden" name="time_taken_seconds" id="time_taken_input" value="0">
+        <input type="hidden" name="battle_partner_id" value="{{ battle_partner_id or 0 }}">
+        <div id="questionsArea">
+            {% for q in questions %}
+            <div class="q-item">
+                <div class="q-text">प्र. {{ loop.index }}. {{ q.question }}</div>
+                {% if q.image_url %}
+                <div style="margin-bottom:12px; text-align:center;">
+                    <img src="{{ q.image_url }}" alt="Question Image" style="max-width:100%; max-height:280px; border-radius:8px;">
+                </div>
+                {% endif %}
+                <label class="opt-label"><input type="radio" name="q_{{ q.id }}" value="A"> A) {{ q.opt_a }}</label>
+                <label class="opt-label"><input type="radio" name="q_{{ q.id }}" value="B"> B) {{ q.opt_b }}</label>
+                <label class="opt-label"><input type="radio" name="q_{{ q.id }}" value="C"> C) {{ q.opt_c }}</label>
+                <label class="opt-label"><input type="radio" name="q_{{ q.id }}" value="D"> D) {{ q.opt_d }}</label>
+                <div style="text-align:right;">
+                    <button type="button" class="btn-report" onclick="reportQuestion({{ q.id }})">⚠️ प्रश्नात चूक वाटते का? कळवा</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="bottom-submission-card">
+            <h3 style="margin:0 0 6px; color:#34d399; font-size:18px;">🎯 निकाल व संवर्ग गुणवत्ता यादीसाठी माहिती भरा:</h3>
+            <p style="font-size:13px; color:#cbd5e1; margin:0 0 14px;">
+                ⚠️ अचूक राज्य रँक आणि संवर्ग रँक मिळवण्यासाठी खालील सर्व माहिती योग्य भरा.
+            </p>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">पूर्ण नाव *:</label><input type="text" name="student_name" id="s_name" placeholder="उदा. राहुल पाटील" oninput="validateAndReady()" onchange="validateAndReady()" required></div>
+                <div><label style="font-size:13px; font-weight:600; color:#cbd5e1;">जिल्हा *:</label><input type="text" name="district" id="s_dist" placeholder="उदा. कोल्हापूर" oninput="validateAndReady()" onchange="validateAndReady()" required></div>
+                <div>
+                    <label style="font-size:13px; font-weight:600; color:#cbd5e1;">प्रवर्ग (Caste Category) *:</label>
+                    <select name="caste_category" id="s_cat" required>
+                        <option value="OPEN">OPEN (खुला प्रवर्ग)</option>
+                        <option value="OBC">OBC (इतर मागासवर्ग)</option>
+                        <option value="EWS">EWS (आर्थिक दुर्बल घटक)</option>
+                        <option value="SC">SC (अनुसूचित जाती)</option>
+                        <option value="ST">ST (अनुसूचित जमाती)</option>
+                        <option value="VJ/NT">VJ/NT (विमुक्त जाती / भटक्या जमाती)</option>
+                        <option value="SBC">SBC (विशेष मागास प्रवर्ग)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:13px; font-weight:600; color:#cbd5e1;">WhatsApp मोबाईल नंबर *:</label>
+                    <div style="display:flex; gap:6px;">
+                        <input type="tel" name="phone" id="s_phone" placeholder="10 अंकी मोबाईल नंबर" maxlength="10" oninput="validateAndReady()" onchange="validateAndReady()" required>
+                        <button type="button" onclick="selectExamPhonebook('s_phone')" style="background:#0284c7; color:white; border:none; border-radius:8px; padding:0 12px; cursor:pointer; font-size:13px; font-weight:bold; height:45px; margin-top:5px;">📖</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="button" id="submitBtn" class="btn-submit" onclick="handleBtnClick(this);" disabled>⚠️ नाव, जिल्हा व WhatsApp नंबर भरा</button>
+    </form>
+</div>
+
 </body>
 </html>'''
 # =============================================================================
