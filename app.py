@@ -1635,6 +1635,25 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
             }
         }
 
+        function handleExamSubmit() {
+            if (isFormSubmitted) {
+                return false;
+            }
+            isFormSubmitted = true;
+            window.onbeforeunload = null;
+
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.setAttribute('disabled', 'disabled');
+                submitBtn.innerText = "⏳ आपली टेस्ट सबमिट होत आहे, निकालाच्या पानासाठी कृपया थोडा वेळ वाट पहा...";
+                submitBtn.style.setProperty('background', '#475569', 'important');
+                submitBtn.style.setProperty('color', '#cbd5e1', 'important');
+                submitBtn.style.setProperty('cursor', 'not-allowed', 'important');
+                submitBtn.style.setProperty('opacity', '0.7', 'important');
+            }
+            return true;
+        }
         document.addEventListener('DOMContentLoaded', function() {
             startTimer();
             restoreAnswerProgress();
@@ -1681,7 +1700,7 @@ EXAM_TEMPLATE = '''<!DOCTYPE html>
 </div>
 
 <div class="box">
-    <form id="examForm" method="POST" action="/submit_test/{{ test.id }}" onsubmit="isFormSubmitted = true; window.onbeforeunload = null;">
+    <form id="examForm" method="POST" action="/submit_test/{{ test.id }}" onsubmit="return handleExamSubmit();">
         <input type="hidden" name="time_taken_seconds" id="time_taken_input" value="0">
         <input type="hidden" name="battle_partner_id" value="{{ battle_partner_id or 0 }}">
         <div id="questionsArea">
