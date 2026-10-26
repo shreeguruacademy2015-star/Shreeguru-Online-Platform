@@ -1261,58 +1261,64 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     </div>
 </div>
 
-    <div id="battleContainer" class="section-box">
-        <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा महामुकाबला (रँकिंग)</h3>
-        <p style="font-size:13px; color:#94a3b8; margin:0 0 15px;">
-            रॅपिड फायर टेस्टच्या कामगिरीनुसार महाराष्ट्रातील ३६ जिल्ह्यांची लाईव्ह क्रमवारी:
-        </p>
-        <table class="rank-table" style="max-width: 500px; margin: 0 auto;">
-            <tr>
-                <th style="width: 25%; text-align: center;">राज्य रँक</th>
-                <th style="text-align: left; padding-left: 20px;">जिल्हा</th>
-            </tr>
-            {% for dist in live_district_battles %}
-            <tr>
-                <td style="text-align: center;">
-                    {% if loop.index == 1 %}
-                        <span style="font-size: 16px;">🥇 <b>#1</b></span>
-                    {% elif loop.index == 2 %}
-                        <span style="font-size: 15px;">🥈 <b>#2</b></span>
-                    {% elif loop.index == 3 %}
-                        <span style="font-size: 15px;">🥉 <b>#3</b></span>
-                    {% else %}
-                        <b>#{{ loop.index }}</b>
-                    {% endif %}
-                </td>
-                <td style="padding-left: 20px; font-weight: 700; font-size: 14.5px; color: #f1f5f9;">
-                    📍 {{ dist.district }}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+    <!-- 🏆 आकर्षक आणि एकाच स्क्रीनवर बसणारा जिल्हा महामुकाबला चार्ट -->
+<div id="battleContainer" class="section-box" style="padding: 18px 12px; background: radial-gradient(circle at top, #1e293b 0%, #0b1329 100%); border: 1.5px solid #334155; border-radius: 16px; margin-top: 15px;">
+    
+    <div style="text-align: center; margin-bottom: 16px;">
+        <h3 style="color: #f59e0b; margin: 0 0 6px 0; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 0 15px rgba(245,158,11,0.4);">
+            🏆 राज्यस्तरीय जिल्हा महामुकाबला
+        </h3>
+        <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #0284c7; padding: 3px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;">
+            ⚡ रॅपिड फायर कामगिरीनुसार महाराष्ट्रातील ३६ जिल्ह्यांची क्रमवारी
+        </span>
     </div>
 
-    <div id="docsContainer" class="section-box">
-        <h3 style="color:#38bdf8; margin-top:0;">📄 अधिकृत भरती कागदपत्रे व मागील प्रश्नपत्रिका</h3>
-        {% if recruitment_pdf %}<a href="{{ recruitment_pdf }}" target="_blank" class="doc-link">📑 पोलीस भरती अधिकृत जाहिरात (PDF)</a>{% endif %}
-        {% if eligibility_pdf %}<a href="{{ eligibility_pdf }}" target="_blank" class="doc-link">📋 शारीरिक व लेखी पात्रता निकष (PDF)</a>{% endif %}
-    </div>
-
-    <div id="helpContainer" class="section-box">
-        <h3 style="color:#34d399; margin-top:0;">📞 मदत व मार्गदर्शन हेल्प डेस्क (Help Desk)</h3>
-        <p style="font-size:14px; color:#cbd5e1; margin-bottom:15px;">टेस्ट किंवा पेमेंट संदर्भात काही अडचण असल्यास खालील क्रमांकावर संपर्क साधा किंवा येथे तक्रार नोंदवा:</p>
-        <div style="background:#1e293b; padding:18px; border-radius:10px; border:1px solid #334155; display:inline-block; text-align:left; max-width:450px; width:100%;">
-            <p style="margin:6px 0; color:#f8fafc;">📱 <b>हेल्पलाईन नंबर:</b> <a href="https://wa.me/91{{ help_phone }}" target="_blank" style="color:#34d399; font-weight:bold;">{{ help_phone }}</a></p>
-            <p style="margin:6px 0; color:#f8fafc;">📍 <b>पत्ता:</b> {{ help_address }}</p>
-            <hr style="border:0; border-top:1px solid #334155; margin:12px 0;">
-            <form method="POST" action="/submit_help_desk">
-                <input type="text" name="name" placeholder="तुमचे पूर्ण नाव" required style="width:100%; padding:8px; margin-bottom:8px; border-radius:6px; background:#0f172a; border:1px solid #334155; color:white;">
-                <input type="tel" name="phone" id="help_phone_input" placeholder="१० अंकी व्हॉट्सॲप नंबर" maxlength="10" required style="width:100%; padding:8px; margin-bottom:8px; border-radius:6px; background:#0f172a; border:1px solid #334155; color:white;">
-                <textarea name="feedback" rows="3" placeholder="आपली अडचण किंवा अभिप्राय येथे लिहा..." required style="width:100%; padding:8px; margin-bottom:8px; border-radius:6px; background:#0f172a; border:1px solid #334155; color:white;"></textarea>
-                <button type="submit" style="background:#10b981; color:#022c22; font-weight:bold; border:none; padding:10px 18px; border-radius:6px; cursor:pointer; width:100%;">🚀 तक्रार/अभिप्राय पाठवा</button>
-            </form>
+    <!-- 🥇🥈🥉 टॉप १, २, ३ जिल्हे (वर आडवे आकर्षक कार्ड्स) -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 650px; margin: 0 auto 18px auto;">
+        {% for dist in live_district_battles[:3] %}
+        <div style="
+            background: {% if loop.index == 1 %}linear-gradient(135deg, rgba(245,158,11,0.25), rgba(15,23,42,0.95)){% elif loop.index == 2 %}linear-gradient(135deg, rgba(148,163,184,0.25), rgba(15,23,42,0.95)){% else %}linear-gradient(135deg, rgba(217,119,6,0.25), rgba(15,23,42,0.95)){% endif %};
+            border: 2px solid {% if loop.index == 1 %}#fbbf24{% elif loop.index == 2 %}#cbd5e1{% else %}#f97316{% endif %};
+            border-radius: 12px;
+            padding: 10px 4px;
+            text-align: center;
+            box-shadow: 0 4px 15px {% if loop.index == 1 %}rgba(251,191,36,0.25){% elif loop.index == 2 %}rgba(203,213,225,0.2){% else %}rgba(249,115,22,0.2){% endif %};
+        ">
+            <div style="font-size: 22px; line-height: 1.1;">
+                {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% else %}🥉{% endif %}
+            </div>
+            <div style="font-size: 11px; font-weight: 800; color: {% if loop.index == 1 %}#fde047{% elif loop.index == 2 %}#f1f5f9{% else %}#fdba74{% endif %}; margin: 2px 0;">
+                रँक #{{ loop.index }}
+            </div>
+            <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                📍 {{ dist.district }}
+            </div>
         </div>
+        {% endfor %}
     </div>
+
+    <!-- 📋 ४ ते ३६ जिल्हे (३ कॉम्पॅक्ट कॉलम्समध्ये, एकाच पानावर फिट) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; max-width: 820px; margin: 0 auto;">
+        {% for dist in live_district_battles[3:] %}
+        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.75); border: 1px solid #334155; padding: 6px 10px; border-radius: 6px;">
+            <span style="color: #94a3b8; font-size: 11.5px; font-weight: 700; width: 30px;">
+                #{{ loop.index + 3 }}
+            </span>
+            <span style="color: #f1f5f9; font-size: 12.5px; font-weight: 700; flex: 1; text-align: left; padding-left: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                📍 {{ dist.district }}
+            </span>
+            <span style="font-size: 10px; color: #38bdf8;">•</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 14px; text-align: center;">
+        <small style="color: #64748b; font-size: 11px;">
+            🎯 रोज सकाळी ०९:०० वाजता रॅपिड टेस्ट सोडवून आपल्या जिल्ह्याला अव्वल आणा!
+        </small>
+    </div>
+
+</div>
 
 <!-- ========================================== -->
     <!-- 1. App Install Button (PWA Download) -->
