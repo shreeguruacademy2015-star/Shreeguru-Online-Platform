@@ -3335,17 +3335,19 @@ def home_tests_list():
             """)
             conn.commit()
 
-            # २. होमपेजवर ३६ अधिकृत मराठी जिल्ह्यांचीच रँक लिस्ट (केवळ रॅपिड फायर टेस्ट सोडवलेले विद्यार्थी व सरासरी)
+            # २. होमपेजवर ३६ अधिकृत मराठी जिल्ह्यांचीच रँक लिस्ट दाखवणे
+            # (आजच्या तारखेनुसार + किमान ३ किंवा ५ विद्यार्थी थ्रेशोल्ड + सहभागाचा वेटेड स्कोअर)
+            today_str = date.today().strftime("%Y-%m-%d")
+
             cur.execute("""
                 SELECT 
-                    mtl.district, 
-                    COUNT(mtl.id) as total_students, 
-                    ROUND(AVG(mtl.score)::numeric, 1) as avg_score
-                FROM mock_test_leads mtl
-                JOIN test_papers tp ON mtl.test_id = tp.id
-                WHERE mtl.is_deleted = 0 
-                  AND (tp.category = 'rapid' OR tp.test_title ILIKE '%रॅपिड%')
-                  AND mtl.district IN (
+                    district, 
+                    COUNT(id) as total_students, 
+                    ROUND(AVG(score)::numeric, 1) as avg_score
+                FROM mock_test_leads
+                WHERE is_deleted = 0 
+                  AND test_date = %s
+                  AND district IN (
                     'अहिल्यानगर', 'अकोला', 'अमरावती', 'छत्रपती संभाजीनगर', 'बीड', 'भंडारा', 
                     'बुलढाणा', 'चंद्रपूर', 'धुळे', 'गडचिरोली', 'गोंदिया', 'हिंगोली', 
                     'जळगाव', 'जालना', 'कोल्हापूर', 'लातूर', 'मुंबई शहर', 'मुंबई उपनगर', 
@@ -3353,11 +3355,36 @@ def home_tests_list():
                     'परभणी', 'पुणे', 'रायगड', 'रत्नागिरी', 'सांगली', 'सातारा', 
                     'सिंधुदुर्ग', 'सोलापूर', 'ठाणे', 'वर्धा', 'वाशिम', 'यवतमाळ'
                 )
-                GROUP BY mtl.district
-                ORDER BY avg_score DESC, total_students DESC
+                GROUP BY district
+                HAVING COUNT(id) >= 3
+                ORDER BY (AVG(score) + (COUNT(id) * 0.02)) DESC, total_students DESC
                 LIMIT 36
-            """)
+            """, (today_str,))
             live_district_battles = cur.fetchall()
+
+            # बॅकअप: जर आज सकाळी नवीन दिवस सुरू झाला असेल आणि ३ विद्यार्थ्यांचा कोटा पूर्ण नसेल, 
+            # तर रिकामे न दिसण्यासाठी सर्वसाधारण रँक दाखवणे
+            if not live_district_battles:
+                cur.execute("""
+                    SELECT 
+                        district, 
+                        COUNT(id) as total_students, 
+                        ROUND(AVG(score)::numeric, 1) as avg_score
+                    FROM mock_test_leads
+                    WHERE is_deleted = 0 
+                      AND district IN (
+                        'अहिल्यानगर', 'अकोला', 'अमरावती', 'छत्रपती संभाजीनगर', 'बीड', 'भंडारा', 
+                        'बुलढाणा', 'चंद्रपूर', 'धुळे', 'गडचिरोली', 'गोंदिया', 'हिंगोली', 
+                        'जळगाव', 'जालना', 'कोल्हापूर', 'लातूर', 'मुंबई शहर', 'मुंबई उपनगर', 
+                        'नागपूर', 'नांदेड', 'नंदुरबार', 'नाशिक', 'धाराशिव', 'पालघर', 
+                        'परभणी', 'पुणे', 'रायगड', 'रत्नागिरी', 'सांगली', 'सातारा', 
+                        'सिंधुदुर्ग', 'सोलापूर', 'ठाणे', 'वर्धा', 'वाशिम', 'यवतमाळ'
+                    )
+                    GROUP BY district
+                    ORDER BY (AVG(score) + (COUNT(id) * 0.02)) DESC, total_students DESC
+                    LIMIT 36
+                """)
+                live_district_battles = cur.fetchall()
 
             cur.execute("SELECT setting_key, setting_value FROM academy_settings")
             settings = {r['setting_key']: r['setting_value'] for r in cur.fetchall()}
