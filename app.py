@@ -1262,26 +1262,32 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 </div>
 
     <div id="battleContainer" class="section-box">
-        <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा मुकाबला (⚡ रॅपिड फायर लाईव्ह रँक)</h3>
+        <h3 style="color:#f59e0b; margin-top:0;">🏆 राज्यस्तरीय जिल्हा महामुकाबला (रँकिंग)</h3>
         <p style="font-size:13px; color:#94a3b8; margin:0 0 15px;">
-            केवळ <b>२० गुण रॅपिड फायर टेस्ट</b> सोडवणाऱ्या विद्यार्थ्यांच्या आधारावर तयार झालेली ३६ जिल्ह्यांची लाईव्ह गुणवत्ता यादी:
+            रॅपिड फायर टेस्टच्या कामगिरीनुसार महाराष्ट्रातील ३६ जिल्ह्यांची लाईव्ह क्रमवारी:
         </p>
-        <table class="rank-table">
+        <table class="rank-table" style="max-width: 500px; margin: 0 auto;">
             <tr>
-                <th>रँक</th>
-                <th>जिल्हा</th>
-                <th>रॅपिड टेस्ट देणारे एकूण विद्यार्थी</th>
-                <th>जिल्ह्याची सरासरी (२० पैकी)</th>
+                <th style="width: 25%; text-align: center;">राज्य रँक</th>
+                <th style="text-align: left; padding-left: 20px;">जिल्हा</th>
             </tr>
             {% for dist in live_district_battles %}
             <tr>
-                <td><b>#{{ loop.index }}</b></td>
-                <td><b>{{ dist.district }}</b></td>
-                <td><span style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:3px 8px; border-radius:12px; font-weight:bold;">{{ dist.total_students }} विद्यार्थी</span></td>
-                <td style="color:#34d399; font-weight:bold;">{{ dist.avg_score }} गुण</td>
+                <td style="text-align: center;">
+                    {% if loop.index == 1 %}
+                        <span style="font-size: 16px;">🥇 <b>#1</b></span>
+                    {% elif loop.index == 2 %}
+                        <span style="font-size: 15px;">🥈 <b>#2</b></span>
+                    {% elif loop.index == 3 %}
+                        <span style="font-size: 15px;">🥉 <b>#3</b></span>
+                    {% else %}
+                        <b>#{{ loop.index }}</b>
+                    {% endif %}
+                </td>
+                <td style="padding-left: 20px; font-weight: 700; font-size: 14.5px; color: #f1f5f9;">
+                    📍 {{ dist.district }}
+                </td>
             </tr>
-            {% else %}
-            <tr><td colspan="4" style="text-align:center; color:#94a3b8;">विद्यार्थ्यांनी रॅपिड टेस्ट सोडवल्यानंतर जिल्ह्यांची लाईव्ह क्रमवारी येथे दिसेल.</td></tr>
             {% endfor %}
         </table>
     </div>
@@ -3335,56 +3341,37 @@ def home_tests_list():
             """)
             conn.commit()
 
-            # २. होमपेजवर ३६ अधिकृत मराठी जिल्ह्यांचीच रँक लिस्ट दाखवणे
-            # (आजच्या तारखेनुसार + किमान ३ किंवा ५ विद्यार्थी थ्रेशोल्ड + सहभागाचा वेटेड स्कोअर)
-            today_str = date.today().strftime("%Y-%m-%d")
-
+            # महाराष्ट्रातील सर्व ३६ जिल्हे अचूक कामगिरीनुसार क्रमाने लावणे
             cur.execute("""
-                SELECT 
-                    district, 
-                    COUNT(id) as total_students, 
-                    ROUND(AVG(score)::numeric, 1) as avg_score
-                FROM mock_test_leads
-                WHERE is_deleted = 0 
-                  AND test_date = %s
-                  AND district IN (
-                    'अहिल्यानगर', 'अकोला', 'अमरावती', 'छत्रपती संभाजीनगर', 'बीड', 'भंडारा', 
-                    'बुलढाणा', 'चंद्रपूर', 'धुळे', 'गडचिरोली', 'गोंदिया', 'हिंगोली', 
-                    'जळगाव', 'जालना', 'कोल्हापूर', 'लातूर', 'मुंबई शहर', 'मुंबई उपनगर', 
-                    'नागपूर', 'नांदेड', 'नंदुरबार', 'नाशिक', 'धाराशिव', 'पालघर', 
-                    'परभणी', 'पुणे', 'रायगड', 'रत्नागिरी', 'सांगली', 'सातारा', 
-                    'सिंधुदुर्ग', 'सोलापूर', 'ठाणे', 'वर्धा', 'वाशिम', 'यवतमाळ'
-                )
-                GROUP BY district
-                HAVING COUNT(id) >= 3
-                ORDER BY (AVG(score) + (COUNT(id) * 0.02)) DESC, total_students DESC
-                LIMIT 36
-            """, (today_str,))
-            live_district_battles = cur.fetchall()
-
-            # बॅकअप: जर आज सकाळी नवीन दिवस सुरू झाला असेल आणि ३ विद्यार्थ्यांचा कोटा पूर्ण नसेल, 
-            # तर रिकामे न दिसण्यासाठी सर्वसाधारण रँक दाखवणे
-            if not live_district_battles:
-                cur.execute("""
-                    SELECT 
-                        district, 
-                        COUNT(id) as total_students, 
-                        ROUND(AVG(score)::numeric, 1) as avg_score
-                    FROM mock_test_leads
-                    WHERE is_deleted = 0 
-                      AND district IN (
+                WITH all_36_districts AS (
+                    SELECT unnest(ARRAY[
                         'अहिल्यानगर', 'अकोला', 'अमरावती', 'छत्रपती संभाजीनगर', 'बीड', 'भंडारा', 
                         'बुलढाणा', 'चंद्रपूर', 'धुळे', 'गडचिरोली', 'गोंदिया', 'हिंगोली', 
                         'जळगाव', 'जालना', 'कोल्हापूर', 'लातूर', 'मुंबई शहर', 'मुंबई उपनगर', 
                         'नागपूर', 'नांदेड', 'नंदुरबार', 'नाशिक', 'धाराशिव', 'पालघर', 
                         'परभणी', 'पुणे', 'रायगड', 'रत्नागिरी', 'सांगली', 'सातारा', 
                         'सिंधुदुर्ग', 'सोलापूर', 'ठाणे', 'वर्धा', 'वाशिम', 'यवतमाळ'
-                    )
+                    ]) AS district
+                ),
+                district_stats AS (
+                    SELECT 
+                        district,
+                        COUNT(id) AS total_count,
+                        COALESCE(AVG(score), 0) AS avg_s
+                    FROM mock_test_leads
+                    WHERE is_deleted = 0
                     GROUP BY district
-                    ORDER BY (AVG(score) + (COUNT(id) * 0.02)) DESC, total_students DESC
-                    LIMIT 36
-                """)
-                live_district_battles = cur.fetchall()
+                )
+                SELECT 
+                    a.district
+                FROM all_36_districts a
+                LEFT JOIN district_stats s ON a.district = s.district
+                ORDER BY 
+                    COALESCE(s.avg_s + (s.total_count * 0.15), 0) DESC,
+                    a.district ASC
+                LIMIT 36;
+            """)
+            live_district_battles = cur.fetchall()
 
             cur.execute("SELECT setting_key, setting_value FROM academy_settings")
             settings = {r['setting_key']: r['setting_value'] for r in cur.fetchall()}
