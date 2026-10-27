@@ -2435,11 +2435,14 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid #ecfdf5; padding-bottom:12px; margin-bottom:15px;">
             <div>
                 <h3 style="margin:0; color:#065f46; font-size:18px;">🛒 सशुल्क टेस्ट खरेदीदार यादी (Paid Orders)</h3>
-                <small style="color:#64748b;">ज्या विद्यार्थ्यांनी प्रत्यक्ष फी / पेमेंट करून टेस्ट खरेदी केली आहे</small>
+                <small style="color:#64748b;">ज्या विद्यार्थ्यांनी प्रत्यक्ष फी भरून टेस्ट खरेदी केली आहे</small>
             </div>
-            <div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                 <span style="background:#ecfdf5; color:#065f46; border:1.5px solid #10b981; padding:6px 14px; border-radius:20px; font-weight:bold; font-size:13px;">
                     🎯 एकूण खरेदीदार: {{ paid_buyers|length }} विद्यार्थी
+                </span>
+                <span style="background:#10b981; color:#ffffff; padding:6px 14px; border-radius:20px; font-weight:bold; font-size:13px; box-shadow:0 2px 6px rgba(16,185,129,0.3);">
+                    💰 एकूण जमा फी: ₹{{ total_revenue }}
                 </span>
             </div>
         </div>
@@ -2453,6 +2456,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     <th style="padding:10px;">जिल्हा</th>
                     <th style="padding:10px;">WhatsApp नंबर</th>
                     <th style="padding:10px;">खरेदी केलेली टेस्ट</th>
+                    <th style="padding:10px; text-align:center; color:#065f46;">जमा फी</th>
                     <th style="padding:10px;">पेमेंट तपशील</th>
                     <th style="padding:10px; text-align:center;">थेट संपर्क</th>
                 </tr>
@@ -2466,6 +2470,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     <td style="padding:10px;">📍 {{ b.district }}</td>
                     <td style="padding:10px; font-weight:600;">{{ b.phone }}</td>
                     <td style="padding:10px; color:#0284c7; font-weight:bold;">{{ b.test_name }}</td>
+                    <td style="padding:10px; text-align:center; font-weight:800; color:#059669; font-size:14px;">
+                        ₹{{ b.total_fee_paid|int if b.total_fee_paid and b.total_fee_paid > 0 else 99 }}
+                    </td>
                     <td style="padding:10px;">
                         {% if b.razorpay_payment_id %}
                             <span style="background:#eff6ff; color:#1d4ed8; padding:3px 8px; border-radius:4px; font-family:monospace; font-size:11.5px; border:1px solid #bfdbfe;">
@@ -2476,7 +2483,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                                 📱 UTR: {{ b.utr_number }}
                             </span>
                         {% else %}
-                            <span style="color:#059669; font-weight:bold;">₹ फी जमा</span>
+                            <span style="color:#059669; font-weight:bold;">₹ ऑनलाईन जमा</span>
                         {% endif %}
                     </td>
                     <td style="padding:10px; text-align:center;">
@@ -2487,7 +2494,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" style="text-align:center; padding:25px; color:#94a3b8;">
+                    <td colspan="9" style="text-align:center; padding:25px; color:#94a3b8;">
                         अजून कोणत्याही विद्यार्थ्याने सशुल्क टेस्ट खरेदी केलेली नाही.
                     </td>
                 </tr>
@@ -2501,7 +2508,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid #eff6ff; padding-bottom:12px; margin-bottom:15px;">
             <div>
                 <h3 style="margin:0; color:#1d4ed8; font-size:18px;">🎁 मोफत टेस्ट सराव विद्यार्थी (Free Test Leads)</h3>
-                <small style="color:#64748b;">ज्या विद्यार्थ्यांनी मोफत / सराव टेस्ट सोडवल्या आहेत</small>
+                <small style="color:#64748b;">ज्या विद्यार्थ्यांनी मोफत सराव व डेमो टेस्ट्स सोडवल्या आहेत</small>
             </div>
             <div>
                 <span style="background:#eff6ff; color:#1d4ed8; border:1.5px solid #3b82f6; padding:6px 14px; border-radius:20px; font-weight:bold; font-size:13px;">
@@ -2552,42 +2559,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 {% endfor %}
             </tbody>
         </table>
-    </div>
-
-<!-- 4. SPECIAL ACCESS TAB -->
-{% elif active_tab == 'special' %}
-<h3>👑 Special Access व्यवस्थापन</h3>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-        <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:8px;">
-            <h4 style="color:#065f46; margin-top:0;">🔄 अमर्याद प्रयत्न सवलत (Unlimited Attempts)</h4>
-            <form method="POST" action="/admin/add_special_unlimited">
-                <input type="text" name="phone" placeholder="१० अंकी नंबर" maxlength="10" required>
-                <input type="text" name="student_name" placeholder="नाव">
-                <input type="text" name="note" placeholder="टीप">
-                <button type="submit" class="btn" style="width:100%;">➕ जोडा</button>
-            </form>
-            <table>
-                <tr><th>नंबर</th><th>नाव</th><th>कृती</th></tr>
-                {% for u in unlimited_list %}
-                <tr><td>{{ u.phone }}</td><td>{{ u.student_name }}</td><td><a href="/admin/delete_special_unlimited/{{ u.id }}" class="btn-sm" style="background:#dc2626; color:white;">🗑️</a></td></tr>
-                {% endfor %}
-            </table>
-        </div>
-        <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:8px;">
-            <h4 style="color:#b45309; margin-top:0;">⭐ मोफत पास (Free Pass)</h4>
-            <form method="POST" action="/admin/add_special_free_pass">
-                <input type="text" name="phone" placeholder="१० अंकी नंबर" maxlength="10" required>
-                <input type="text" name="student_name" placeholder="नाव">
-                <input type="text" name="note" placeholder="टीप">
-                <button type="submit" class="btn" style="width:100%; background:#d97706;">➕ जोडा</button>
-            </form>
-            <table>
-                <tr><th>नंबर</th><th>नाव</th><th>कृती</th></tr>
-                {% for f in free_pass_list %}
-                <tr><td>{{ f.phone }}</td><td>{{ f.student_name }}</td><td><a href="/admin/delete_special_free_pass/{{ f.id }}" class="btn-sm" style="background:#dc2626; color:white;">🗑️</a></td></tr>
-                {% endfor %}
-            </table>
-        </div>
     </div>
 
     <!-- 5. QUESTIONS TAB -->
@@ -4705,44 +4676,136 @@ def admin_dashboard():
             cur.execute(pay_query, tuple(pay_params))
             payments = cur.fetchall()
 
-            # १. सशुल्क टेस्ट खरेदीदार व मोफत टेस्ट विद्यार्थी अचूक वर्गीकरण
-            paid_buyers = []
-            free_test_users = []
+            <!-- 🛒 १. सशुल्क टेस्ट खरेदीदार विद्यार्थी (Paid Buyers) -->
+    <div style="background:#ffffff; border:1.5px solid #10b981; border-radius:12px; padding:20px; margin-top:25px; box-shadow:0 4px 12px rgba(16,185,129,0.08); overflow-x:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid #ecfdf5; padding-bottom:12px; margin-bottom:15px;">
+            <div>
+                <h3 style="margin:0; color:#065f46; font-size:18px;">🛒 सशुल्क टेस्ट खरेदीदार यादी (Paid Orders)</h3>
+                <small style="color:#64748b;">ज्या विद्यार्थ्यांनी प्रत्यक्ष फी भरून टेस्ट खरेदी केली आहे</small>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <span style="background:#ecfdf5; color:#065f46; border:1.5px solid #10b981; padding:6px 14px; border-radius:20px; font-weight:bold; font-size:13px;">
+                    🎯 एकूण खरेदीदार: {{ paid_buyers|length }} विद्यार्थी
+                </span>
+                <span style="background:#10b981; color:#ffffff; padding:6px 14px; border-radius:20px; font-weight:bold; font-size:13px; box-shadow:0 2px 6px rgba(16,185,129,0.3);">
+                    💰 एकूण जमा फी: ₹{{ total_revenue }}
+                </span>
+            </div>
+        </div>
 
-            try:
-                cur.execute("""
-                    SELECT * FROM mock_test_leads 
-                    WHERE payment_status = 'Approved' 
-                      AND is_deleted = 0 
-                    ORDER BY id DESC
-                """)
-                approved_leads = cur.fetchall()
+        <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+            <thead>
+                <tr style="background:#f8fafc; color:#0f172a; border-bottom:2px solid #cbd5e1;">
+                    <th style="padding:10px; text-align:center;">अ.क्र.</th>
+                    <th style="padding:10px;">तारीख</th>
+                    <th style="padding:10px;">विद्यार्थ्याचे नाव</th>
+                    <th style="padding:10px;">जिल्हा</th>
+                    <th style="padding:10px;">WhatsApp नंबर</th>
+                    <th style="padding:10px;">खरेदी केलेली टेस्ट</th>
+                    <th style="padding:10px; text-align:center; color:#065f46;">जमा फी</th>
+                    <th style="padding:10px;">पेमेंट तपशील</th>
+                    <th style="padding:10px; text-align:center;">थेट संपर्क</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in paid_buyers %}
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px; text-align:center; font-weight:bold; color:#64748b;">#{{ loop.index }}</td>
+                    <td style="padding:10px;">{{ b.test_date }}</td>
+                    <td style="padding:10px; font-weight:bold; color:#0f172a;">{{ b.student_name }}</td>
+                    <td style="padding:10px;">📍 {{ b.district }}</td>
+                    <td style="padding:10px; font-weight:600;">{{ b.phone }}</td>
+                    <td style="padding:10px; color:#0284c7; font-weight:bold;">{{ b.test_name }}</td>
+                    <td style="padding:10px; text-align:center; font-weight:800; color:#059669; font-size:14px;">
+                        ₹{{ b.total_fee_paid|int if b.total_fee_paid and b.total_fee_paid > 0 else 99 }}
+                    </td>
+                    <td style="padding:10px;">
+                        {% if b.razorpay_payment_id %}
+                            <span style="background:#eff6ff; color:#1d4ed8; padding:3px 8px; border-radius:4px; font-family:monospace; font-size:11.5px; border:1px solid #bfdbfe;">
+                                ⚡ {{ b.razorpay_payment_id }}
+                            </span>
+                        {% elif b.utr_number %}
+                            <span style="background:#fefce8; color:#854d0e; padding:3px 8px; border-radius:4px; font-family:monospace; font-size:11.5px; border:1px solid #fef08a;">
+                                📱 UTR: {{ b.utr_number }}
+                            </span>
+                        {% else %}
+                            <span style="color:#059669; font-weight:bold;">₹ ऑनलाईन जमा</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:10px; text-align:center;">
+                        <a href="https://wa.me/91{{ b.phone }}?text=जय%20हिंद%20{{ b.student_name }},%20महाराष्ट्र%20पोलीस%20भरती%20टेस्ट%20पोर्टलवर%20आपले%20स्वागत%20आहे!" target="_blank" style="background:#25D366; color:white; padding:5px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+                            💬 WhatsApp
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align:center; padding:25px; color:#94a3b8;">
+                        अजून कोणत्याही विद्यार्थ्याने सशुल्क टेस्ट खरेदी केलेली नाही.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-                for item in approved_leads:
-                    # टेस्टचे नाव तपासणे
-                    t_title = ""
-                    if isinstance(item, dict):
-                        t_title = str(item.get('test_name') or '')
-                    elif hasattr(item, 'keys'):
-                        t_title = str(item['test_name'] if 'test_name' in item else '')
-                    elif isinstance(item, (list, tuple)) and len(item) > 5:
-                        t_title = str(item[5])
-                    else:
-                        t_title = str(item)
+    <!-- 🎁 २. मोफत टेस्ट सराव विद्यार्थी (Free Test Leads) -->
+    <div style="background:#ffffff; border:1.5px solid #3b82f6; border-radius:12px; padding:20px; margin-top:30px; box-shadow:0 4px 12px rgba(59,130,246,0.06); overflow-x:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid #eff6ff; padding-bottom:12px; margin-bottom:15px;">
+            <div>
+                <h3 style="margin:0; color:#1d4ed8; font-size:18px;">🎁 मोफत टेस्ट सराव विद्यार्थी (Free Test Leads)</h3>
+                <small style="color:#64748b;">ज्या विद्यार्थ्यांनी मोफत सराव व डेमो टेस्ट्स सोडवल्या आहेत</small>
+            </div>
+            <div>
+                <span style="background:#eff6ff; color:#1d4ed8; border:1.5px solid #3b82f6; padding:6px 14px; border-radius:20px; font-weight:bold; font-size:13px;">
+                    📝 एकूण मोफत सराव: {{ free_test_users|length }} विद्यार्थी
+                </span>
+            </div>
+        </div>
 
-                    t_lower = t_title.lower()
-
-                    # अचूक लॉजिक: 'रॅपिड फायर', 'मोफत', किंवा 'free' असेल तर Free टेस्ट यादीत,
-                    # बाकी सर्व ('महासराव', 'महासंग्राम' इ.) सशुल्क (Paid) यादीत!
-                    if 'रॅपिड' in t_lower or 'rapid' in t_lower or 'मोफत' in t_lower or 'free' in t_lower or 'डेमो' in t_lower:
-                        free_test_users.append(item)
-                    else:
-                        paid_buyers.append(item)
-
-            except Exception as e:
-                conn.rollback()
-                paid_buyers = []
-                free_test_users = []
+        <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+            <thead>
+                <tr style="background:#f8fafc; color:#0f172a; border-bottom:2px solid #cbd5e1;">
+                    <th style="padding:10px; text-align:center;">अ.क्र.</th>
+                    <th style="padding:10px;">तारीख</th>
+                    <th style="padding:10px;">विद्यार्थ्याचे नाव</th>
+                    <th style="padding:10px;">जिल्हा</th>
+                    <th style="padding:10px;">WhatsApp नंबर</th>
+                    <th style="padding:10px;">सोडवलेली टेस्ट</th>
+                    <th style="padding:10px; text-align:center;">स्थिती</th>
+                    <th style="padding:10px; text-align:center;">संपर्क</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in free_test_users %}
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px; text-align:center; font-weight:bold; color:#64748b;">#{{ loop.index }}</td>
+                    <td style="padding:10px;">{{ f.test_date }}</td>
+                    <td style="padding:10px; font-weight:bold; color:#0f172a;">{{ f.student_name }}</td>
+                    <td style="padding:10px;">📍 {{ f.district }}</td>
+                    <td style="padding:10px; font-weight:600;">{{ f.phone }}</td>
+                    <td style="padding:10px; color:#475569;">{{ f.test_name }}</td>
+                    <td style="padding:10px; text-align:center;">
+                        <span style="background:#f1f5f9; color:#475569; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:600;">
+                            मोफत सराव
+                        </span>
+                    </td>
+                    <td style="padding:10px; text-align:center;">
+                        <a href="https://wa.me/91{{ f.phone }}?text=जय%20हिंद%20{{ f.student_name }},%20महाराष्ट्र%20पोलीस%20भरती%20मोफत%20सराव%20टेस्ट%20सोडवल्याबद्दल%20अभिनंदन!%20पुढील%20तयारीसाठी%20फुल%20टेस्ट%20सिरीज%20उपलब्ध%20आहे." target="_blank" style="background:#25D366; color:white; padding:5px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+                            💬 WhatsApp
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align:center; padding:25px; color:#94a3b8;">
+                        कोणतीही मोफत टेस्ट नोंद उपलब्ध नाही.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
             # २. मोफत टेस्ट सोडवणारे विद्यार्थी (Free Test Users)
             try:
@@ -4859,7 +4922,8 @@ def admin_dashboard():
                 undo_items=undo_items,
                 deleted_questions_list=deleted_questions_list,
                 paid_buyers=paid_buyers,
-                free_test_users=free_test_users
+                free_test_users=free_test_users,
+                total_revenue=total_revenue
             )
 
 # प्रश्न नोंद (इमेज अपलोडसह)
