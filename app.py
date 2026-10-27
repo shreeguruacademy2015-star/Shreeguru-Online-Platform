@@ -2378,15 +2378,64 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <h4>सर्व पेमेंट्स यादी:</h4>
-    <table>
+    <!-- 📋 सर्व पेमेंट्स यादी -->
+    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:15px; margin-top:20px; box-shadow:0 2px 8px rgba(0,0,0,0.04); overflow-x:auto;">
+        <h4 style="margin:0 0 12px 0; color:#1e293b; font-size:16px;">📋 सर्व पेमेंट्स यादी</h4>
+        <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+            <thead>
+                <tr style="background:#f1f5f9; color:#334155; border-bottom:2px solid #cbd5e1;">
+                    <th style="padding:10px;">नाव</th>
+                    <th style="padding:10px;">मोबाईल</th>
+                    <th style="padding:10px;">टेस्ट</th>
+                    <th style="padding:10px;">पद्धत / ID</th>
+                    <th style="padding:10px; text-align:center;">स्थिती</th>
+                    <th style="padding:10px; text-align:center;">कृती</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payments %}
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px; font-weight:600; color:#0f172a;">{{ p.student_name }}</td>
+                    <td style="padding:10px;">{{ p.phone }}</td>
+                    <td style="padding:10px; color:#0284c7; font-weight:bold;">{{ p.test_name }}</td>
+                    <td style="padding:10px;">
+                        {% if p.razorpay_payment_id %}
+                            <span style="background:#eff6ff; color:#1d4ed8; padding:2px 6px; border-radius:4px; font-size:11px; font-family:monospace;">{{ p.razorpay_payment_id }}</span>
+                        {% elif p.utr_number %}
+                            <span style="background:#fefce8; color:#854d0e; padding:2px 6px; border-radius:4px; font-size:11px; font-family:monospace;">UTR: {{ p.utr_number }}</span>
+                        {% else %}
+                            <span style="color:#64748b;">मॅन्युअल UPI</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:10px; text-align:center;">
+                        <span style="color:{{ '#16a34a' if p.payment_status == 'Approved' else '#d97706' }}; font-weight:bold;">
+                            {{ p.payment_status }}
+                        </span>
+                    </td>
+                    <td style="padding:10px; text-align:center;">
+                        {% if p.payment_status != 'Approved' %}
+                        <form method="POST" action="/admin/approve_payment/{{ p.id }}" style="display:inline-block; margin:0;">
+                            <button type="submit" style="background:#16a34a; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">✅ Unlock</button>
+                        </form>
+                        {% endif %}
+                        <a href="/admin/delete_payment/{{ p.id }}" style="background:#dc2626; color:#fff; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:12px; margin-left:4px;" onclick="return confirm('डिलीट करायचे का?');">🗑</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">कोणतीही नोंद उपलब्ध नाही.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
     <!-- 🛒 सशुल्क टेस्ट खरेदीदार विद्यार्थी (Paid Orders) -->
-    <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:12px; padding:20px; margin-top:25px; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
-        
+    <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:12px; padding:20px; margin-top:25px; box-shadow:0 4px 12px rgba(0,0,0,0.05); overflow-x:auto;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid #e2e8f0; padding-bottom:12px; margin-bottom:15px;">
             <div>
                 <h3 style="margin:0; color:#065f46; font-size:18px;">🛒 सशुल्क टेस्ट खरेदीदार यादी (Paid Orders)</h3>
-                <small style="color:#64748b;">ज्या विद्यार्थ्यांनी यशस्वी पेमेंट करून टेस्ट अनलॉक केली आहे</small>
+                <small style="color:#64748b;">यशस्वी पेमेंट झालेले विद्यार्थी</small>
             </div>
             <div>
                 <span style="background:#ecfdf5; color:#065f46; border:1px solid #10b981; padding:6px 14px; border-radius:20px; font-weight:bold; font-size:13px;">
@@ -2395,7 +2444,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             </div>
         </div>
 
-        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
             <thead>
                 <tr style="background:#f8fafc; color:#0f172a; border-bottom:2px solid #cbd5e1;">
                     <th style="padding:10px; text-align:center;">अ.क्र.</th>
@@ -2404,7 +2453,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     <th style="padding:10px;">जिल्हा</th>
                     <th style="padding:10px;">WhatsApp नंबर</th>
                     <th style="padding:10px;">खरेदी केलेली टेस्ट</th>
-                    <th style="padding:10px;">पेमेंट आयडी / पद्धत</th>
+                    <th style="padding:10px;">पेमेंट आयडी</th>
                     <th style="padding:10px; text-align:center;">थेट संपर्क</th>
                 </tr>
             </thead>
@@ -2427,7 +2476,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                                 📱 UTR: {{ b.utr_number }}
                             </span>
                         {% else %}
-                            <span style="color:#64748b;">थेट अनलॉक / मोफत पास</span>
+                            <span style="color:#64748b;">थेट अनलॉक</span>
                         {% endif %}
                     </td>
                     <td style="padding:10px; text-align:center;">
@@ -2445,39 +2494,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 {% endfor %}
             </tbody>
         </table>
-
     </div>
-        <tr><th>नाव</th><th>मोबाईल</th><th>टेस्ट</th><th>पद्धत / ID</th><th>स्थिती</th><th>कृती</th></tr>
-        {% for p in payments %}
-        <tr>
-            <td>{{ p.student_name }}</td>
-            <td>{{ p.phone }}</td>
-            <td>{{ p.test_name }}</td>
-            <td>{{ p.razorpay_payment_id if p.razorpay_payment_id else 'मॅन्युअल UPI' }}</td>
-            <td><span style="color:{{ 'green' if p.payment_status == 'Approved' else 'orange' }}; font-weight:bold;">{{ p.payment_status }}</span></td>
-            <td>
-                {% if p.payment_status != 'Approved' %}
-                <form method="POST" action="/admin/approve_payment/{{ p.id }}" style="display:inline-block;">
-                    <button type="submit" class="btn-sm" style="background:#16a34a; color:white; border:none; padding:5px 10px; cursor:pointer;">✅ Unlock</button>
-                </form>
-                {% endif %}
-                <a href="/admin/delete_payment/{{ p.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे का?');">🗑</a>
-            </td>
-        </tr>
-        {% endfor %}
-</table>
-# सशुल्क टेस्ट्स खरेदी केलेल्या विद्यार्थ्यांची संपूर्ण यादी (सुरक्षित पद्धत)
-            try:
-                cur.execute("""
-                    SELECT * FROM mock_test_leads 
-                    WHERE payment_status = 'Approved' 
-                      AND is_deleted = 0 
-                    ORDER BY id DESC
-                """)
-                paid_buyers = cur.fetchall()
-            except Exception as e:
-                conn.rollback()
-                paid_buyers = []
 
 <!-- 4. SPECIAL ACCESS TAB -->
 {% elif active_tab == 'special' %}
