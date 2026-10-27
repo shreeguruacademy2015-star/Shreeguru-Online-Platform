@@ -4705,12 +4705,11 @@ def admin_dashboard():
             cur.execute(pay_query, tuple(pay_params))
             payments = cur.fetchall()
 
-            # १. सशुल्क टेस्ट खरेदीदार व मोफत टेस्ट विद्यार्थी वर्गीकरण
+            # १. सशुल्क टेस्ट खरेदीदार व मोफत टेस्ट विद्यार्थी अचूक वर्गीकरण
             paid_buyers = []
             free_test_users = []
 
             try:
-                # सर्व Approved नोंदी आणणे
                 cur.execute("""
                     SELECT * FROM mock_test_leads 
                     WHERE payment_status = 'Approved' 
@@ -4733,8 +4732,9 @@ def admin_dashboard():
 
                     t_lower = t_title.lower()
 
-                    # जर टेस्टच्या नावात 'मोफत', 'free' किंवा 'डेमो' असेल तर Free यादीत, बाकी सर्व Paid यादीत
-                    if 'मोफत' in t_lower or 'free' in t_lower or 'डेमो' in t_lower or 'demo' in t_lower:
+                    # अचूक लॉजिक: 'रॅपिड फायर', 'मोफत', किंवा 'free' असेल तर Free टेस्ट यादीत,
+                    # बाकी सर्व ('महासराव', 'महासंग्राम' इ.) सशुल्क (Paid) यादीत!
+                    if 'रॅपिड' in t_lower or 'rapid' in t_lower or 'मोफत' in t_lower or 'free' in t_lower or 'डेमो' in t_lower:
                         free_test_users.append(item)
                     else:
                         paid_buyers.append(item)
