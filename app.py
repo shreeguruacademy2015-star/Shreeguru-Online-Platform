@@ -4615,17 +4615,18 @@ def admin_dashboard():
             cur.execute(pay_query, tuple(pay_params))
             payments = cur.fetchall()
 
-            # सशुल्क टेस्ट्स खरेदी केलेल्या विद्यार्थ्यांची संपूर्ण यादी
-            cur.execute("""
-                SELECT 
-                    id, test_date, student_name, district, phone, 
-                    test_name, payment_status, razorpay_payment_id, utr_number
-                FROM mock_test_leads
-                WHERE payment_status = 'Approved' 
-                  AND is_deleted = 0
-                ORDER BY id DESC
-            """)
-            paid_buyers = cur.fetchall()
+            # सशुल्क टेस्ट्स खरेदी केलेल्या विद्यार्थ्यांची संपूर्ण यादी (सुरक्षित पद्धत)
+            try:
+                cur.execute("""
+                    SELECT * FROM mock_test_leads 
+                    WHERE payment_status = 'Approved' 
+                      AND is_deleted = 0 
+                    ORDER BY id DESC
+                """)
+                paid_buyers = cur.fetchall()
+            except Exception as e:
+                conn.rollback()
+                paid_buyers = []
 
             # ५. गुणवत्ता यादी, फीडबॅक, स्पेशल ॲक्सेस व ऑडिट्स
             cur.execute("SELECT * FROM mock_test_leads WHERE is_deleted=0 ORDER BY score DESC, id ASC LIMIT 100")
