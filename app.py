@@ -4705,25 +4705,44 @@ def admin_dashboard():
             cur.execute(pay_query, tuple(pay_params))
             payments = cur.fetchall()
 
-            # १. सशुल्क टेस्ट खरेदीदार (Paid Orders)
+            # १. सशुल्क टेस्ट खरेदीदार व मोफत टेस्ट विद्यार्थी वर्गीकरण
+            paid_buyers = []
+            free_test_users = []
+
             try:
+                # सर्व Approved नोंदी आणणे
                 cur.execute("""
                     SELECT * FROM mock_test_leads 
                     WHERE payment_status = 'Approved' 
                       AND is_deleted = 0 
-                      AND (
-                          (razorpay_payment_id IS NOT NULL AND razorpay_payment_id != '') 
-                          OR 
-                          (utr_number IS NOT NULL AND utr_number != '')
-                          OR 
-                          (total_fee_paid IS NOT NULL AND total_fee_paid > 0)
-                      )
                     ORDER BY id DESC
                 """)
-                paid_buyers = cur.fetchall()
-            except Exception:
+                approved_leads = cur.fetchall()
+
+                for item in approved_leads:
+                    # टेस्टचे नाव तपासणे
+                    t_title = ""
+                    if isinstance(item, dict):
+                        t_title = str(item.get('test_name') or '')
+                    elif hasattr(item, 'keys'):
+                        t_title = str(item['test_name'] if 'test_name' in item else '')
+                    elif isinstance(item, (list, tuple)) and len(item) > 5:
+                        t_title = str(item[5])
+                    else:
+                        t_title = str(item)
+
+                    t_lower = t_title.lower()
+
+                    # जर टेस्टच्या नावात 'मोफत', 'free' किंवा 'डेमो' असेल तर Free यादीत, बाकी सर्व Paid यादीत
+                    if 'मोफत' in t_lower or 'free' in t_lower or 'डेमो' in t_lower or 'demo' in t_lower:
+                        free_test_users.append(item)
+                    else:
+                        paid_buyers.append(item)
+
+            except Exception as e:
                 conn.rollback()
                 paid_buyers = []
+                free_test_users = []
 
             # २. मोफत टेस्ट सोडवणारे विद्यार्थी (Free Test Users)
             try:
