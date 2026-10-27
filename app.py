@@ -1261,64 +1261,103 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
     </div>
 </div>
 
-    <!-- 🏆 आकर्षक आणि एकाच स्क्रीनवर बसणारा जिल्हा महामुकाबला चार्ट -->
-<div id="battleContainer" class="section-box" style="padding: 18px 12px; background: radial-gradient(circle at top, #1e293b 0%, #0b1329 100%); border: 1.5px solid #334155; border-radius: 16px; margin-top: 15px;">
-    
-    <div style="text-align: center; margin-bottom: 16px;">
-        <h3 style="color: #f59e0b; margin: 0 0 6px 0; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 0 15px rgba(245,158,11,0.4);">
-            🏆 राज्यस्तरीय जिल्हा महामुकाबला
-        </h3>
-        <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #0284c7; padding: 3px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;">
-            ⚡ रॅपिड फायर कामगिरीनुसार महाराष्ट्रातील ३६ जिल्ह्यांची क्रमवारी
-        </span>
-    </div>
+    <!-- 🏆 आकर्षक जिल्हा महामुकाबला - फायनल विजेते + लाईव्ह हालचाली -->
+    <div id="battleContainer" class="section-box" style="padding: 20px 14px; background: radial-gradient(circle at top, #1e293b 0%, #0b1329 100%); border: 1.5px solid #334155; border-radius: 16px; margin-top: 15px;">
+        
+        <div style="text-align: center; margin-bottom: 18px;">
+            <h3 style="color: #f59e0b; margin: 0 0 6px 0; font-size: 21px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 0 15px rgba(245,158,11,0.4);">
+                🏆 राज्यस्तरीय जिल्हा महामुकाबला
+            </h3>
+            <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block;">
+                ⚡ २४ तास लाईव्ह मुकाबला | दररोज संध्याकाळी ठीक ०७:०० वाजता अंतिम निकाल लॉक!
+            </span>
+        </div>
 
-    <!-- 🥇🥈🥉 टॉप १, २, ३ जिल्हे (वर आडवे आकर्षक कार्ड्स) -->
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 650px; margin: 0 auto 18px auto;">
-        {% for dist in live_district_battles[:3] %}
-        <div style="
-            background: {% if loop.index == 1 %}linear-gradient(135deg, rgba(245,158,11,0.25), rgba(15,23,42,0.95)){% elif loop.index == 2 %}linear-gradient(135deg, rgba(148,163,184,0.25), rgba(15,23,42,0.95)){% else %}linear-gradient(135deg, rgba(217,119,6,0.25), rgba(15,23,42,0.95)){% endif %};
-            border: 2px solid {% if loop.index == 1 %}#fbbf24{% elif loop.index == 2 %}#cbd5e1{% else %}#f97316{% endif %};
-            border-radius: 12px;
-            padding: 10px 4px;
-            text-align: center;
-            box-shadow: 0 4px 15px {% if loop.index == 1 %}rgba(251,191,36,0.25){% elif loop.index == 2 %}rgba(203,213,225,0.2){% else %}rgba(249,115,22,0.2){% endif %};
-        ">
-            <div style="font-size: 22px; line-height: 1.1;">
-                {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% else %}🥉{% endif %}
+        <!-- विभाग १: कालच्या संध्याकाळी ७:०० चे अधिकृत विजेते (Final Champions) -->
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1.5px solid #f59e0b; border-radius: 12px; padding: 14px; margin-bottom: 20px;">
+            <div style="text-align: center; color: #fbbf24; font-weight: 800; font-size: 13.5px; margin-bottom: 10px;">
+                🎖️ कालच्या महामुकाबल्याचे अधिकृत मानकरी (मागील फायनल निकाल)
             </div>
-            <div style="font-size: 11px; font-weight: 800; color: {% if loop.index == 1 %}#fde047{% elif loop.index == 2 %}#f1f5f9{% else %}#fdba74{% endif %}; margin: 2px 0;">
-                रँक #{{ loop.index }}
-            </div>
-            <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                📍 {{ dist.district }}
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 650px; margin: 0 auto;">
+                {% for dist in final_top_districts[:3] %}
+                <div style="
+                    background: {% if loop.index == 1 %}linear-gradient(135deg, rgba(245,158,11,0.25), rgba(15,23,42,0.95)){% elif loop.index == 2 %}linear-gradient(135deg, rgba(148,163,184,0.25), rgba(15,23,42,0.95)){% else %}linear-gradient(135deg, rgba(217,119,6,0.25), rgba(15,23,42,0.95)){% endif %};
+                    border: 2px solid {% if loop.index == 1 %}#fbbf24{% elif loop.index == 2 %}#cbd5e1{% else %}#f97316{% endif %};
+                    border-radius: 10px;
+                    padding: 8px 4px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 20px; line-height: 1;">
+                        {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% else %}🥉{% endif %}
+                    </div>
+                    <div style="font-size: 11px; font-weight: 800; color: {% if loop.index == 1 %}#fde047{% elif loop.index == 2 %}#f1f5f9{% else %}#fdba74{% endif %}; margin: 2px 0;">
+                        विजेता #{{ loop.index }}
+                    </div>
+                    <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        📍 {{ dist.district }}
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
-    </div>
 
-    <!-- 📋 ४ ते ३६ जिल्हे (३ कॉम्पॅक्ट कॉलम्समध्ये, एकाच पानावर फिट) -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; max-width: 820px; margin: 0 auto;">
-        {% for dist in live_district_battles[3:] %}
-        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.75); border: 1px solid #334155; padding: 6px 10px; border-radius: 6px;">
-            <span style="color: #94a3b8; font-size: 11.5px; font-weight: 700; width: 30px;">
-                #{{ loop.index + 3 }}
+        <!-- विभाग २: आजचा लाईव्ह महासंग्राम (२ कॉलम्समध्ये प्रत्यक्ष हालचाली) -->
+        <div style="text-align: left; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 6px;">
+            <span style="color: #38bdf8; font-weight: bold; font-size: 13.5px;">
+                🔴 आजचा लाईव्ह मुकाबला (विद्यार्थी सोडवतील तशी क्रमवारी):
             </span>
-            <span style="color: #f1f5f9; font-size: 12.5px; font-weight: 700; flex: 1; text-align: left; padding-left: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                📍 {{ dist.district }}
+            <span style="font-size: 11px; color: #94a3b8;">
+                (गुण + सहभागानुसार क्रम)
             </span>
-            <span style="font-size: 10px; color: #38bdf8;">•</span>
         </div>
-        {% endfor %}
-    </div>
 
-    <div style="margin-top: 14px; text-align: center;">
-        <small style="color: #64748b; font-size: 11px;">
-            🎯 रोज सकाळी ०९:०० वाजता रॅपिड टेस्ट सोडवून आपल्या जिल्ह्याला अव्वल आणा!
-        </small>
-    </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 820px; margin: 0 auto;">
+            <!-- डावा कॉलम (रँक १ ते १८) -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                {% for dist in live_district_battles[:18] %}
+                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.85); border: 1px solid {% if loop.index <= 3 %}#10b981{% else %}#334155{% endif %}; padding: 7px 10px; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 11.5px; font-weight: 800; color: {% if loop.index <= 3 %}#34d399{% else %}#94a3b8{% endif %}; width: 26px;">
+                            #{{ loop.index }}
+                        </span>
+                        <span style="color: #f8fafc; font-size: 13px; font-weight: 700;">
+                            📍 {{ dist.district }}
+                        </span>
+                    </div>
+                    <div style="font-size: 11px; color: #cbd5e1;">
+                        <span style="color: #38bdf8; font-weight: bold;">{{ dist.student_count }}</span> विद्यार्थी
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
 
-</div>
+            <!-- उजवा कॉलम (रँक १९ ते ३६) -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                {% for dist in live_district_battles[18:] %}
+                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; padding: 7px 10px; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 11.5px; font-weight: 800; color: #64748b; width: 26px;">
+                            #{{ loop.index + 18 }}
+                        </span>
+                        <span style="color: #cbd5e1; font-size: 13px; font-weight: 600;">
+                            📍 {{ dist.district }}
+                        </span>
+                    </div>
+                    <div style="font-size: 11px; color: #94a3b8;">
+                        <span style="color: #38bdf8;">{{ dist.student_count }}</span> विद्यार्थी
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="margin-top: 14px; text-align: center;">
+            <small style="color: #94a3b8; font-size: 11.5px;">
+                🎯 तुमच्या जिल्ह्याला वर आणण्यासाठी आजची टेस्ट लगेच सोडवा आणि मित्रांना शेअर करा!
+            </small>
+        </div>
+
+    </div>
 
 <!-- ========================================== -->
     <!-- 1. App Install Button (PWA Download) -->
@@ -3508,7 +3547,49 @@ def home_tests_list():
             """)
             conn.commit()
 
-            # महाराष्ट्रातील सर्व ३६ जिल्हे अचूक कामगिरीनुसार क्रमाने लावणे
+            # --- २४ तासांची सायकल: दररोज संध्याकाळी ७:०० वाजता कटऑफ निश्चित करणे ---
+            now_dt = datetime.now()
+            today_7pm = datetime.combine(now_dt.date(), time(19, 0, 0))
+            
+            if now_dt < today_7pm:
+                # चालू सायकल: काल संध्याकाळी ७:०० ते आज संध्याकाळी ७:००
+                curr_start_str = (today_7pm - timedelta(days=1)).strftime("%Y-%m-%d")
+                curr_end_str = now_dt.strftime("%Y-%m-%d")
+                prev_start_str = (today_7pm - timedelta(days=2)).strftime("%Y-%m-%d")
+                prev_end_str = (today_7pm - timedelta(days=1)).strftime("%Y-%m-%d")
+            else:
+                # चालू सायकल: आज संध्याकाळी ७:०० ते उद्या संध्याकाळी ७:००
+                curr_start_str = today_7pm.strftime("%Y-%m-%d")
+                curr_end_str = (today_7pm + timedelta(days=1)).strftime("%Y-%m-%d")
+                prev_start_str = (today_7pm - timedelta(days=1)).strftime("%Y-%m-%d")
+                prev_end_str = today_7pm.strftime("%Y-%m-%d")
+
+            # १. मागील सायकलचे फायनल झालेले अधिकृत मानकरी जिल्हे (Top 3 Champions)
+            cur.execute("""
+                SELECT district, COUNT(id) as total_count, COALESCE(AVG(score), 0) as avg_s
+                FROM mock_test_leads
+                WHERE is_deleted = 0 
+                  AND test_date >= %s AND test_date <= %s
+                  AND district != ''
+                GROUP BY district
+                ORDER BY (COALESCE(AVG(score), 0) + (COUNT(id) * 0.15)) DESC
+                LIMIT 3;
+            """, (prev_start_str, prev_end_str))
+            final_top_districts = cur.fetchall()
+
+            # सुरुवातीला मागील दिवसाचा डेटा कमी असल्यास ऑल-टाईममधील टॉप ३ बॅकअप म्हणून घेणे
+            if not final_top_districts or len(final_top_districts) < 3:
+                cur.execute("""
+                    SELECT district, COUNT(id) as total_count, COALESCE(AVG(score), 0) as avg_s
+                    FROM mock_test_leads
+                    WHERE is_deleted = 0 AND district != ''
+                    GROUP BY district
+                    ORDER BY (COALESCE(AVG(score), 0) + (COUNT(id) * 0.15)) DESC
+                    LIMIT 3;
+                """)
+                final_top_districts = cur.fetchall()
+
+            # २. चालू सायकलमधील आजचे थेट ३६ जिल्हे (विद्यार्थी सोडवतील तशी रिअल-टाईम क्रमवारी)
             cur.execute("""
                 WITH all_36_districts AS (
                     SELECT unnest(ARRAY[
@@ -3526,18 +3607,21 @@ def home_tests_list():
                         COUNT(id) AS total_count,
                         COALESCE(AVG(score), 0) AS avg_s
                     FROM mock_test_leads
-                    WHERE is_deleted = 0
+                    WHERE is_deleted = 0 
+                      AND test_date >= %s AND test_date <= %s
                     GROUP BY district
                 )
                 SELECT 
-                    a.district
+                    a.district,
+                    COALESCE(s.total_count, 0) as student_count,
+                    ROUND(COALESCE(s.avg_s, 0)::numeric, 1) as avg_marks
                 FROM all_36_districts a
                 LEFT JOIN district_stats s ON a.district = s.district
                 ORDER BY 
                     COALESCE(s.avg_s + (s.total_count * 0.15), 0) DESC,
                     a.district ASC
                 LIMIT 36;
-            """)
+            """, (curr_start_str, curr_end_str))
             live_district_battles = cur.fetchall()
 
             cur.execute("SELECT setting_key, setting_value FROM academy_settings")
@@ -3577,9 +3661,10 @@ def home_tests_list():
                 recruitment_pdf=settings.get('recruitment_pdf', ''),
                 eligibility_pdf=settings.get('eligibility_pdf', ''),
                 parsed_home_tabs=parsed_home_tabs,
+                final_top_districts=final_top_districts,
                 live_district_battles=live_district_battles,
                 help_phone=settings.get('help_phone', '9921111960'),
-                help_address=settings.get('help_address', 'महाराष्ट्र पोलीस भरती सराव केंद्र, कोल्हापूर'),
+                help_address=settings.get('help_address', 'महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल, कोल्हापूर'),
                 active_students_count=active_students_count,
                 wa_active_link=wa_active_link
             )
