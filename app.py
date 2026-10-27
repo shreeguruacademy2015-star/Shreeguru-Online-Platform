@@ -2471,7 +2471,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     <td style="padding:10px; font-weight:600;">{{ b.phone }}</td>
                     <td style="padding:10px; color:#0284c7; font-weight:bold;">{{ b.test_name }}</td>
                     <td style="padding:10px; text-align:center; font-weight:800; color:#059669; font-size:14px;">
-                        ₹{{ b.total_fee_paid|int if b.total_fee_paid and b.total_fee_paid > 0 else 99 }}
+                        ₹{{ b.final_fee if b.final_fee is defined else (b.admin_set_fee|int if b.admin_set_fee else 4) }}
                     </td>
                     <td style="padding:10px;">
                         {% if b.razorpay_payment_id %}
@@ -4719,12 +4719,35 @@ def admin_dashboard():
 
             try:
                 cur.execute("""
-                    SELECT * FROM mock_test_leads 
-                    WHERE payment_status = 'Approved' 
-                      AND is_deleted = 0 
-                    ORDER BY id DESC
+                    SELECT mtl.*, tp.test_fee AS admin_set_fee 
+                    FROM mock_test_leads mtl
+                    LEFT JOIN test_papers tp ON mtl.test_id = tp.id
+                    WHERE mtl.payment_status = 'Approved' 
+                      AND mtl.is_deleted = 0 
+                    ORDER BY mtl.id DESC
                 """)
                 approved_leads = cur.fetchall()
+
+                for item in approved_leads:
+                    t_title = str(item.get('test_name') or '').lower()
+                    has_utr = bool((item.get('utr_number') or '').strip())
+                    has_rzp = bool((item.get('razorpay_payment_id') or '').strip())
+                    
+                    # १. विद्यार्थ्याने भरलेली फी तपासा
+                    fee_paid = float(item.get('total_fee_paid') or item.get('base_fee_paid') or 0)
+                    # २. ऍडमिनने त्या टेस्टसाठी सेट केलेली अधिकृत फी तपासा
+                    admin_fee = float(item.get('admin_set_fee') or 0)
+
+                    # जर महासंग्राम टेस्ट असेल किंवा ऑनलाईन पेमेंट/फी भरली असेल तर Paid मध्ये
+                    if 'महासंग्राम' in t_title or has_utr or has_rzp or fee_paid > 0:
+                        paid_buyers.append(item)
+                        
+                        # जर प्रत्यक्ष भरलेली फी असेल तर ती, अन्यथा ऍडमिनने सेट केलेली फी लागू होईल
+                        actual_fee = int(fee_paid) if fee_paid > 0 else (int(admin_fee) if admin_fee > 0 else 4)
+                        item['final_fee'] = actual_fee
+                        total_revenue += actual_fee
+                    else:
+                        free_test_users.append(item)
 
                 for item in approved_leads:
                     t_title = str(item.get('test_name') or '').lower()
