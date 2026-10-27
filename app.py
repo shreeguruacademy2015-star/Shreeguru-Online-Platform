@@ -1315,18 +1315,13 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             <!-- डावा कॉलम (रँक १ ते १८) -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
                 {% for dist in live_district_battles[:18] %}
-                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.85); border: 1px solid {% if loop.index <= 3 %}#10b981{% else %}#334155{% endif %}; padding: 7px 10px; border-radius: 8px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="font-size: 11.5px; font-weight: 800; color: {% if loop.index <= 3 %}#34d399{% else %}#94a3b8{% endif %}; width: 26px;">
-                            #{{ loop.index }}
-                        </span>
-                        <span style="color: #f8fafc; font-size: 13px; font-weight: 700;">
-                            📍 {{ dist.district }}
-                        </span>
-                    </div>
-                    <div style="font-size: 11px; color: #cbd5e1;">
-                        <span style="color: #38bdf8; font-weight: bold;">{{ dist.student_count }}</span> विद्यार्थी
-                    </div>
+                <div style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.85); border: 1px solid {% if loop.index <= 3 %}#10b981{% else %}#334155{% endif %}; padding: 8px 12px; border-radius: 8px;">
+                    <span style="font-size: 11.5px; font-weight: 800; color: {% if loop.index <= 3 %}#34d399{% else %}#94a3b8{% endif %}; width: 28px;">
+                        #{{ loop.index }}
+                    </span>
+                    <span style="color: #f8fafc; font-size: 13.5px; font-weight: 700;">
+                        📍 {{ dist.district }}
+                    </span>
                 </div>
                 {% endfor %}
             </div>
@@ -1334,18 +1329,13 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             <!-- उजवा कॉलम (रँक १९ ते ३६) -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
                 {% for dist in live_district_battles[18:] %}
-                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; padding: 7px 10px; border-radius: 8px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="font-size: 11.5px; font-weight: 800; color: #64748b; width: 26px;">
-                            #{{ loop.index + 18 }}
-                        </span>
-                        <span style="color: #cbd5e1; font-size: 13px; font-weight: 600;">
-                            📍 {{ dist.district }}
-                        </span>
-                    </div>
-                    <div style="font-size: 11px; color: #94a3b8;">
-                        <span style="color: #38bdf8;">{{ dist.student_count }}</span> विद्यार्थी
-                    </div>
+                <div style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; padding: 8px 12px; border-radius: 8px;">
+                    <span style="font-size: 11.5px; font-weight: 800; color: #64748b; width: 28px;">
+                        #{{ loop.index + 18 }}
+                    </span>
+                    <span style="color: #cbd5e1; font-size: 13.5px; font-weight: 600;">
+                        📍 {{ dist.district }}
+                    </span>
                 </div>
                 {% endfor %}
             </div>
@@ -1358,7 +1348,6 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         </div>
 
     </div>
-
 <!-- ========================================== -->
     <!-- 1. App Install Button (PWA Download) -->
     <!-- ========================================== -->
