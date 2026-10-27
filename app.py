@@ -2380,6 +2380,73 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
 
     <h4>सर्व पेमेंट्स यादी:</h4>
     <table>
+    <!-- 🛒 सशुल्क टेस्ट खरेदीदार विद्यार्थी (Paid Orders) -->
+    <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:12px; padding:20px; margin-top:25px; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid #e2e8f0; padding-bottom:12px; margin-bottom:15px;">
+            <div>
+                <h3 style="margin:0; color:#065f46; font-size:18px;">🛒 सशुल्क टेस्ट खरेदीदार यादी (Paid Orders)</h3>
+                <small style="color:#64748b;">ज्या विद्यार्थ्यांनी यशस्वी पेमेंट करून टेस्ट अनलॉक केली आहे</small>
+            </div>
+            <div>
+                <span style="background:#ecfdf5; color:#065f46; border:1px solid #10b981; padding:6px 14px; border-radius:20px; font-weight:bold; font-size:13px;">
+                    🎯 एकूण खरेदीदार: {{ paid_buyers|length }} विद्यार्थी
+                </span>
+            </div>
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+                <tr style="background:#f8fafc; color:#0f172a; border-bottom:2px solid #cbd5e1;">
+                    <th style="padding:10px; text-align:center;">अ.क्र.</th>
+                    <th style="padding:10px;">तारीख</th>
+                    <th style="padding:10px;">विद्यार्थ्याचे नाव</th>
+                    <th style="padding:10px;">जिल्हा</th>
+                    <th style="padding:10px;">WhatsApp नंबर</th>
+                    <th style="padding:10px;">खरेदी केलेली टेस्ट</th>
+                    <th style="padding:10px;">पेमेंट आयडी / पद्धत</th>
+                    <th style="padding:10px; text-align:center;">थेट संपर्क</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in paid_buyers %}
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px; text-align:center; font-weight:bold; color:#64748b;">#{{ loop.index }}</td>
+                    <td style="padding:10px;">{{ b.test_date }}</td>
+                    <td style="padding:10px; font-weight:bold; color:#0f172a;">{{ b.student_name }}</td>
+                    <td style="padding:10px;">📍 {{ b.district }}</td>
+                    <td style="padding:10px; font-weight:600;">{{ b.phone }}</td>
+                    <td style="padding:10px; color:#0284c7; font-weight:bold;">{{ b.test_name }}</td>
+                    <td style="padding:10px;">
+                        {% if b.razorpay_payment_id %}
+                            <span style="background:#eff6ff; color:#1d4ed8; padding:3px 8px; border-radius:4px; font-family:monospace; font-size:11.5px; border:1px solid #bfdbfe;">
+                                ⚡ {{ b.razorpay_payment_id }}
+                            </span>
+                        {% elif b.utr_number %}
+                            <span style="background:#fefce8; color:#854d0e; padding:3px 8px; border-radius:4px; font-family:monospace; font-size:11.5px; border:1px solid #fef08a;">
+                                📱 UTR: {{ b.utr_number }}
+                            </span>
+                        {% else %}
+                            <span style="color:#64748b;">थेट अनलॉक / मोफत पास</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:10px; text-align:center;">
+                        <a href="https://wa.me/91{{ b.phone }}?text=जय%20हिंद%20{{ b.student_name }},%20महाराष्ट्र%20पोलीस%20भरती%20टेस्ट%20पोर्टलवर%20आपले%20स्वागत%20आहे!" target="_blank" style="background:#25D366; color:white; padding:5px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px; display:inline-flex; align-items:center; gap:4px;">
+                            💬 WhatsApp
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align:center; padding:30px; color:#94a3b8;">
+                        अजून कोणत्याही विद्यार्थ्याने सशुल्क टेस्ट खरेदी केलेली नाही.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
         <tr><th>नाव</th><th>मोबाईल</th><th>टेस्ट</th><th>पद्धत / ID</th><th>स्थिती</th><th>कृती</th></tr>
         {% for p in payments %}
         <tr>
@@ -4548,6 +4615,18 @@ def admin_dashboard():
             cur.execute(pay_query, tuple(pay_params))
             payments = cur.fetchall()
 
+            # सशुल्क टेस्ट्स खरेदी केलेल्या विद्यार्थ्यांची संपूर्ण यादी
+            cur.execute("""
+                SELECT 
+                    id, test_date, student_name, district, phone, 
+                    test_name, payment_status, razorpay_payment_id, utr_number
+                FROM mock_test_leads
+                WHERE payment_status = 'Approved' 
+                  AND is_deleted = 0
+                ORDER BY id DESC
+            """)
+            paid_buyers = cur.fetchall()
+
             # ५. गुणवत्ता यादी, फीडबॅक, स्पेशल ॲक्सेस व ऑडिट्स
             cur.execute("SELECT * FROM mock_test_leads WHERE is_deleted=0 ORDER BY score DESC, id ASC LIMIT 100")
             all_leads_sorted = cur.fetchall()
@@ -4645,7 +4724,8 @@ def admin_dashboard():
                 site_status=settings_map.get('site_status', 'active'),
                 custom_tabs_list=custom_tabs_list,
                 undo_items=undo_items,
-                deleted_questions_list=deleted_questions_list
+                deleted_questions_list=deleted_questions_list,
+                paid_buyers=paid_buyers
             )
 
 # मॅन्युअल प्रश्न नोंद (इमेज अपलोडसह)
