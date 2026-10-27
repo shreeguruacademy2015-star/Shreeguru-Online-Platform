@@ -2253,14 +2253,18 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         <div style="background: #1e293b; border: 1px solid #334155; padding: 10px 16px; border-radius: 8px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
             <span style="display: inline-block; width: 10px; height: 10px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e;"></span>
             <div>
-                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold;">सध्या ऑनलाईन</div>
-                <div style="font-size: 18px; color: #22c55e; font-weight: bold; line-height: 1.2;">{{ live_now_count }} विद्यार्थी</div>
-            </div>
-        </div>
-        <div style="background: #1e293b; border: 1px solid #334155; padding: 10px 16px; border-radius: 8px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-            <span style="font-size: 20px;">👥</span>
-            <div>
-                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold;">एकूण व्हिजिट्स</div>
+    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold;">सध्या ऑनलाईन</div>
+    <div style="font-size: 18px; color: #22c55e; font-weight: bold; line-height: 1.2;">{{ live_now_count }} विद्यार्थी</div>
+</div>
+</div>
+<div style="background: #1e293b; border: 1px solid #334155; padding: 10px 16px; border-radius: 8px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+    <span style="font-size: 20px;">👥</span>
+    <div>
+        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold;">🚩 महाराष्ट्रातून जोडलेले उमेदवार</div>
+        <div style="font-size: 18px; color: #38bdf8; font-weight: bold; line-height: 1.2;">{{ total_visits_count }} उमेदवार</div>
+    </div>
+</div>
+                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold;">्स</div>
                 <div style="font-size: 18px; color: #38bdf8; font-weight: bold; line-height: 1.2;">{{ total_visits_count }} वेळा</div>
             </div>
         </div>
@@ -3402,7 +3406,7 @@ def home_tests_list():
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             try:
-                # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स अचूक ट्रॅकिंग ---
+                # --- लाईव्ह युझर्स आणि ्स अचूक ट्रॅकिंग ---
                 import time as py_time
                 import uuid
                 now_ts = int(py_time.time())
@@ -4581,7 +4585,7 @@ def admin_dashboard():
 
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # --- लाईव्ह युझर्स आणि एकूण व्हिजिट्स मोजणे ---
+            # --- लाईव्ह युझर्स आणि ्स मोजणे ---
             import time as py_time
             now_ts = int(py_time.time())
             live_now_count = 0 
@@ -4593,7 +4597,7 @@ def admin_dashboard():
                 row_live = cur.fetchone()
                 live_now_count = row_live['c'] if row_live and row_live['c'] else 0
 
-                # २. एकूण व्हिजिट्स संख्या (site_stats मधून)
+                # २. ्स संख्या (site_stats मधून)
                 cur.execute("SELECT total_visits FROM site_stats WHERE id = 1;")
                 row_v = cur.fetchone()
                 if row_v and row_v.get('total_visits'):
