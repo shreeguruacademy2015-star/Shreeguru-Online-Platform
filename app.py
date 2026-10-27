@@ -2466,6 +2466,18 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </tr>
         {% endfor %}
 </table>
+# सशुल्क टेस्ट्स खरेदी केलेल्या विद्यार्थ्यांची संपूर्ण यादी (सुरक्षित पद्धत)
+            try:
+                cur.execute("""
+                    SELECT * FROM mock_test_leads 
+                    WHERE payment_status = 'Approved' 
+                      AND is_deleted = 0 
+                    ORDER BY id DESC
+                """)
+                paid_buyers = cur.fetchall()
+            except Exception as e:
+                conn.rollback()
+                paid_buyers = []
 
 <!-- 4. SPECIAL ACCESS TAB -->
 {% elif active_tab == 'special' %}
