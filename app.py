@@ -3533,6 +3533,13 @@ def home_tests_list():
                 UPDATE mock_test_leads SET district = 'मुंबई उपनगर' 
                 WHERE LOWER(district) IN ('mumbai suburban', 'suburban') 
                    OR district ILIKE '%suburban%';
+                   
+                UPDATE mock_test_leads SET district = 'नाशिक' 
+                WHERE LOWER(district) IN ('nashik', 'nasik', 'nahik', 'nsk') 
+                   OR district ILIKE '%nashik%' 
+                   OR district ILIKE '%nasik%'
+                   OR district ILIKE '%nahik%'
+                   OR district ILIKE '%नाशिक%';   
             """)
             conn.commit()
 
