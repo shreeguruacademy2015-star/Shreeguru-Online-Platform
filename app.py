@@ -5064,7 +5064,7 @@ def admin_delete_subject(subject_id):
     return redirect('/admin/dashboard?tab=subjects_mgmt')
 
 # =============================================================================
-# 6. DIGITAL SMART AI QUESTION GENERATOR (GROQ AUTO-CLEAN & FALLBACK - OPTIMIZED)
+# 6. DIGITAL SMART AI QUESTION GENERATOR (DYNAMIC ACTIVE MODEL + ZERO 404)
 # =============================================================================
 
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
@@ -5081,8 +5081,8 @@ def admin_ai_generate_advanced():
     if not test_id:
         return jsonify({"success": False, "error": "कृपया आधी टेस्ट निवडा!"}), 400
 
-    raw_key = os.environ.get("GROQ_API_KEY") or os.environ.get("GEMINI_API_KEY") or ""
-    api_key = "".join(raw_key.split()).strip()
+    raw_groq = os.environ.get("GROQ_API_KEY", "")
+    api_key = "".join(raw_groq.split()).strip()
 
     if not api_key:
         return jsonify({"success": False, "error": "Render Environment मध्ये 'GROQ_API_KEY' सापडली नाही!"}), 400
@@ -5092,7 +5092,32 @@ def admin_ai_generate_advanced():
         "Content-Type": "application/json"
     }
 
-    ordered_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+    # १. Groq कडून तुमच्या खात्यावर सध्या Active असलेल्या मॉडेल्सची थेट यादी मिळवणे (404 टाळण्यासाठी)
+    available_models = []
+    try:
+        m_resp = requests.get("https://api.groq.com/openai/v1/models", headers=headers, timeout=8)
+        if m_resp.status_code == 200:
+            m_json = m_resp.json().get("data", [])
+            for item in m_json:
+                m_id = item.get("id", "")
+                # फक्त टेक्स्ट जनरेशन मॉडेल्स निवडणे (whisper किंवा guard वगळून)
+                if not any(skip in m_id.lower() for skip in ['whisper', 'guard', 'vision', 'safetensors']):
+                    available_models.append(m_id)
+    except Exception as m_err:
+        print(f"Model list fetch notice: {m_err}")
+
+    # प्राधान्यक्रम: सर्वात आधी उपलब्ध मोठे मॉडेल, नसल्यास जे उपलब्ध असेल ते
+    preferred_order = [
+        "llama-3.3-70b-versatile",
+        "llama3-70b-8192",
+        "llama-3.1-70b-versatile",
+        "llama3-8b-8192",
+        "mixtral-8x7b-32768",
+        "gemma2-9b-it"
+    ]
+    target_models = [m for m in preferred_order if m in available_models]
+    if not target_models:
+        target_models = available_models if available_models else ["llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768"]
 
     diff_map = {
         "easy": "काठिण्य पातळी: सोपी (थेट, वस्तुनिष्ठ व पायाभूत प्रश्न).",
@@ -5147,15 +5172,15 @@ def admin_ai_generate_advanced():
         )
 
         subj_success = False
-        for model_name in ordered_models:
+        for model_name in target_models:
             payload = {
                 "model": model_name,
                 "messages": [
-                    {"role": "system", "content": "तुम्ही स्पर्धा परीक्षेचे अनुभवी पेपर सेटर आहात. विचारलेल्या फॉरमॅटमध्ये थेट MCQs द्या."},
+                    {"role": "system", "content": "तुम्ही स्पर्धा परीक्षेचे मुख्य पेपर सेटर आहात. विचारलेल्या फॉरमॅटमध्ये थेट MCQs द्या."},
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.25,
-                "max_tokens": 2500
+                "max_tokens": 3000
             }
 
             try:
