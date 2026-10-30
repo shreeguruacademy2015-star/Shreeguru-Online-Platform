@@ -5957,6 +5957,661 @@ def print_test_route(test_id):
             """
             return html_code
 
+# १०० प्रश्नांची CSV फाईल अपलोड
+@app.route('/admin/upload_csv_questions', methods=['POST'])
+def admin_upload_csv_questions():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    test_id = request.form.get('test_id')
+    file = request.files.get('csv_file')
+    if not file: 
+        return "No file uploaded", 400
+
+    try:
+        content = file.stream.read().decode("utf-8-sig", errors="ignore")
+    except Exception:
+        content = file.stream.read().decode("latin1", errors="ignore")
+
+    stream = io.StringIO(content, newline=None)
+    csv_reader = csv.reader(stream)
+
+    questions_to_insert = []
+    for row in csv_reader:
+        if not row: 
+            continue
+        first_cell = row[0].strip().lower()
+        if any(h in first_cell for h in ['sr', 'अनुक्रमांक', 'question', 'प्रश्न']): 
+            continue
+
+        if len(row) >= 9:
+            q = row[2].strip()
+            oa, ob, oc, od = row[3].strip(), row[4].strip(), row[5].strip(), row[6].strip()
+            corr = row[7].strip().upper()
+            exp = row[8].strip()
+        elif len(row) >= 6:
+            q = row[0].strip()
+            oa, ob, oc, od = row[1].strip(), row[2].strip(), row[3].strip(), row[4].strip()
+            corr = row[5].strip().upper() if len(row) > 5 else 'A'
+            exp = row[6].strip() if len(row) > 6 else ''
+        else:
+            continue
+
+        if corr not in ['A', 'B', 'C', 'D']: 
+            corr = 'A'
+        if q: 
+            questions_to_insert.append((test_id, q, oa, ob, oc, od, corr, exp))
+
+    if questions_to_insert:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.executemany("""
+                    INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, questions_to_insert)
+                conn.commit()
+
+    return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={test_id}')
+
+# हार्डकॉपी व्हिजन स्कॅनर (OCR)
+@app.route('/admin/ai_scan_hardcopy', methods=['POST'])
+def admin_ai_scan_hardcopy():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    test_id = request.form.get('test_id')
+    file = request.files.get('scanned_image')
+    if file and test_id and AIQuestionGenerator:
+        fname = secure_filename(f"scan_{int(datetime.now().timestamp())}_{file.filename}")
+        fpath = os.path.join(app.config['UPLOAD_FOLDER'], fname)
+        file.save(fpath)
+        with get_db() as conn:
+            gen = AIQuestionGenerator(db_connection=conn)
+            scanned_mcqs = gen.scan_hardcopy_image(fpath, test_id=test_id)
+            if scanned_mcqs:
+                with conn.cursor() as cur:
+                    for q in scanned_mcqs:
+                        cur.execute("""
+                            INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (test_id, q['question'], q['opt_a'], q['opt_b'], q['opt_c'], q['opt_d'], q['correct'], q.get('explanation', '')))
+                    conn.commit()
+    return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={test_id}')
+
+# एरर-प्रूफ सॉफ्ट डिलीट व रिसायकल बिन राऊट्स
+@app.route('/admin/delete_question/<int:q_id>')
+def admin_delete_question(q_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT test_id FROM questions WHERE id=%s", (q_id,))
+            q_row = cur.fetchone()
+            t_id = q_row[0] if q_row else ''
+            cur.execute("UPDATE questions SET is_deleted=1 WHERE id=%s", (q_id,))
+            conn.commit()
+    return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={t_id}')
+
+@app.route('/admin/bulk_delete_questions', methods=['POST'])
+def admin_bulk_delete_questions():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    ids = request.form.getlist('question_ids')
+    test_id = request.args.get('filter_test_id', '')
+    if ids:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                int_ids = [int(i) for i in ids if str(i).isdigit()]
+                if int_ids:
+                    cur.execute("UPDATE questions SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
+                    conn.commit()
+    return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={test_id}')
+
+@app.route('/admin/delete_lead/<int:lead_id>')
+def admin_delete_lead(lead_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id=%s", (lead_id,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=leads')
+
+@app.route('/admin/bulk_delete_leads', methods=['POST'])
+def admin_bulk_delete_leads():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    ids = request.form.getlist('lead_ids')
+    if ids:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                int_ids = [int(i) for i in ids if str(i).isdigit()]
+                if int_ids:
+                    cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id = ANY(%s)", (int_ids,))
+                    conn.commit()
+    return redirect('/admin/dashboard?tab=leads')
+
+@app.route('/admin/delete_payment/<int:lead_id>')
+def admin_delete_payment(lead_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE mock_test_leads SET is_deleted=1 WHERE id=%s", (lead_id,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=payments')
+
+@app.route('/admin/undo_delete/<item_type>/<int:item_id>')
+def admin_undo_delete(item_type, item_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            if item_type == 'question':
+                cur.execute("UPDATE questions SET is_deleted=0 WHERE id=%s", (item_id,))
+            elif item_type == 'lead':
+                cur.execute("UPDATE mock_test_leads SET is_deleted=0 WHERE id=%s", (item_id,))
+            conn.commit()
+    return redirect('/admin/dashboard')
+
+@app.route('/admin/restore_item/<item_type>/<int:item_id>')
+def admin_restore_item(item_type, item_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            if item_type == 'question':
+                cur.execute("UPDATE questions SET is_deleted=0 WHERE id=%s", (item_id,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=trash')
+
+@app.route('/admin/bulk_restore_trash', methods=['POST'])
+def admin_bulk_restore_trash():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    ids = request.form.getlist('question_ids')
+    if ids:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                int_ids = [int(i) for i in ids if str(i).isdigit()]
+                if int_ids:
+                    cur.execute("UPDATE questions SET is_deleted=0 WHERE id = ANY(%s)", (int_ids,))
+                    conn.commit()
+    return redirect('/admin/dashboard?tab=trash')
+
+@app.route('/admin/bulk_delete_trash', methods=['POST'])
+def admin_bulk_delete_trash():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    ids = request.form.getlist('question_ids')
+    if ids:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                int_ids = [int(i) for i in ids if str(i).isdigit()]
+                if int_ids:
+                    cur.execute("DELETE FROM questions WHERE id = ANY(%s)", (int_ids,))
+                    conn.commit()
+    return redirect('/admin/dashboard?tab=trash')
+
+@app.route('/admin/bulk_delete_feedback', methods=['POST'])
+def admin_bulk_delete_feedback():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    selected_ids = request.form.getlist('feedback_ids')
+    if selected_ids:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                int_ids = [int(i) for i in selected_ids if str(i).isdigit()]
+                if int_ids:
+                    cur.execute("DELETE FROM student_feedbacks WHERE id = ANY(%s)", (int_ids,))
+                    conn.commit()
+    return redirect('/admin/dashboard?tab=feedback')
+
+# टेस्ट व्यवस्थापन (Add, Update, Clone & Delete - sequence_order दुरुस्तीसह)
+@app.route('/admin/add_test', methods=['POST'])
+def admin_add_test():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    
+    title = request.form.get('test_title', '').strip()
+    subject = request.form.get('subject') or None
+    category = request.form.get('category', 'paid')
+    ttype = request.form.get('test_type', 'Paid')
+    seq_input = request.form.get('sequence_order')
+    fee = float(request.form.get('test_fee', 99) or 0)
+    duration = int(request.form.get('duration_minutes', 60) or 60)
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # अनुक्रमांक दिला नसेल तर शेवटचा क्रमांक शोधून आपोआप +१ करणे:
+            if not seq_input or str(seq_input).strip() == '':
+                cur.execute("""
+                    SELECT COALESCE(MAX(sequence_order), 0) + 1 AS next_seq 
+                    FROM test_papers 
+                    WHERE category = %s AND is_deleted = 0
+                """, (category,))
+                seq = cur.fetchone()['next_seq']
+            else:
+                seq = int(seq_input)
+
+            cur.execute("""
+                INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, sequence_order, subject)
+                VALUES (%s, %s, %s, %s, 'Active', %s, %s, %s)
+            """, (title, ttype, fee, duration, category, seq, subject))
+            conn.commit()
+
+    return redirect(f'/admin/dashboard?tab=launch&cat_tab={category}')
+# एका क्लिकवर सर्व टेस्ट्स चालू किंवा बंद करण्याचा राऊट
+@app.route('/admin/bulk_toggle_test_status', methods=['POST'])
+def admin_bulk_toggle_test_status():
+    if not session.get('admin_logged'):
+        return redirect('/admin/login')
+    
+    target_status = request.form.get('target_status', 'Active')  # 'Active' किंवा 'Closed'
+    cat_tab = request.form.get('cat_tab', 'all')
+    
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if cat_tab == 'all':
+                cur.execute("UPDATE test_papers SET status = %s WHERE is_deleted = 0", (target_status,))
+            elif cat_tab == 'subjects':
+                cur.execute("UPDATE test_papers SET status = %s WHERE is_deleted = 0 AND (category = 'subjects' OR (subject IS NOT NULL AND subject != ''))", (target_status,))
+            else:
+                cur.execute("UPDATE test_papers SET status = %s WHERE is_deleted = 0 AND category = %s", (target_status, cat_tab))
+            conn.commit()
+            
+    return redirect(f'/admin/dashboard?tab=launch&cat_tab={cat_tab}')
+@app.route('/admin/update_test/<int:test_id>', methods=['POST'])
+def admin_update_test(test_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    title = request.form.get('test_title', '').strip()
+    subject = request.form.get('subject', '').strip()
+    category = request.form.get('category', 'paid')
+    ttype = request.form.get('test_type', 'Paid')
+    seq = int(request.form.get('sequence_order', 1) or 1)
+    fee = float(request.form.get('test_fee', 0) or 0)
+    duration = int(request.form.get('duration_minutes', 60) or 60)
+    status = request.form.get('status', 'Active').strip()
+    return_cat_tab = request.form.get('return_cat_tab', 'all')
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                UPDATE test_papers 
+                SET test_title=%s, test_type=%s, test_fee=%s, duration_minutes=%s, category=%s, sequence_order=%s, status=%s, subject=%s 
+                WHERE id=%s
+            """, (title, ttype, fee, duration, category, seq, status, subject, test_id))
+            conn.commit()
+    return redirect(f'/admin/dashboard?tab=launch&cat_tab={return_cat_tab}')
+
+@app.route('/admin/clone_test/<int:test_id>')
+def admin_clone_test(test_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM test_papers WHERE id=%s", (test_id,))
+            t = cur.fetchone()
+            if t:
+                # संबंधित कॅटेगरीमधील शेवटचा अनुक्रमांक शोधून +१ करणे:
+                cur.execute("""
+                    SELECT COALESCE(MAX(sequence_order), 0) + 1 AS next_seq 
+                    FROM test_papers 
+                    WHERE category = %s AND is_deleted = 0
+                """, (t['category'],))
+                next_seq = cur.fetchone()['next_seq']
+
+                cur.execute("""
+                    INSERT INTO test_papers (test_title, test_type, test_fee, duration_minutes, status, category, sequence_order, subject)
+                    VALUES (%s, %s, %s, %s, 'Active', %s, %s, %s) RETURNING id
+                """, (f"{t['test_title']} (Copy)", t['test_type'], t['test_fee'], t['duration_minutes'], t['category'], next_seq, t.get('subject', '')))
+                new_t_id = cur.fetchone()['id']
+
+                cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0", (test_id,))
+                qs = cur.fetchall()
+                for q in qs:
+                    cur.execute("""
+                        INSERT INTO questions (test_id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation, image_url, subject)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (new_t_id, q['question'], q['opt_a'], q['opt_b'], q['opt_c'], q['opt_d'], q['correct'], q['explanation'], q.get('image_url', ''), q.get('subject', '')))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
+
+@app.route('/admin/delete_test/<int:test_id>')
+def admin_delete_test(test_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE test_papers SET is_deleted=1 WHERE id=%s", (test_id,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=launch')
+
+@app.route('/admin/resequence_tests')
+def admin_resequence_tests():
+    if not session.get('admin_logged'):
+        return redirect('/admin/login')
+    
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id FROM test_papers WHERE is_deleted = 0 ORDER BY id ASC")
+            all_tests = cur.fetchall()
+            
+            for new_seq, t in enumerate(all_tests, start=1):
+                cur.execute("UPDATE test_papers SET sequence_order = %s WHERE id = %s", (new_seq, t['id']))
+            conn.commit()
+            
+    return redirect('/admin/dashboard?tab=launch')
+
+# स्पेशल ॲक्सेस व पेमेंट मंजुरी राऊट्स
+@app.route('/admin/approve_payment/<int:lead_id>', methods=['POST'])
+def admin_approve_payment(lead_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    token = secrets.token_hex(8)
+    expires = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d %H:%M:%S")
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                UPDATE mock_test_leads 
+                SET payment_status='Approved', access_token=%s, token_expires_at=%s 
+                WHERE id=%s
+            """, (token, expires, lead_id))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=payments')
+
+@app.route('/admin/add_special_unlimited', methods=['POST'])
+def add_special_unlimited():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    phone = request.form.get('phone', '').strip()
+    name = request.form.get('student_name', '').strip()
+    note = request.form.get('note', '').strip()
+    added_on = datetime.now().strftime("%Y-%m-%d %H:%M")
+    if re.match(r'^[6-9]\d{9}$', phone):
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO special_unlimited_attempts (phone, student_name, note, added_on)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (phone) DO UPDATE SET student_name=EXCLUDED.student_name, note=EXCLUDED.note
+                """, (phone, name, note, added_on))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+@app.route('/admin/delete_special_unlimited/<int:uid>')
+def delete_special_unlimited(uid):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM special_unlimited_attempts WHERE id=%s", (uid,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+@app.route('/admin/add_special_free_pass', methods=['POST'])
+def add_special_free_pass():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    phone = request.form.get('phone', '').strip()
+    name = request.form.get('student_name', '').strip()
+    note = request.form.get('note', '').strip()
+    added_on = datetime.now().strftime("%Y-%m-%d %H:%M")
+    if re.match(r'^[6-9]\d{9}$', phone):
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO special_free_pass (phone, student_name, note, added_on)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (phone) DO UPDATE SET student_name=EXCLUDED.student_name, note=EXCLUDED.note
+                """, (phone, name, note, added_on))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+@app.route('/admin/delete_special_free_pass/<int:fid>')
+def delete_special_free_pass(fid):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM special_free_pass WHERE id=%s", (fid,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=special')
+
+# सेटिंग्स अपडेट्स (Razorpay, UPI QR, पासवर्ड, सानुकूल टॅब्स व PDF)
+@app.route('/admin/add_custom_tab', methods=['POST'])
+def admin_add_custom_tab():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    key = re.sub(r'[^a-zA-Z0-9_]', '', request.form.get('tab_key', '').strip().lower())
+    label = request.form.get('tab_label', '').strip()
+    if key and label:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO custom_tabs (tab_key, tab_label) 
+                    VALUES (%s, %s) 
+                    ON CONFLICT (tab_key) DO UPDATE SET tab_label = EXCLUDED.tab_label
+                """, (key, label))
+                cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='home_tab_order'")
+                row = cur.fetchone()
+                current_order = row['setting_value'] if row else 'live,paid,free,rapid,subjects,about,battle,docs,help'
+                if key not in current_order.split(','):
+                    new_order = f"{current_order},{key}"
+                    cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='home_tab_order'", (new_order,))
+                conn.commit()
+    return redirect('/admin/dashboard?tab=settings')
+
+@app.route('/admin/update_razorpay_settings', methods=['POST'])
+def admin_update_razorpay_settings():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    kid = request.form.get('razorpay_key_id', '').strip()
+    ksec = request.form.get('razorpay_key_secret', '').strip()
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('razorpay_key_id', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (kid,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('razorpay_key_secret', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (ksec,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=payments')
+
+@app.route('/admin/update_payment_settings', methods=['POST'])
+def admin_update_payment_settings():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    new_mobile = request.form.get('upi_mobile', '').strip()
+    qr_url_input = request.form.get('qr_url', '').strip()
+    qr_file = request.files.get('qr_file')
+    
+    final_qr_url = qr_url_input
+    if qr_file and qr_file.filename != '':
+        fname = secure_filename(f"qr_{int(datetime.now().timestamp())}_{qr_file.filename}")
+        save_path = os.path.join(app.config['UPLOAD_FOLDER'], fname)
+        qr_file.save(save_path)
+        final_qr_url = f"/static/uploads/{fname}"
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='qr_code_url'", (final_qr_url,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='upi_mobile'", (new_mobile,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=payments')
+
+@app.route('/admin/update_pdf_docs', methods=['POST'])
+def admin_update_pdf_docs():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    rec_file = request.files.get('recruitment_pdf_file')
+    elg_file = request.files.get('eligibility_pdf_file')
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if rec_file and rec_file.filename != '':
+                fname = secure_filename(f"recruitment_{int(datetime.now().timestamp())}_{rec_file.filename}")
+                rec_file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='recruitment_pdf'", (f"/static/uploads/{fname}",))
+            
+            if elg_file and elg_file.filename != '':
+                fname = secure_filename(f"eligibility_{int(datetime.now().timestamp())}_{elg_file.filename}")
+                elg_file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='eligibility_pdf'", (f"/static/uploads/{fname}",))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=notices')
+
+@app.route('/admin/update_password', methods=['POST'])
+def admin_update_password():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    new_pass = request.form.get('new_password')
+    site_status = request.form.get('site_status', 'active')
+    home_tab_order = request.form.get('home_tab_order', 'live,paid,free,rapid,subjects,about,battle,docs,help').strip()
+    admin_tab_order = request.form.get('admin_tab_order', 'leads,power,payments,special,questions,launch,analytics,audit,blocked,leaderboard,feedback,notices,trash,settings').strip()
+    wa_groups = request.form.get('wa_groups_multiline', '').strip()
+    help_phone = request.form.get('help_phone', '').strip()
+    help_address = request.form.get('help_address', '').strip()
+    insta = request.form.get('insta_link', 'https://instagram.com')
+    yt = request.form.get('yt_link', 'https://youtube.com')
+    top = request.form.get('toppers_link', '/')
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            if new_pass:
+                cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_pass'", (new_pass,))
+            if help_phone:
+                cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('help_phone', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (help_phone,))
+            if help_address:
+                cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('help_address', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (help_address,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('site_status', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (site_status,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('home_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (home_tab_order,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,))
+            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('wa_groups_multiline', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (wa_groups,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='insta_link'", (insta,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='yt_link'", (yt,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='toppers_link'", (top,))
+            conn.commit()
+    return redirect('/admin/dashboard?tab=settings')
+
+# फिल्टरसह लीड्स CSV डाऊनलोड
+@app.route('/admin/export_leads_csv')
+def admin_export_leads_csv():
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    lead_dist = request.args.get('lead_dist', '').strip()
+    lead_cat = request.args.get('lead_cat', '').strip()
+    lead_test_id = request.args.get('lead_test_id', '').strip()
+
+    query = "SELECT test_date, student_name, district, caste_category, phone, test_name, score, total_marks FROM mock_test_leads WHERE is_deleted=0"
+    params = []
+    if lead_dist:
+        query += " AND district = %s"
+        params.append(lead_dist)
+    if lead_cat:
+        query += " AND caste_category = %s"
+        params.append(lead_cat)
+    if lead_test_id:
+        query += " AND test_id = %s"
+        params.append(lead_test_id)
+    query += " ORDER BY id DESC"
+
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query, tuple(params))
+            leads = cur.fetchall()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Date', 'Name', 'District', 'Category', 'WhatsApp', 'Test Name', 'Score', 'Total'])
+    for l in leads:
+        writer.writerow([l['test_date'], l['student_name'], l['district'], l.get('caste_category', 'OPEN'), l['phone'], l['test_name'], l['score'], l['total_marks']])
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=filtered_leads_2026.csv"}
+    )
+
+# ७. टेस्ट प्रश्नपत्रिका A4 प्रिंट / PDF राऊट
+@app.route('/admin/print_test/<int:test_id>')
+def print_test_route(test_id):
+    if not session.get('admin_logged'): 
+        return redirect('/admin/login')
+    
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id, test_title, category, duration_minutes, test_fee FROM test_papers WHERE id = %s", (test_id,))
+            test = cur.fetchone()
+            if not test: 
+                return "टेस्ट सापडली नाही!", 404
+            
+            cur.execute("""
+                SELECT id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation, image_url 
+                FROM questions 
+                WHERE test_id = %s AND is_deleted=0 
+                ORDER BY id ASC
+            """, (test_id,))
+            questions = cur.fetchall()
+            
+            html_code = f"""
+            <!DOCTYPE html>
+            <html lang="mr">
+            <head>
+                <meta charset="UTF-8">
+                <title>प्रश्नपत्रिका - {test['test_title']}</title>
+                <style>
+                    @page {{ size: A4; margin: 15mm; }}
+                    body {{ font-family: 'Segoe UI', Tahoma, sans-serif; color: #1e293b; line-height: 1.5; padding: 10px; }}
+                    .header {{ text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px; }}
+                    .header h2 {{ margin: 0; font-size: 22px; color: #0f172a; }}
+                    .header p {{ margin: 4px 0 0; font-size: 14px; font-weight: bold; color: #475569; }}
+                    .meta-box {{ display: flex; justify-content: space-between; border-bottom: 1px dashed #94a3b8; padding-bottom: 8px; margin-bottom: 15px; font-size: 13px; font-weight: 600; }}
+                    .q-block {{ margin-bottom: 18px; page-break-inside: avoid; }}
+                    .q-text {{ font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #0f172a; }}
+                    .options-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-left: 15px; font-size: 14px; }}
+                    .print-bar {{ background: #f1f5f9; padding: 10px; text-align: center; margin-bottom: 20px; border-radius: 8px; }}
+                    .btn-print {{ background: #059669; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }}
+                    @media print {{ .print-bar {{ display: none; }} }}
+                </style>
+            </head>
+            <body>
+                <div class="print-bar">
+                    <button class="btn-print" onclick="window.print()">🖨️ ही प्रश्नपत्रिका प्रिंट / PDF सेव्ह करा</button>
+                </div>
+                
+                <div class="header">
+                    <h2>महाराष्ट्र पोलीस भरती सराव केंद्र</h2>
+                    <p>सराव परीक्षा: {test['test_title']}</p>
+                </div>
+                <div class="meta-box">
+                    <span>एकूण प्रश्न: {len(questions)}</span>
+                    <span>वेळ: {test['duration_minutes']} मिनिटे</span>
+                    <span>कॅटेगरी: {str(test['category']).upper()}</span>
+                </div>
+                
+                <div class="questions-list">
+            """
+            
+            for idx, q in enumerate(questions, 1):
+                img_tag = f'<div style="margin-bottom:6px;"><img src="{q["image_url"]}" style="max-height:160px;"></div>' if q.get('image_url') else ''
+                html_code += f"""
+                    <div class="q-block">
+                        <div class="q-text">प्र. {idx}) {q['question']}</div>
+                        {img_tag}
+                        <div class="options-grid">
+                            <div>(A) {q['opt_a']}</div>
+                            <div>(B) {q['opt_b']}</div>
+                            <div>(C) {q['opt_c']}</div>
+                            <div>(D) {q['opt_d']}</div>
+                        </div>
+                    </div>
+                """
+                
+            html_code += """
+                </div>
+            </body>
+            </html>
+            """
+            return html_code
+
 # =============================================================================
 # ३६०° पॉवर सर्च - नंबर ब्लॉक व अनब्लॉक राऊट
 # =============================================================================
