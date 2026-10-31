@@ -5082,7 +5082,6 @@ def admin_ai_generate_advanced():
     if not test_id:
         return jsonify({"success": False, "error": "कृपया आधी टेस्ट निवडा!"}), 400
 
-    # Render वरून सर्व Keys कॉमा-सेपरेटेड घेणे (किंवा सिंगल जुनी की)
     raw_keys = os.environ.get("GROQ_API_KEYS") or os.environ.get("GROQ_API_KEY") or ""
     all_keys = [k.strip() for k in raw_keys.split(",") if k.strip()]
 
@@ -5102,7 +5101,6 @@ def admin_ai_generate_advanced():
     generated_list = []
     last_api_error = ""
 
-    # आधीपासून असलेले प्रश्न लोड करणे (ड्युप्लिकेट टाळण्यासाठी)
     existing_questions_set = set()
     try:
         with get_db() as conn:
@@ -5114,7 +5112,6 @@ def admin_ai_generate_advanced():
     except Exception as db_err:
         print(f"Db fetch notice: {db_err}")
 
-    # विषयनिहाय प्रश्न निर्मिती (लहान तुकड्यांमध्ये)
     for subj, num in subject_counts.items():
         try:
             total_req = int(num)
@@ -5150,25 +5147,38 @@ def admin_ai_generate_advanced():
             )
 
             raw_output = ""
-            # 🔥 मल्टी-की रोटेशन: एक की संपली की दुसरी की आपोआप वापरणे
+            
+            # मल्टी-की रोटेशन (requests द्वारे - कोणतीही नवीन लायब्ररी न लागता)
             for current_key in all_keys:
+                headers = {
+                    "Authorization": f"Bearer {current_key}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.25,
+                    "max_tokens": 1800
+                }
                 try:
-                    client = Groq(api_key=current_key)
-                    chat_resp = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=0.25,
-                        max_tokens=1800
+                    res = requests.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        json=payload,
+                        headers=headers,
+                        timeout=25
                     )
-                    content = chat_resp.choices[0].message.content
-                    if content and "|" in content:
-                        raw_output = content
-                        break
-                except RateLimitError as rle:
-                    last_api_error = f"Rate Limit Hit on key: {str(rle)[:30]}... पुढची की वापरत आहे."
-                    continue
+                    if res.status_code == 200:
+                        content = res.json()["choices"][0]["message"]["content"]
+                        if content and "|" in content:
+                            raw_output = content
+                            break
+                    elif res.status_code == 429:
+                        last_api_error = f"Key Quota 429: पुढची की वापरत आहे..."
+                        continue
+                    else:
+                        last_api_error = f"HTTP {res.status_code}"
                 except Exception as ex:
-                    last_api_error = f"Groq Error: {str(ex)[:35]}"
+                    last_api_error = f"Error: {str(ex)[:35]}"
                     continue
 
             if not raw_output:
@@ -5217,7 +5227,6 @@ def admin_ai_generate_advanced():
     if not generated_list:
         return jsonify({"success": False, "error": f"Groq कडून प्रश्न तयार झाले नाहीत. कारण: [{last_api_error}]. कृपया १ मिनिट थांबून पुन्हा प्रयत्न करा."}), 500
 
-    # डेटाबेसमध्ये प्रश्न सेव्ह करणे
     try:
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
