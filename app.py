@@ -5064,7 +5064,7 @@ def admin_delete_subject(subject_id):
     return redirect('/admin/dashboard?tab=subjects_mgmt')
 
 # =============================================================================
-# 6. DIGITAL SMART AI QUESTION GENERATOR (ZERO DUPLICATION & BULLET-PROOF)
+# 6. DIGITAL SMART AI QUESTION GENERATOR (DEBUG-ENABLED & ROBUST PARSER)
 # =============================================================================
 
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
@@ -5085,12 +5085,11 @@ def admin_ai_generate_advanced():
     gemini_key = "".join((os.environ.get("GEMINI_API_KEY") or "").split()).strip()
 
     if not groq_key and not gemini_key:
-        return jsonify({"success": False, "error": "Render Environment मध्ये कोणतीही API Key (GROQ किंवा GEMINI) सापडली नाही!"}), 400
+        return jsonify({"success": False, "error": "Render Environment मध्ये कोणतीही API Key (GROQ किंवा GEMINI) सेट केलेली नाही!"}), 400
 
-    # काठिण्य पातळी
     diff_map = {
-        "easy": "काठिण्य पातळी: सोपी (थेट व वस्तुनिष्ठ प्रश्न).",
-        "medium": "काठिण्य पातळी: मध्यम (पोलीस भरती नियमित गुणवत्ता स्तर).",
+        "easy": "काठिण्य पातळी: सोपी (थेट व पायाभूत प्रश्न).",
+        "medium": "काठिण्य पातळी: मध्यम (पोलीस भरती नियमित दर्जा).",
         "hard": "काठिण्य पातळी: कठीण (MPSC स्तर व विधानात्मक प्रश्न)."
     }
     diff_instruction = diff_map.get(difficulty, "काठिण्य पातळी: प्रमाण समतोल (सुलभ व मध्यम दर्जा).")
@@ -5098,70 +5097,69 @@ def admin_ai_generate_advanced():
     import random
     import re
     generated_list = []
+    engine_errors = []
 
-    # १. आधीपासून असलेल्या सर्व प्रश्नांचे संकलन (Duplicate रोखण्यासाठी मास्टर सेट)
+    # १. आधीपासून अस्तित्वात असलेले प्रश्न मिळवणे (Duplicate Check)
     existing_questions_set = set()
-    recent_questions_sample = []
     try:
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # या टेस्टमध्ये आणि संपूर्ण डेटाबेसमध्ये असलेले प्रश्न मिळवणे
                 cur.execute("SELECT question FROM questions WHERE is_deleted = 0 ORDER BY id DESC LIMIT 400")
-                rows = cur.fetchall()
-                for r in rows:
-                    clean_q = re.sub(r'[\s\W_]+', '', str(r['question']).strip().lower())
-                    existing_questions_set.add(clean_q)
-                    if len(recent_questions_sample) < 30:
-                        recent_questions_sample.append(str(r['question']).strip()[:60])
-    except Exception as db_q_err:
-        print(f"Existing questions fetch notice: {db_q_err}")
+                for r in cur.fetchall():
+                    q_clean = re.sub(r'[\s\W_]+', '', str(r['question']).strip().lower())
+                    existing_questions_set.add(q_clean)
+    except Exception as db_err:
+        print(f"Db fetch notice: {db_err}")
 
-    # २. AI कॉलिंग फंक्शन (Groq -> Fallback to Gemini)
-    def fetch_ai_mcqs(prompt_text):
+    # २. सुपर-फास्ट AI कॉलर
+    def request_ai_response(prompt_text):
+        # अ. Groq इंजिन (सर्वात वेगवान)
         if groq_key:
-            groq_headers = {
-                "Authorization": f"Bearer {groq_key}",
-                "Content-Type": "application/json"
-            }
-            groq_models = ["llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768", "llama-3.1-70b-versatile"]
+            headers = {"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"}
+            groq_models = ["llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768"]
             for gm in groq_models:
                 payload = {
                     "model": gm,
                     "messages": [
-                        {"role": "system", "content": "तुम्ही स्पर्धा परीक्षेचे मुख्य पेपर सेटर आहात. विचारलेल्या फॉरमॅटमध्ये अचूक शुद्ध मराठी MCQs द्या. कोणताही प्रश्न रिपीट करू नका."},
+                        {"role": "system", "content": "You are an expert exam paper setter in Marathi. Strictly output questions in the requested pipe-separated format."},
                         {"role": "user", "content": prompt_text}
                     ],
-                    "temperature": 0.35,  # रिपीटेशन टाळण्यासाठी क्रिएटिव्हिटी किंचित वाढवली आहे
-                    "max_tokens": 3000
+                    "temperature": 0.3,
+                    "max_tokens": 2000
                 }
                 try:
-                    res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=groq_headers, timeout=40)
+                    res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=25)
                     if res.status_code == 200:
-                        content = res.json()["choices"][0]["message"]["content"]
-                        if content and "|" in content:
-                            return content
-                except Exception:
-                    continue
+                        out = res.json()["choices"][0]["message"]["content"]
+                        if out and "|" in out:
+                            return out
+                    else:
+                        engine_errors.append(f"Groq({gm}): {res.status_code}")
+                except Exception as e:
+                    engine_errors.append(f"Groq-Timeout({gm})")
 
+        # ब. Gemini इंजिन (बॅकअप)
         if gemini_key:
-            try:
-                gem_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-                gem_payload = {
-                    "contents": [{
-                        "parts": [{"text": prompt_text}]
-                    }],
-                    "generationConfig": {"temperature": 0.35, "maxOutputTokens": 3000}
-                }
-                gres = requests.post(gem_url, json=gem_payload, headers={"Content-Type": "application/json"}, timeout=40)
-                if gres.status_code == 200:
-                    gdata = gres.json()
-                    return gdata["candidates"][0]["content"]["parts"][0]["text"]
-            except Exception:
-                pass
+            for g_ver in ["gemini-1.5-flash", "gemini-2.0-flash"]:
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{g_ver}:generateContent?key={gemini_key}"
+                    payload = {
+                        "contents": [{"parts": [{"text": prompt_text}]}],
+                        "generationConfig": {"temperature": 0.3, "maxOutputTokens": 2000}
+                    }
+                    res = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=25)
+                    if res.status_code == 200:
+                        out = res.json()["candidates"][0]["content"]["parts"][0]["text"]
+                        if out and "|" in out:
+                            return out
+                    else:
+                        engine_errors.append(f"Gemini({g_ver}): {res.status_code}")
+                except Exception as e:
+                    engine_errors.append(f"Gemini-Timeout")
 
         return ""
 
-    # ३. विषयनिहाय अखंड प्रश्न निर्मिती (Zero Repetition Logic)
+    # ३. विषयनिहाय प्रश्न निर्मिती
     for subj, num in subject_counts.items():
         try:
             total_req = int(num)
@@ -5171,58 +5169,36 @@ def admin_ai_generate_advanced():
         if total_req <= 0:
             continue
 
-        syllabus_compact = ""
-        try:
-            from syllabus_data import MASTER_SYLLABUS
-            for k, sdata in MASTER_SYLLABUS.items():
-                if subj.strip().lower() in sdata.get('name', '').strip().lower():
-                    top_topics = []
-                    for sec_title, sec_points in list(sdata.get('sections', {}).items())[:2]:
-                        top_topics.append(f"{sec_title}: {', '.join(sec_points[:3])}")
-                    syllabus_compact = "अभ्यासक्रम घटक: " + "; ".join(top_topics)
-                    break
-        except Exception:
-            syllabus_compact = ""
-
         ca_rule = ""
         if "चालू घडामोडी" in subj:
-            ca_rule = "विशेष सूचना: प्रश्न केवळ २०२५-२०२६ या चालू कालावधीतील चालू घडामोडींवरच असावेत."
+            ca_rule = "विशेष सूचना: प्रश्न केवळ २०२५-२०२६ या चालू कालावधीतील घडामोडींवरच असावेत."
 
-        collected_for_subject = 0
+        collected = 0
         attempts = 0
-        max_attempts = (total_req // 5 + 3) * 2  # अनंत लूप रोखण्यासाठी सेफगार्ड
 
-        while collected_for_subject < total_req and attempts < max_attempts:
+        while collected < total_req and attempts < 4:
             attempts += 1
-            batch_size = min(total_req - collected_for_subject, 10)
-
-            # नुकतेच विचारलेले ५-६ प्रश्न AI ला देणे जेणेकरून ते पुन्हा विचारले जाणार नाहीत
-            avoid_sample_text = ""
-            if recent_questions_sample:
-                avoid_sample_text = "खालील प्रश्न आधीच आलेले आहेत, हे प्रश्न किंवा यांसारखे प्रश्न पुन्हा देऊ नका:\n- " + "\n- ".join(recent_questions_sample[:5])
+            batch_size = min(total_req - collected, 5)  # ५-५ चे सुरक्षित तुकडे जेणेकरून टाइमआउट होणार नाही
 
             prompt = (
                 f"परीक्षेचे नाव: {department}\n"
                 f"विषय: {subj}\n"
-                f"{syllabus_compact}\n"
                 f"{diff_instruction}\n"
-                f"{ca_rule}\n"
-                f"{avoid_sample_text}\n\n"
-                f"कडक सूचना:\n"
-                f"१. कोणताही प्रश्न पुन्हा रिपीट (Duplicate) होता कामा नये. प्रत्येक प्रश्न पूर्णपणे नवीन आणि दर्जेदार असावा.\n"
+                f"{ca_rule}\n\n"
+                f"सूचना:\n"
+                f"१. कोणताही जुना प्रश्न रिपीट करू नका.\n"
                 f"२. एकूण {batch_size} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n"
-                f"३. ४ पैकी एकच अचूक उत्तर असावे आणि अचूक पर्याय A, B, C, D मध्ये समप्रमाणात वितरित करा.\n"
-                f"४. प्रत्येक प्रश्न खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | वापरून):\n"
+                f"३. प्रत्येक प्रश्न खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | वापरून):\n"
                 f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
-                f"केवळ {batch_size} ओळी द्या, कोणताही अतिरिक्त मजकूर नको."
+                f"केवळ {batch_size} ओळी द्या. कोणतीही प्रस्तावना किंवा शेवट लिहू नका."
             )
 
-            raw_output = fetch_ai_mcqs(prompt)
+            raw_output = request_ai_response(prompt)
             if not raw_output:
                 continue
 
             for line in raw_output.strip().split('\n'):
-                if collected_for_subject >= total_req:
+                if collected >= total_req:
                     break
 
                 parts = [p.strip() for p in line.split('|')]
@@ -5230,15 +5206,11 @@ def admin_ai_generate_advanced():
                     q_text = parts[0]
                     q_text = re.sub(r'^\d+[\.\)\-]\s*', '', q_text).strip()
 
-                    # रिपीटेशन तपासणी (Exact & Normalized Check)
-                    clean_check = re.sub(r'[\s\W_]+', '', q_text.lower())
-                    if not clean_check or clean_check in existing_questions_set:
-                        # हा प्रश्न आधीच येऊन गेला आहे, त्यामुळे गाळण्यात येत आहे
+                    clean_c = re.sub(r'[\s\W_]+', '', q_text.lower())
+                    if not clean_c or clean_c in existing_questions_set:
                         continue
 
-                    # नवीन प्रश्न नोंदवणे
-                    existing_questions_set.add(clean_check)
-                    recent_questions_sample.insert(0, q_text[:60])
+                    existing_questions_set.add(clean_c)
 
                     options = [('A', parts[1]), ('B', parts[2]), ('C', parts[3]), ('D', parts[4])]
                     raw_corr = parts[5].upper()
@@ -5262,12 +5234,14 @@ def admin_ai_generate_advanced():
                         shuffled_opts[0], shuffled_opts[1], shuffled_opts[2], shuffled_opts[3],
                         final_corr, exp, subj
                     ))
-                    collected_for_subject += 1
+                    collected += 1
 
+    # जर प्रश्न तयार झाले नाहीत तर नेमकी एरर दाखवणे
     if not generated_list:
-        return jsonify({"success": False, "error": "AI कडून नवीन प्रश्न तयार होऊ शकले नाहीत. कृपया पुन्हा प्रयत्न करा."}), 500
+        debug_info = ", ".join(engine_errors[-3:]) if engine_errors else "कोणताही रिस्पॉन्स आला नाही"
+        return jsonify({"success": False, "error": f"AI कडून प्रश्न तयार झाले नाहीत. कारण: [{debug_info}]. Render मधील API Keys तपासा."}), 500
 
-    # ४. डेटाबेसमध्ये १००% नवीन प्रश्नांची नोंद
+    # ४. डेटाबेसमध्ये सुरक्षित सेव्ह
     try:
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
