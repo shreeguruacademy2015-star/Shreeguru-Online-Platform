@@ -5064,7 +5064,7 @@ def admin_delete_subject(subject_id):
     return redirect('/admin/dashboard?tab=subjects_mgmt')
 
 # =============================================================================
-# 6. DIGITAL SMART AI QUESTION GENERATOR (DEBUG-ENABLED & ROBUST PARSER)
+# 6. DIGITAL SMART AI QUESTION GENERATOR (GROQ ZERO-ERROR DYNAMIC ENGINE)
 # =============================================================================
 
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
@@ -5081,14 +5081,37 @@ def admin_ai_generate_advanced():
     if not test_id:
         return jsonify({"success": False, "error": "कृपया आधी टेस्ट निवडा!"}), 400
 
-    groq_key = "".join((os.environ.get("GROQ_API_KEY") or "").split()).strip()
-    gemini_key = "".join((os.environ.get("GEMINI_API_KEY") or "").split()).strip()
+    raw_key = os.environ.get("GROQ_API_KEY") or os.environ.get("GEMINI_API_KEY") or ""
+    api_key = "".join(raw_key.split()).strip()
 
-    if not groq_key and not gemini_key:
-        return jsonify({"success": False, "error": "Render Environment मध्ये कोणतीही API Key (GROQ किंवा GEMINI) सेट केलेली नाही!"}), 400
+    if not api_key:
+        return jsonify({"success": False, "error": "Render Environment मध्ये 'GROQ_API_KEY' सापडली नाही!"}), 400
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    # १. Groq कडून सध्या चालू (Active) असलेल्या मॉडेल्सची थेट यादी मिळवणे
+    working_models = []
+    try:
+        m_res = requests.get("https://api.groq.com/openai/v1/models", headers=headers, timeout=8)
+        if m_res.status_code == 200:
+            for item in m_res.json().get("data", []):
+                mid = item.get("id", "")
+                if not any(skip in mid.lower() for skip in ['whisper', 'guard', 'vision', 'safetensors']):
+                    working_models.append(mid)
+    except Exception as e:
+        print(f"Model fetch notice: {e}")
+
+    # प्राधान्यक्रम (चालू असलेल्यांपैकी सर्वोत्तम मॉडेल निवडणे)
+    priority = ["llama-3.3-70b-versatile", "llama-3.1-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768", "llama-3.1-8b-instant", "llama3-8b-8192", "gemma2-9b-it"]
+    chosen_models = [m for m in priority if m in working_models]
+    if not chosen_models:
+        chosen_models = working_models if working_models else ["llama-3.1-8b-instant", "llama3-8b-8192"]
 
     diff_map = {
-        "easy": "काठिण्य पातळी: सोपी (थेट व पायाभूत प्रश्न).",
+        "easy": "काठिण्य पातळी: सोपी (थेट, वस्तुनिष्ठ व पायाभूत प्रश्न).",
         "medium": "काठिण्य पातळी: मध्यम (पोलीस भरती नियमित दर्जा).",
         "hard": "काठिण्य पातळी: कठीण (MPSC स्तर व विधानात्मक प्रश्न)."
     }
@@ -5096,10 +5119,11 @@ def admin_ai_generate_advanced():
 
     import random
     import re
+    import time as py_time
     generated_list = []
-    engine_errors = []
+    last_api_error = ""
 
-    # १. आधीपासून अस्तित्वात असलेले प्रश्न मिळवणे (Duplicate Check)
+    # २. आधीपासून असलेले प्रश्न मिळवणे (Zero Duplicate Check)
     existing_questions_set = set()
     try:
         with get_db() as conn:
@@ -5111,55 +5135,7 @@ def admin_ai_generate_advanced():
     except Exception as db_err:
         print(f"Db fetch notice: {db_err}")
 
-    # २. सुपर-फास्ट AI कॉलर
-    def request_ai_response(prompt_text):
-        # अ. Groq इंजिन (सर्वात वेगवान)
-        if groq_key:
-            headers = {"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"}
-            groq_models = ["llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768"]
-            for gm in groq_models:
-                payload = {
-                    "model": gm,
-                    "messages": [
-                        {"role": "system", "content": "You are an expert exam paper setter in Marathi. Strictly output questions in the requested pipe-separated format."},
-                        {"role": "user", "content": prompt_text}
-                    ],
-                    "temperature": 0.3,
-                    "max_tokens": 2000
-                }
-                try:
-                    res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=25)
-                    if res.status_code == 200:
-                        out = res.json()["choices"][0]["message"]["content"]
-                        if out and "|" in out:
-                            return out
-                    else:
-                        engine_errors.append(f"Groq({gm}): {res.status_code}")
-                except Exception as e:
-                    engine_errors.append(f"Groq-Timeout({gm})")
-
-        # ब. Gemini इंजिन (बॅकअप)
-        if gemini_key:
-            for g_ver in ["gemini-1.5-flash", "gemini-2.0-flash"]:
-                try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{g_ver}:generateContent?key={gemini_key}"
-                    payload = {
-                        "contents": [{"parts": [{"text": prompt_text}]}],
-                        "generationConfig": {"temperature": 0.3, "maxOutputTokens": 2000}
-                    }
-                    res = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=25)
-                    if res.status_code == 200:
-                        out = res.json()["candidates"][0]["content"]["parts"][0]["text"]
-                        if out and "|" in out:
-                            return out
-                    else:
-                        engine_errors.append(f"Gemini({g_ver}): {res.status_code}")
-                except Exception as e:
-                    engine_errors.append(f"Gemini-Timeout")
-
-        return ""
-
-    # ३. विषयनिहाय प्रश्न निर्मिती
+    # ३. विषयनिहाय अखंड प्रश्न निर्मिती (लहान तुकड्यांमध्ये)
     for subj, num in subject_counts.items():
         try:
             total_req = int(num)
@@ -5176,25 +5152,52 @@ def admin_ai_generate_advanced():
         collected = 0
         attempts = 0
 
-        while collected < total_req and attempts < 4:
+        while collected < total_req and attempts < 6:
             attempts += 1
-            batch_size = min(total_req - collected, 5)  # ५-५ चे सुरक्षित तुकडे जेणेकरून टाइमआउट होणार नाही
+            # 429 टाळण्यासाठी लहान तुकडे (कमाल ५ प्रश्न एका फेरीत)
+            batch_size = min(total_req - collected, 5)
 
             prompt = (
                 f"परीक्षेचे नाव: {department}\n"
                 f"विषय: {subj}\n"
                 f"{diff_instruction}\n"
                 f"{ca_rule}\n\n"
-                f"सूचना:\n"
-                f"१. कोणताही जुना प्रश्न रिपीट करू नका.\n"
+                f"कडक सूचना:\n"
+                f"१. कोणताही प्रश्न पुन्हा रिपीट करू नका.\n"
                 f"२. एकूण {batch_size} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n"
-                f"३. प्रत्येक प्रश्न खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | वापरून):\n"
+                f"३. ४ पैकी एकच अचूक उत्तर असावे आणि अचूक पर्याय A, B, C, D मध्ये समप्रमाणात वितरित करा.\n"
+                f"४. प्रत्येक प्रश्न खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | वापरून):\n"
                 f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
-                f"केवळ {batch_size} ओळी द्या. कोणतीही प्रस्तावना किंवा शेवट लिहू नका."
+                f"केवळ {batch_size} ओळी द्या. कोणतीही प्रस्तावना, क्रमांक किंवा इतर मजकूर नको."
             )
 
-            raw_output = request_ai_response(prompt)
+            # फक्त 'user' रोल वापरून रिक्वेस्ट पाठवणे (Groq 400 एरर प्रतिबंध)
+            raw_output = ""
+            for active_model in chosen_models:
+                payload = {
+                    "model": active_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.25,
+                    "max_tokens": 1800
+                }
+                try:
+                    res = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=25)
+                    if res.status_code == 200:
+                        content = res.json()["choices"][0]["message"]["content"]
+                        if content and "|" in content:
+                            raw_output = content
+                            break
+                    elif res.status_code == 429:
+                        last_api_error = f"{active_model}: 429 Rate Limit"
+                        continue
+                    else:
+                        last_api_error = f"{active_model}: {res.status_code}"
+                except Exception as ex:
+                    last_api_error = f"{active_model}: {str(ex)[:40]}"
+                    continue
+
             if not raw_output:
+                py_time.sleep(1)
                 continue
 
             for line in raw_output.strip().split('\n'):
@@ -5236,10 +5239,8 @@ def admin_ai_generate_advanced():
                     ))
                     collected += 1
 
-    # जर प्रश्न तयार झाले नाहीत तर नेमकी एरर दाखवणे
     if not generated_list:
-        debug_info = ", ".join(engine_errors[-3:]) if engine_errors else "कोणताही रिस्पॉन्स आला नाही"
-        return jsonify({"success": False, "error": f"AI कडून प्रश्न तयार झाले नाहीत. कारण: [{debug_info}]. Render मधील API Keys तपासा."}), 500
+        return jsonify({"success": False, "error": f"Groq कडून प्रश्न तयार झाले नाहीत. कारण: [{last_api_error}]. कृपया १ मिनिट थांबून पुन्हा प्रयत्न करा."}), 500
 
     # ४. डेटाबेसमध्ये सुरक्षित सेव्ह
     try:
