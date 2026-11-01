@@ -5064,7 +5064,7 @@ def admin_delete_subject(subject_id):
     return redirect('/admin/dashboard?tab=subjects_mgmt')
 
 # =============================================================================
-# 6. DIGITAL SMART AI QUESTION GENERATOR (FOOLPROOF BULLETPROOF ENGINE)
+# 6. DIGITAL SMART AI QUESTION GENERATOR (DYNAMIC ACTIVE MODEL MATCHER)
 # =============================================================================
 
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
@@ -5097,7 +5097,7 @@ def admin_ai_generate_advanced():
     import random
     import re
     generated_list = []
-    last_api_error = "Groq कडून फॉरमॅटनुसार डेटा आला नाही"
+    last_api_error = ""
 
     existing_questions_set = set()
     try:
@@ -5110,11 +5110,6 @@ def admin_ai_generate_advanced():
     except Exception:
         pass
 
-    candidate_models = [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant"
-]
-
     for subj, num in subject_counts.items():
         try:
             total_req = int(num)
@@ -5124,14 +5119,12 @@ def admin_ai_generate_advanced():
         if total_req <= 0:
             continue
 
-        # एका वेळी कमाल ५ ते १० प्रश्न
         req_count = min(total_req, 10)
 
         ca_rule = ""
         if "चालू घडामोडी" in subj:
-            ca_rule = "प्रश्न केवळ २०२५-२०२६ चालू घडामोडींवर असावेत."
+            ca_rule = "विशेष सूचना: प्रश्न केवळ २०२५-२०२६ चालू घडामोडींवर असावेत."
 
-        # अतिशय सोपा व स्पष्ट प्रॉम्प्ट जेणेकरून Groq कधीही चुकत नाही
         prompt = f"""You are an expert Marathi paper setter for {department}.
 विषय: {subj}
 {diff_instruction}
@@ -5139,23 +5132,44 @@ def admin_ai_generate_advanced():
 
 Create exactly {req_count} multiple-choice questions in Marathi.
 STRICT FORMAT RULE:
-Output EACH question on a new single line using '|' separator exactly like this:
+Output EACH question on a single line using '|' separator:
 प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (फक्त A, B, C किंवा D) | स्पष्टीकरण
 
-No markdown, no bold text, no greetings, no introductory text. Only {req_count} lines.
+No markdown, no bold text, no numbering. Only {req_count} lines.
 """
 
         raw_output = ""
+
+        # १. मल्टी-की लूप
         for current_key in all_keys:
             headers = {
                 "Authorization": f"Bearer {current_key}",
                 "Content-Type": "application/json"
             }
-            for active_model in candidate_models:
+
+            # २. Groq कडून तुमच्या खात्यावर खरोखर चालू असलेल्या मॉडेल्सची यादी थेट मिळवणे
+            active_models = []
+            try:
+                m_res = requests.get("https://api.groq.com/openai/v1/models", headers=headers, timeout=5)
+                if m_res.status_code == 200:
+                    for item in m_res.json().get("data", []):
+                        m_id = item.get("id", "")
+                        # इमेज किंवा व्हॉइस मॉडेल्स वगळून फक्त चॅट मॉडेल्स घेणे
+                        if not any(skip in m_id.lower() for skip in ['whisper', 'vision', 'guard', 'safetensors']):
+                            active_models.append(m_id)
+            except Exception:
+                pass
+
+            # जर यादी मिळाली नाही तर बॅकअप मॉडेल्स
+            if not active_models:
+                active_models = ["llama-3.3-70b-versatile", "gemma2-9b-it", "llama3-70b-8192"]
+
+            # ३. चालू असलेल्या मॉडेल्सवरून रिक्वेस्ट पाठवणे
+            for active_model in active_models:
                 payload = {
                     "model": active_model,
                     "messages": [
-                        {"role": "system", "content": "You output only structured text with pipe (|) separator in Marathi. No extra text."},
+                        {"role": "system", "content": "You output only Marathi questions with pipe (|) separator."},
                         {"role": "user", "content": prompt}
                     ],
                     "temperature": 0.3,
@@ -5173,18 +5187,15 @@ No markdown, no bold text, no greetings, no introductory text. Only {req_count} 
                         if content and "|" in content:
                             raw_output = content
                             break
-                        else:
-                            last_api_error = "Groq ने उत्तरात '|' फॉरमॅट दिला नाही."
                     elif res.status_code == 429:
                         last_api_error = "Rate limit hit (429)"
-                        break
+                        break # पुढच्या की वर जा
+                    elif res.status_code == 404:
+                        continue # पुढचे सक्रिय मॉडेल तपासा
                     else:
-                        try:
-                            last_api_error = res.json().get('error', {}).get('message', f"HTTP {res.status_code}")
-                        except Exception:
-                            last_api_error = f"HTTP {res.status_code}"
+                        continue
                 except Exception as ex:
-                    last_api_error = f"Timeout/Conn error: {str(ex)[:30]}"
+                    last_api_error = str(ex)[:35]
                     continue
 
             if raw_output:
@@ -5198,7 +5209,6 @@ No markdown, no bold text, no greetings, no introductory text. Only {req_count} 
 
                 parts = [p.strip() for p in line.split('|')]
                 if len(parts) >= 6:
-                    # क्रमांक (उदा. १., 1., Q1:) काढून टाकणे
                     q_text = re.sub(r'^(प्र[\.\s]*\d*|प्रश्न|\d+[\.\)\-:]*|\*)\s*', '', parts[0]).strip()
                     clean_c = re.sub(r'[\s\W_]+', '', q_text.lower())
                     if not clean_c or clean_c in existing_questions_set:
@@ -5206,13 +5216,11 @@ No markdown, no bold text, no greetings, no introductory text. Only {req_count} 
 
                     existing_questions_set.add(clean_c)
 
-                    # पर्याय स्वच्छ करणे
                     opt_a = re.sub(r'^[A-Da-d1-4][\.\)\-\:]\s*', '', parts[1]).strip()
                     opt_b = re.sub(r'^[A-Da-d1-4][\.\)\-\:]\s*', '', parts[2]).strip()
                     opt_c = re.sub(r'^[A-Da-d1-4][\.\)\-\:]\s*', '', parts[3]).strip()
                     opt_d = re.sub(r'^[A-Da-d1-4][\.\)\-\:]\s*', '', parts[4]).strip()
 
-                    # अचूक उत्तर शोधणे
                     raw_corr = parts[5].strip().upper()
                     m = re.search(r'[A-D]', raw_corr)
                     final_corr = m.group(0) if m else 'A'
