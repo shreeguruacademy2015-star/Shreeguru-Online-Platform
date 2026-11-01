@@ -5146,46 +5146,60 @@ def admin_ai_generate_advanced():
                 f"केवळ {batch_size} ओळी द्या. कोणतीही प्रस्तावना, क्रमांक किंवा इतर मजकूर नको."
             )
 
+            candidate_models = [
+                "llama-3.1-8b-instant",
+                "llama3-8b-8192",
+                "llama-3.3-70b-versatile",
+                "gemma2-9b-it"
+            ]
+
             raw_output = ""
             
-            # मल्टी-की रोटेशन (Groq च्या अधिकृत ॲक्टिव्ह मॉडेलसह)
+            # मल्टी-की आणि मल्टी-मॉडेल रोटेशन
             for current_key in all_keys:
                 headers = {
                     "Authorization": f"Bearer {current_key}",
                     "Content-Type": "application/json"
                 }
-                payload = {
-                    "model": "llama-3.1-8b-instant",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.25,
-                    "max_tokens": 1800
-                }
-                try:
-                    res = requests.post(
-                        "https://api.groq.com/openai/v1/chat/completions",
-                        json=payload,
-                        headers=headers,
-                        timeout=25
-                    )
-                    if res.status_code == 200:
-                        content = res.json()["choices"][0]["message"]["content"]
-                        if content and "|" in content:
-                            raw_output = content
+
+                for active_model in candidate_models:
+                    payload = {
+                        "model": active_model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.25,
+                        "max_tokens": 1800
+                    }
+                    try:
+                        res = requests.post(
+                            "https://api.groq.com/openai/v1/chat/completions",
+                            json=payload,
+                            headers=headers,
+                            timeout=25
+                        )
+                        if res.status_code == 200:
+                            content = res.json()["choices"][0]["message"]["content"]
+                            if content and "|" in content:
+                                raw_output = content
+                                break
+                        elif res.status_code == 429:
+                            last_api_error = f"Key Quota 429: पुढची की वापरत आहे..."
                             break
-                    elif res.status_code == 429:
-                        last_api_error = f"Key Quota 429: पुढची की वापरत आहे..."
+                        elif res.status_code == 404:
+                            last_api_error = f"{active_model} 404, पुढचे मॉडेल तपासत आहे..."
+                            continue
+                        else:
+                            try:
+                                err_msg = res.json().get('error', {}).get('message', res.text[:80])
+                            except Exception:
+                                err_msg = res.text[:80]
+                            last_api_error = f"HTTP {res.status_code}: {err_msg}"
+                            continue
+                    except Exception as ex:
+                        last_api_error = f"Error: {str(ex)[:35]}"
                         continue
-                    else:
-                        # Groq कडून आलेला मूळ एरर मेसेज अचूक वाचणे
-                        try:
-                            err_msg = res.json().get('error', {}).get('message', res.text[:80])
-                        except Exception:
-                            err_msg = res.text[:80]
-                        last_api_error = f"HTTP {res.status_code}: {err_msg}"
-                        continue
-                except Exception as ex:
-                    last_api_error = f"Error: {str(ex)[:35]}"
-                    continue
+
+                if raw_output:
+                    break
 
             if not raw_output:
                 py_time.sleep(1)
