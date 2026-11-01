@@ -5148,14 +5148,14 @@ def admin_ai_generate_advanced():
 
             raw_output = ""
             
-            # मल्टी-की रोटेशन (requests द्वारे - कोणतीही नवीन लायब्ररी न लागता)
+            # मल्टी-की रोटेशन (Groq च्या अधिकृत ॲक्टिव्ह मॉडेलसह)
             for current_key in all_keys:
                 headers = {
                     "Authorization": f"Bearer {current_key}",
                     "Content-Type": "application/json"
                 }
                 payload = {
-                    "model": "llama-3.3-70b-versatile",
+                    "model": "llama-3.1-8b-instant",
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": 0.25,
                     "max_tokens": 1800
@@ -5176,7 +5176,13 @@ def admin_ai_generate_advanced():
                         last_api_error = f"Key Quota 429: पुढची की वापरत आहे..."
                         continue
                     else:
-                        last_api_error = f"HTTP {res.status_code}"
+                        # Groq कडून आलेला मूळ एरर मेसेज अचूक वाचणे
+                        try:
+                            err_msg = res.json().get('error', {}).get('message', res.text[:80])
+                        except Exception:
+                            err_msg = res.text[:80]
+                        last_api_error = f"HTTP {res.status_code}: {err_msg}"
+                        continue
                 except Exception as ex:
                     last_api_error = f"Error: {str(ex)[:35]}"
                     continue
