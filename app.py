@@ -5064,7 +5064,7 @@ def admin_delete_subject(subject_id):
     return redirect('/admin/dashboard?tab=subjects_mgmt')
 
 # =============================================================================
-# 6. DIGITAL SMART AI QUESTION GENERATOR (TURBO ZERO-TIMEOUT ENGINE)
+# 6. DIGITAL SMART AI QUESTION GENERATOR (FOOLPROOF BULLETPROOF ENGINE)
 # =============================================================================
 
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
@@ -5088,7 +5088,7 @@ def admin_ai_generate_advanced():
         return jsonify({"success": False, "error": "Render Environment मध्ये 'GROQ_API_KEYS' सापडली नाही!"}), 400
 
     diff_map = {
-        "easy": "काठिण्य पातळी: सोपी (थेट, वस्तुनिष्ठ प्रश्न).",
+        "easy": "काठिण्य पातळी: सोपी (थेट वस्तुनिष्ठ प्रश्न).",
         "medium": "काठिण्य पातळी: मध्यम (पोलीस भरती नियमित दर्जा).",
         "hard": "काठिण्य पातळी: कठीण (MPSC स्तर व विधानात्मक प्रश्न)."
     }
@@ -5097,9 +5097,8 @@ def admin_ai_generate_advanced():
     import random
     import re
     generated_list = []
-    last_api_error = ""
+    last_api_error = "Groq कडून फॉरमॅटनुसार डेटा आला नाही"
 
-    # ड्युप्लिकेट तपासणी
     existing_questions_set = set()
     try:
         with get_db() as conn:
@@ -5108,10 +5107,9 @@ def admin_ai_generate_advanced():
                 for r in cur.fetchall():
                     q_clean = re.sub(r'[\s\W_]+', '', str(r['question']).strip().lower())
                     existing_questions_set.add(q_clean)
-    except Exception as db_err:
+    except Exception:
         pass
 
-    # जलद मॉडेल्स
     candidate_models = ["llama-3.1-8b-instant", "llama3-8b-8192"]
 
     for subj, num in subject_counts.items():
@@ -5123,23 +5121,26 @@ def admin_ai_generate_advanced():
         if total_req <= 0:
             continue
 
-        # एका वेळी कमाल १० प्रश्न मागणे (टाईमआऊट टाळण्यासाठी)
+        # एका वेळी कमाल ५ ते १० प्रश्न
         req_count = min(total_req, 10)
 
         ca_rule = ""
         if "चालू घडामोडी" in subj:
-            ca_rule = "विशेष सूचना: प्रश्न केवळ २०२५-२०२६ चालू घडामोडींवर असावेत."
+            ca_rule = "प्रश्न केवळ २०२५-२०२६ चालू घडामोडींवर असावेत."
 
-        prompt = (
-            f"परीक्षेचे नाव: {department}\n"
-            f"विषय: {subj}\n"
-            f"{diff_instruction}\n"
-            f"{ca_rule}\n\n"
-            f"एकूण {req_count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n"
-            f"फॉरमॅट (प्रत्येक प्रश्न एका ओळीत, पाईप | वापरून):\n"
-            f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
-            f"फक्त {req_count} ओळी द्या. कोणतीही प्रस्तावना नको."
-        )
+        # अतिशय सोपा व स्पष्ट प्रॉम्प्ट जेणेकरून Groq कधीही चुकत नाही
+        prompt = f"""You are an expert Marathi paper setter for {department}.
+विषय: {subj}
+{diff_instruction}
+{ca_rule}
+
+Create exactly {req_count} multiple-choice questions in Marathi.
+STRICT FORMAT RULE:
+Output EACH question on a new single line using '|' separator exactly like this:
+प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (फक्त A, B, C किंवा D) | स्पष्टीकरण
+
+No markdown, no bold text, no greetings, no introductory text. Only {req_count} lines.
+"""
 
         raw_output = ""
         for current_key in all_keys:
@@ -5150,8 +5151,11 @@ def admin_ai_generate_advanced():
             for active_model in candidate_models:
                 payload = {
                     "model": active_model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.25,
+                    "messages": [
+                        {"role": "system", "content": "You output only structured text with pipe (|) separator in Marathi. No extra text."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.3,
                     "max_tokens": 1500
                 }
                 try:
@@ -5159,19 +5163,25 @@ def admin_ai_generate_advanced():
                         "https://api.groq.com/openai/v1/chat/completions",
                         json=payload,
                         headers=headers,
-                        timeout=9  # ९ सेकंदांत रिस्पॉन्स न आल्यास लगेच पुढची की/मॉडेल ट्राय करणे
+                        timeout=12
                     )
                     if res.status_code == 200:
                         content = res.json()["choices"][0]["message"]["content"]
                         if content and "|" in content:
                             raw_output = content
                             break
+                        else:
+                            last_api_error = "Groq ने उत्तरात '|' फॉरमॅट दिला नाही."
                     elif res.status_code == 429:
-                        last_api_error = "Rate Limit 429"
+                        last_api_error = "Rate limit hit (429)"
                         break
                     else:
-                        continue
-                except Exception:
+                        try:
+                            last_api_error = res.json().get('error', {}).get('message', f"HTTP {res.status_code}")
+                        except Exception:
+                            last_api_error = f"HTTP {res.status_code}"
+                except Exception as ex:
+                    last_api_error = f"Timeout/Conn error: {str(ex)[:30]}"
                     continue
 
             if raw_output:
@@ -5179,32 +5189,36 @@ def admin_ai_generate_advanced():
 
         if raw_output:
             for line in raw_output.strip().split('\n'):
+                line = line.strip()
+                if not line or "|" not in line:
+                    continue
+
                 parts = [p.strip() for p in line.split('|')]
                 if len(parts) >= 6:
-                    q_text = re.sub(r'^\d+[\.\)\-]\s*', '', parts[0]).strip()
+                    # क्रमांक (उदा. १., 1., Q1:) काढून टाकणे
+                    q_text = re.sub(r'^(प्र[\.\s]*\d*|प्रश्न|\d+[\.\)\-:]*|\*)\s*', '', parts[0]).strip()
                     clean_c = re.sub(r'[\s\W_]+', '', q_text.lower())
                     if not clean_c or clean_c in existing_questions_set:
                         continue
 
                     existing_questions_set.add(clean_c)
 
-                    options = [('A', parts[1]), ('B', parts[2]), ('C', parts[3]), ('D', parts[4])]
-                    raw_corr = parts[5].upper() if parts[5].upper() in ['A', 'B', 'C', 'D'] else 'A'
-                    corr_text = dict(options).get(raw_corr, parts[1])
+                    # पर्याय स्वच्छ करणे
+                    opt_a = re.sub(r'^[A-Da-d1-4][\.\)\-\:]\s*', '', parts[1]).strip()
+                    opt_b = re.sub(r'^[A-Da-d1-4][\.\)\-\:]\s*', '', parts[2]).strip()
+                    opt_c = re.sub(r'^[A-Da-d1-4][\.\)\-\:]\s*', '', parts[3]).strip()
+                    opt_d = re.sub(r'^[A-Da-d1-4][\.\)\-\:]\s*', '', parts[4]).strip()
 
-                    shuffled_opts = [parts[1], parts[2], parts[3], parts[4]]
-                    random.shuffle(shuffled_opts)
+                    # अचूक उत्तर शोधणे
+                    raw_corr = parts[5].strip().upper()
+                    m = re.search(r'[A-D]', raw_corr)
+                    final_corr = m.group(0) if m else 'A'
 
-                    final_corr = 'A'
-                    for idx, opt_val in enumerate(shuffled_opts):
-                        if opt_val == corr_text:
-                            final_corr = ['A', 'B', 'C', 'D'][idx]
-                            break
-
-                    exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार सविस्तर विश्लेषण.'
+                    exp = parts[6].strip() if len(parts) > 6 and parts[6].strip() else 'महाराष्ट्र पोलीस भरती संदर्भानुसार सविस्तर स्पष्टीकरण.'
+                    
                     generated_list.append((
                         test_id, q_text,
-                        shuffled_opts[0], shuffled_opts[1], shuffled_opts[2], shuffled_opts[3],
+                        opt_a, opt_b, opt_c, opt_d,
                         final_corr, exp, subj
                     ))
 
