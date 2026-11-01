@@ -5065,7 +5065,7 @@ def admin_delete_subject(subject_id):
     return redirect('/admin/dashboard?tab=subjects_mgmt')
 
 # =============================================================================
-# 6. DIGITAL SMART AI QUESTION GENERATOR (GROQ MULTI-KEY AUTO ROTATION ENGINE)
+# 6. DIGITAL SMART AI QUESTION GENERATOR (TURBO ZERO-TIMEOUT ENGINE)
 # =============================================================================
 
 @app.route('/admin/ai_generate_advanced', methods=['POST'])
@@ -5089,18 +5089,18 @@ def admin_ai_generate_advanced():
         return jsonify({"success": False, "error": "Render Environment मध्ये 'GROQ_API_KEYS' सापडली नाही!"}), 400
 
     diff_map = {
-        "easy": "काठिण्य पातळी: सोपी (थेट, वस्तुनिष्ठ व पायाभूत प्रश्न).",
+        "easy": "काठिण्य पातळी: सोपी (थेट, वस्तुनिष्ठ प्रश्न).",
         "medium": "काठिण्य पातळी: मध्यम (पोलीस भरती नियमित दर्जा).",
         "hard": "काठिण्य पातळी: कठीण (MPSC स्तर व विधानात्मक प्रश्न)."
     }
-    diff_instruction = diff_map.get(difficulty, "काठिण्य पातळी: प्रमाण समतोल (सुलभ व मध्यम दर्जा).")
+    diff_instruction = diff_map.get(difficulty, "काठिण्य पातळी: प्रमाण समतोल.")
 
     import random
     import re
-    import time as py_time
     generated_list = []
     last_api_error = ""
 
+    # ड्युप्लिकेट तपासणी
     existing_questions_set = set()
     try:
         with get_db() as conn:
@@ -5110,7 +5110,10 @@ def admin_ai_generate_advanced():
                     q_clean = re.sub(r'[\s\W_]+', '', str(r['question']).strip().lower())
                     existing_questions_set.add(q_clean)
     except Exception as db_err:
-        print(f"Db fetch notice: {db_err}")
+        pass
+
+    # जलद मॉडेल्स
+    candidate_models = ["llama-3.1-8b-instant", "llama3-8b-8192"]
 
     for subj, num in subject_counts.items():
         try:
@@ -5121,94 +5124,65 @@ def admin_ai_generate_advanced():
         if total_req <= 0:
             continue
 
+        # एका वेळी कमाल १० प्रश्न मागणे (टाईमआऊट टाळण्यासाठी)
+        req_count = min(total_req, 10)
+
         ca_rule = ""
         if "चालू घडामोडी" in subj:
-            ca_rule = "विशेष सूचना: प्रश्न केवळ २०२५-२०२६ या चालू कालावधीतील घडामोडींवरच असावेत."
+            ca_rule = "विशेष सूचना: प्रश्न केवळ २०२५-२०२६ चालू घडामोडींवर असावेत."
 
-        collected = 0
-        attempts = 0
+        prompt = (
+            f"परीक्षेचे नाव: {department}\n"
+            f"विषय: {subj}\n"
+            f"{diff_instruction}\n"
+            f"{ca_rule}\n\n"
+            f"एकूण {req_count} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n"
+            f"फॉरमॅट (प्रत्येक प्रश्न एका ओळीत, पाईप | वापरून):\n"
+            f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
+            f"फक्त {req_count} ओळी द्या. कोणतीही प्रस्तावना नको."
+        )
 
-        while collected < total_req and attempts < 6:
-            attempts += 1
-            batch_size = min(total_req - collected, 5)
-
-            prompt = (
-                f"परीक्षेचे नाव: {department}\n"
-                f"विषय: {subj}\n"
-                f"{diff_instruction}\n"
-                f"{ca_rule}\n\n"
-                f"कडक सूचना:\n"
-                f"१. कोणताही प्रश्न पुन्हा रिपीट करू नका.\n"
-                f"२. एकूण {batch_size} बहुपर्यायी प्रश्न (MCQs) शुद्ध मराठीतून तयार करा.\n"
-                f"३. ४ पैकी एकच अचूक उत्तर असावे आणि अचूक पर्याय A, B, C, D मध्ये समप्रमाणात वितरित करा.\n"
-                f"४. प्रत्येक प्रश्न खालील फॉरमॅटमध्ये एका ओळीत द्या (पाईप | वापरून):\n"
-                f"प्रश्न | पर्याय A | पर्याय B | पर्याय C | पर्याय D | अचूक पर्याय (A/B/C/D) | स्पष्टीकरण\n"
-                f"केवळ {batch_size} ओळी द्या. कोणतीही प्रस्तावना, क्रमांक किंवा इतर मजकूर नको."
-            )
-
-            candidate_models = [
-                "llama-3.1-8b-instant",
-                "llama3-8b-8192",
-                "gemma2-9b-it"
-            ]
-
-            raw_output = ""
-            
-            # वेगवान मल्टी-की रोटेशन
-            for current_key in all_keys:
-                headers = {
-                    "Authorization": f"Bearer {current_key}",
-                    "Content-Type": "application/json"
+        raw_output = ""
+        for current_key in all_keys:
+            headers = {
+                "Authorization": f"Bearer {current_key}",
+                "Content-Type": "application/json"
+            }
+            for active_model in candidate_models:
+                payload = {
+                    "model": active_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.25,
+                    "max_tokens": 1500
                 }
-
-                for active_model in candidate_models:
-                    payload = {
-                        "model": active_model,
-                        "messages": [{"role": "user", "content": prompt}],
-                        "temperature": 0.25,
-                        "max_tokens": 1200
-                    }
-                    try:
-                        # टाईमआऊट ८ सेकंद ठेवा जेणेकरून Render हँग होणार नाही
-                        res = requests.post(
-                            "https://api.groq.com/openai/v1/chat/completions",
-                            json=payload,
-                            headers=headers,
-                            timeout=8
-                        )
-                        if res.status_code == 200:
-                            content = res.json()["choices"][0]["message"]["content"]
-                            if content and "|" in content:
-                                raw_output = content
-                                break
-                        elif res.status_code == 429:
-                            last_api_error = "Key Rate Limit (429)"
-                            break  # या की चा कोटा संपला, लगेच पुढची की घ्या
-                        elif res.status_code in [400, 404]:
-                            continue  # मॉडेल उपलब्ध नाही, पुढचे मॉडेल लगेच तपासा
-                        else:
-                            continue
-                    except requests.exceptions.Timeout:
-                        continue  # टाईमआऊट झाल्यास लगेच पुढचे मॉडेल ट्राय करा
-                    except Exception as ex:
+                try:
+                    res = requests.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        json=payload,
+                        headers=headers,
+                        timeout=9  # ९ सेकंदांत रिस्पॉन्स न आल्यास लगेच पुढची की/मॉडेल ट्राय करणे
+                    )
+                    if res.status_code == 200:
+                        content = res.json()["choices"][0]["message"]["content"]
+                        if content and "|" in content:
+                            raw_output = content
+                            break
+                    elif res.status_code == 429:
+                        last_api_error = "Rate Limit 429"
+                        break
+                    else:
                         continue
+                except Exception:
+                    continue
 
-                if raw_output:
-                    break
+            if raw_output:
+                break
 
-            if not raw_output:
-                py_time.sleep(1)
-                continue
-
+        if raw_output:
             for line in raw_output.strip().split('\n'):
-                if collected >= total_req:
-                    break
-
                 parts = [p.strip() for p in line.split('|')]
                 if len(parts) >= 6:
-                    q_text = parts[0]
-                    q_text = re.sub(r'^\d+[\.\)\-]\s*', '', q_text).strip()
-
+                    q_text = re.sub(r'^\d+[\.\)\-]\s*', '', parts[0]).strip()
                     clean_c = re.sub(r'[\s\W_]+', '', q_text.lower())
                     if not clean_c or clean_c in existing_questions_set:
                         continue
@@ -5216,19 +5190,16 @@ def admin_ai_generate_advanced():
                     existing_questions_set.add(clean_c)
 
                     options = [('A', parts[1]), ('B', parts[2]), ('C', parts[3]), ('D', parts[4])]
-                    raw_corr = parts[5].upper()
-                    if raw_corr not in ['A', 'B', 'C', 'D']:
-                        raw_corr = 'A'
-
+                    raw_corr = parts[5].upper() if parts[5].upper() in ['A', 'B', 'C', 'D'] else 'A'
                     corr_text = dict(options).get(raw_corr, parts[1])
+
                     shuffled_opts = [parts[1], parts[2], parts[3], parts[4]]
                     random.shuffle(shuffled_opts)
 
-                    letters = ['A', 'B', 'C', 'D']
                     final_corr = 'A'
                     for idx, opt_val in enumerate(shuffled_opts):
                         if opt_val == corr_text:
-                            final_corr = letters[idx]
+                            final_corr = ['A', 'B', 'C', 'D'][idx]
                             break
 
                     exp = parts[6] if len(parts) > 6 else 'महाराष्ट्र पोलीस भरती संदर्भानुसार सविस्तर विश्लेषण.'
@@ -5237,10 +5208,9 @@ def admin_ai_generate_advanced():
                         shuffled_opts[0], shuffled_opts[1], shuffled_opts[2], shuffled_opts[3],
                         final_corr, exp, subj
                     ))
-                    collected += 1
 
     if not generated_list:
-        return jsonify({"success": False, "error": f"Groq कडून प्रश्न तयार झाले नाहीत. कारण: [{last_api_error}]. कृपया १ मिनिट थांबून पुन्हा प्रयत्न करा."}), 500
+        return jsonify({"success": False, "error": f"Groq कडून प्रश्न तयार झाले नाहीत. कारण: [{last_api_error}]. कृपया पुन्हा प्रयत्न करा."}), 500
 
     try:
         with get_db() as conn:
@@ -5254,8 +5224,7 @@ def admin_ai_generate_advanced():
         return jsonify({
             "success": True, 
             "inserted_count": len(generated_list),
-            "test_id": test_id,
-            "redirect_url": f"/admin/dashboard?tab=questions&q_subtab=ai&filter_test_id={test_id}"
+            "test_id": test_id
         })
     except Exception as db_err:
         return jsonify({"success": False, "error": f"डेटाबेस नोंद त्रुटी: {str(db_err)}"}), 500
