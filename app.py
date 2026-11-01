@@ -5149,13 +5149,12 @@ def admin_ai_generate_advanced():
             candidate_models = [
                 "llama-3.1-8b-instant",
                 "llama3-8b-8192",
-                "llama-3.3-70b-versatile",
                 "gemma2-9b-it"
             ]
 
             raw_output = ""
             
-            # मल्टी-की आणि मल्टी-मॉडेल रोटेशन
+            # वेगवान मल्टी-की रोटेशन
             for current_key in all_keys:
                 headers = {
                     "Authorization": f"Bearer {current_key}",
@@ -5167,14 +5166,15 @@ def admin_ai_generate_advanced():
                         "model": active_model,
                         "messages": [{"role": "user", "content": prompt}],
                         "temperature": 0.25,
-                        "max_tokens": 1800
+                        "max_tokens": 1200
                     }
                     try:
+                        # टाईमआऊट ८ सेकंद ठेवा जेणेकरून Render हँग होणार नाही
                         res = requests.post(
                             "https://api.groq.com/openai/v1/chat/completions",
                             json=payload,
                             headers=headers,
-                            timeout=25
+                            timeout=8
                         )
                         if res.status_code == 200:
                             content = res.json()["choices"][0]["message"]["content"]
@@ -5182,20 +5182,15 @@ def admin_ai_generate_advanced():
                                 raw_output = content
                                 break
                         elif res.status_code == 429:
-                            last_api_error = f"Key Quota 429: पुढची की वापरत आहे..."
-                            break
-                        elif res.status_code == 404:
-                            last_api_error = f"{active_model} 404, पुढचे मॉडेल तपासत आहे..."
-                            continue
+                            last_api_error = "Key Rate Limit (429)"
+                            break  # या की चा कोटा संपला, लगेच पुढची की घ्या
+                        elif res.status_code in [400, 404]:
+                            continue  # मॉडेल उपलब्ध नाही, पुढचे मॉडेल लगेच तपासा
                         else:
-                            try:
-                                err_msg = res.json().get('error', {}).get('message', res.text[:80])
-                            except Exception:
-                                err_msg = res.text[:80]
-                            last_api_error = f"HTTP {res.status_code}: {err_msg}"
                             continue
+                    except requests.exceptions.Timeout:
+                        continue  # टाईमआऊट झाल्यास लगेच पुढचे मॉडेल ट्राय करा
                     except Exception as ex:
-                        last_api_error = f"Error: {str(ex)[:35]}"
                         continue
 
                 if raw_output:
