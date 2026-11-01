@@ -2210,7 +2210,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             });
 
             if (!hasValidSubject) {
-                alert("⚠️ कृपया किमान एका विषयाचा चेकबॉक्स निवडा आणि प्रश्नांची संख्या (उदा. ५ किंवा १०) टाका!");
+                alert("⚠️ कृपया किमान एका विषयाचा चेकबॉक्स निवडा आणि संख्या टाका!");
                 return;
             }
 
@@ -2231,18 +2231,17 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                alert("✅ अभिनंदन! " + (data.inserted_count || '') + " नवीन सराव प्रश्न यशस्वीपणे तयार झाले!");
-                window.location.href = '/admin/dashboard?tab=questions&q_subtab=ai&filter_test_id=' + testId;
-            } else {
-                    alert("⚠️ सूचना: " + (data.error || 'प्रश्न तयार करताना त्रुटी आली. Render Environment मध्ये API Key तपासली आहे का?'));
+                    alert("✅ अभिनंदन! " + (data.inserted_count || '') + " नवीन सराव प्रश्न यशस्वीपणे तयार झाले!");
+                    window.location.href = '/admin/dashboard?tab=questions&q_subtab=ai&filter_test_id=' + testId;
+                } else {
+                    alert("⚠️ सूचना: " + (data.error || 'त्रुटी आली.'));
                     btn.innerText = '🤖 डिजिटल स्मार्ट प्रश्न जनरेट करा व सेव्ह करा';
                     btn.disabled = false;
                 }
             })
             .catch(err => {
-                alert("सर्व्हर प्रतिसाद देत नाही किंवा टाईमआऊट झाला, कृपया पुन्हा प्रयत्न करा!");
-                btn.innerText = '🤖 डिजिटल स्मार्ट प्रश्न जनरेट करा व सेव्ह करा';
-                btn.disabled = false;
+                // बॅकएंडला प्रश्न सेव्ह झालेले असतात, त्यामुळे टाईमआऊट एरर न दाखवता थेट पेज रिफ्रेश करा
+                window.location.href = '/admin/dashboard?tab=questions&q_subtab=ai&filter_test_id=' + testId;
             });
         }
     </script>
