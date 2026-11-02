@@ -1120,27 +1120,6 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- Mahasangram Banner -->
-    <div id="paidHeroCard" class="paid-hero-card">
-        <h3>🎯 अतिसंभाव्य महासंग्राम टेस्ट संच (Mission Khaki 2026)</h3>
-        <p>🔥 <b>फक्त ४ रुपये मध्ये प्रश्नपत्रिका सोडवून राज्यात, जिल्ह्यात व संवर्गनिहाय रँक तपासा!</b><br>
-        गेल्या भरतीत १ मार्काने खाकी वर्दी हुकली होती का? एका मार्काची किंमत १ वर्षाची मेहनत असते! लेखी परीक्षेत ९०+ गुण मिळवण्यासाठी दर्जात्मक प्रश्नांचा सराव अत्यंत महत्त्वाचा आहे.</p>
-        
-        <div class="package-box">
-            <span style="color:#fde047; font-weight:800; font-size:16px;"></span><br>
-            <small style="color:#94a3b8;">(महासंग्राम टेस्ट सोडवा आणि संपूर्ण महाराष्ट्रातील गुणवत्ता यादी पहा!)</small>
-        </div>
-
-        <div class="unlock-badge" style="cursor: pointer; line-height: 1.6; display: inline-block; padding: 12px 20px; text-align: center;" onclick="document.getElementById('friend_invite_phone').focus(); window.scrollTo({top: 180, behavior: 'smooth'});">
-            <div>🎁 <b>विशेष ऑफर:</b> ३ मित्रांना मोफत टेस्ट शेअर करा; त्यांनी टेस्ट सोडवताच तुम्हाला २ महासंग्राम टेस्ट्स १००% मोफत मिळतील!</div>
-            <div style="margin-top: 8px;">
-                <span style="background: #022c22; color: #a7f3d0; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid #059669; display: inline-block;">
-                    📲 येथे क्लिक करून लिंक पाठवा ➔
-                </span>
-            </div>
-        </div>
-    </div>
-
     <!-- Prashnapatrika Grid -->
     <div id="testsContainer" class="test-grid">
         {% for t in tests %}
@@ -1197,6 +1176,26 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             <span style="font-size:13px; color:#64748b;">आमचे तज्ज्ञ शिक्षक नवीन दर्जेदार प्रश्नांची रचना करत आहेत. खाकीची तयारी अखंड चालू ठेवा! ⚔️</span>
         </div>
     </div>
+    <!-- Mahasangram Banner (टेस्ट्सच्या खाली) -->
+<div id="paidHeroCard" class="paid-hero-card" style="width: 100% !important; max-width: 100% !important; margin: 30px auto 15px auto !important; margin-left: 0 !important; margin-right: 0 !important; padding: 16px !important; box-sizing: border-box !important; overflow: hidden !important; text-align: center;">
+    <h3 style="color: #fde047; margin-top: 0;">🎯 अतिसंभाव्य महासंग्राम टेस्ट संच (Mission Khaki 2026)</h3>
+    <p style="color: #cbd5e1; line-height: 1.6;">🔥 <b>फक्त ४ रुपये मध्ये प्रश्नपत्रिका सोडवून राज्यात, जिल्ह्यात व संवर्गनिहाय रँक तपासा!</b><br>
+    गेल्या भरतीत १ मार्काने खाकी वर्दी हुकली होती का? एका मार्काची किंमत १ वर्षाची मेहनत असते! लेखी परीक्षेत ९०+ गुण मिळवण्यासाठी दर्जात्मक प्रश्नांचा सराव अत्यंत महत्त्वाचा आहे.</p>
+    
+    <div class="package-box" style="margin-bottom: 12px;">
+        <span style="color:#fde047; font-weight:800; font-size:16px;"></span><br>
+        <small style="color:#94a3b8;">(महासंग्राम टेस्ट सोडवा आणि संपूर्ण महाराष्ट्रातील गुणवत्ता यादी पहा!)</small>
+    </div>
+
+    <div class="unlock-badge" style="cursor: pointer; line-height: 1.6; display: inline-block; width: 100%; max-width: 600px; box-sizing: border-box; background: linear-gradient(135deg, #059669, #10b981); border-radius: 12px; padding: 14px 18px; text-align: center; border: 1px solid #34d399;" onclick="document.getElementById('friend_invite_phone').focus(); window.scrollTo({top: 180, behavior: 'smooth'});">
+        <div style="color: #ffffff; font-weight: bold; font-size: 14px;">🎁 <b>विशेष ऑफर:</b> ३ मित्रांना मोफत टेस्ट शेअर करा; त्यांनी टेस्ट सोडवताच तुम्हाला २ महासंग्राम टेस्ट्स १००% मोफत मिळतील!</div>
+        <div style="margin-top: 10px;">
+            <span style="background: #022c22; color: #a7f3d0; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid #059669; display: inline-block;">
+                📲 येथे क्लिक करून लिंक पाठवा ➔
+            </span>
+        </div>
+    </div>
+</div>
 
     <!-- Portal Mahiti v Bhavnik Saad Tab -->
     <div id="aboutContainer" class="section-box" style="text-align:left;">
