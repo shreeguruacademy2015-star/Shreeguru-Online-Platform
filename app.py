@@ -3422,7 +3422,7 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                 <!-- २. एकूण टेस्ट्स संख्या -->
                 <div>
                     <label style="font-weight: bold; font-size: 13px; color: #cbd5e1;">समाविष्ट एकूण टेस्ट्स मर्यादा (संख्या):</label>
-                    <input type="number" name="total_tests_count" value="{{ pkg_config.total_tests_count or 25 }}" min="1" max="100" required style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 10px; border-radius: 6px; margin-top: 4px;">
+                    <input type="text" name="total_tests_count" value="{{ pkg_config.total_tests_count or '1-25' }}" placeholder="उदा. 1-25 किंवा 25" required style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 10px; border-radius: 6px; margin-top: 4px;">
                 </div>
 
                 <!-- ३. मूळ किंमत (MRP) -->
@@ -3965,15 +3965,26 @@ def take_test(test_id):
                 if p_row and p_row['unlocked_paid_count'] >= 2:
                     has_free_pass = True
                     
-            # 🎯 कॉम्बो पॅकेज खरेदी तपासणी (Combo Buyer Auto-Unlock)
+            # 🎯 कॉम्बो खरेदीदार तपासणी (उदा. 1-25 किंवा फक्त 25)
             has_combo_pass = False
             if current_phone:
-                cur.execute("""
-                    SELECT 1 FROM user_purchases 
-                    WHERE user_phone = %s AND package_type = 'combo_25' AND status = 'success'
-                """, (current_phone,))
+                cur.execute("SELECT 1 FROM user_purchases WHERE user_phone = %s AND package_type = 'combo_25' AND status = 'success'", (current_phone,))
                 if cur.fetchone():
-                    has_combo_pass = True         
+                    cur.execute("SELECT total_tests_count FROM portal_package_config WHERE package_key='combo_master' LIMIT 1")
+                    cfg = cur.fetchone()
+                    t_seq = int(test.get('sequence_order') or test.get('id') or 1)
+                    val_str = str(cfg['total_tests_count']) if (cfg and cfg.get('total_tests_count')) else "25"
+
+                    if '-' in val_str:
+                        parts = val_str.split('-')
+                        start_num = int(parts[0].strip() or 1)
+                        end_num = int(parts[1].strip() or 25)
+                        if start_num <= t_seq <= end_num:
+                            has_combo_pass = True
+                    else:
+                        limit_val = int(val_str) if str(val_str).isdigit() else 25
+                        if t_seq <= limit_val:
+                            has_combo_pass = True         
 
             # सशुल्क टेस्टसाठी ९० दिवसांचे टोकन पडताळणी
             token_valid = False
@@ -6325,7 +6336,7 @@ def save_master_package_config():
         return redirect('/admin/login')
 
     title = request.form.get('package_title', '२५ अतिसंभाव्य १०० गुण टेस्ट संच').strip()
-    total_tests = int(request.form.get('total_tests_count', 25) or 25)
+    total_tests = str(request.form.get('total_tests_count', '1-25')).strip()
     orig_price = float(request.form.get('original_price', 100.0) or 100.0)
     offer_price = float(request.form.get('offer_price', 50.0) or 50.0)
     single_price = float(request.form.get('single_test_price', 4.0) or 4.0)
