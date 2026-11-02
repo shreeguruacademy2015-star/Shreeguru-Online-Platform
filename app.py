@@ -515,11 +515,13 @@ def init_master_db():
 
     except Exception as db_init_err:
         print(f"Master Database Initialization Critical Error: {db_init_err}")
-        try:
+
+try:
     init_master_db()
 except Exception as e:
     print(f"Init DB Run Error: {e}")
-        # =============================================================================
+
+# =============================================================================
 # MAHARASHTRA POLICE BHARTI ONLINE TEST PORTAL 2026 - MASTER CORE (PART 2/10)
 # MODULE: FULL HTML TEMPLATES - LEGAL TERMS, MAINTENANCE & EXPANDED HOME PAGE
 # =============================================================================
