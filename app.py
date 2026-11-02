@@ -1340,7 +1340,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
 
     <!-- 4. Atisambhavya 100 Gun Sanch -->
     <div style="background:#0f172a; border-left:4px solid #22c55e; padding:12px 15px; border-radius:6px; margin-bottom:10px;">
-        <h4 style="color:#4ade80; margin:0 0 6px 0; font-size:16px;">🎯 अतिसंभाव्य १०० गुण संच (₹९९)</h4>
+        <h4 style="color:#4ade80; margin:0 0 6px 0; font-size:16px;">🎯 अतिसंभाव्य १०० गुण संच</h4>
         <p style="font-size:13.5px; color:#e2e8f0; margin:0; line-height:1.6;">
             <b>का सोडवावी?</b> पोलीस भरतीला वारंवार विचारले जाणारे अतिसंभाव्य आणि निवडक दर्जाचे प्रश्न सराव करण्यासाठी.<br>
             <b>कशी सोडवावी?</b> सर्व विषयांचा अभ्यास रिव्हाईज करून सराव पेपर म्हणून शांततेत सोडवावी.<br>
@@ -2380,7 +2380,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     </div>
 </div>
                 <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold;">्स</div>
-                <div style="font-size: 18px; color: #38bdf8; font-weight: bold; line-height: 1.2;">{{ total_visits_count }} वेळा</div>
             </div>
         </div>
     </div>
