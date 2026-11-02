@@ -392,6 +392,39 @@ def init_master_db():
                     is_deleted INTEGER DEFAULT 0
                 )''')
 
+                # 17. User Purchases Table (कॉम्बो व इतर टेस्ट खरेदी रेकॉर्ड)
+                cur.execute('''CREATE TABLE IF NOT EXISTS user_purchases (
+                    id SERIAL PRIMARY KEY,
+                    user_phone VARCHAR(20) NOT NULL,
+                    package_type VARCHAR(50) NOT NULL,
+                    amount NUMERIC(10, 2) NOT NULL,
+                    status VARCHAR(20) DEFAULT 'success',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );''')
+
+                # 18. All-in-One Package & Pricing Config Table
+                cur.execute('''CREATE TABLE IF NOT EXISTS portal_package_config (
+                    id SERIAL PRIMARY KEY,
+                    package_key VARCHAR(50) UNIQUE NOT NULL DEFAULT 'combo_master',
+                    package_title VARCHAR(150) NOT NULL DEFAULT 'संपूर्ण २५ अतिसंभाव्य १०० गुण टेस्ट संच',
+                    total_tests_count INT NOT NULL DEFAULT 25,
+                    original_price NUMERIC(10, 2) NOT NULL DEFAULT 100.0,
+                    offer_price NUMERIC(10, 2) NOT NULL DEFAULT 50.0,
+                    single_test_price NUMERIC(10, 2) NOT NULL DEFAULT 4.0,
+                    offer_end_time TIMESTAMP NULL,
+                    is_timer_enabled BOOLEAN DEFAULT TRUE,
+                    is_package_active BOOLEAN DEFAULT TRUE,
+                    banner_badge_text VARCHAR(100) DEFAULT '🔥 महा-धमाका कॉम्बो ऑफर',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );''')
+
+                # सुरुवातीचे डिफॉल्ट रेकॉर्ड
+                cur.execute("""
+                    INSERT INTO portal_package_config (package_key) 
+                    VALUES ('combo_master') 
+                    ON CONFLICT (package_key) DO NOTHING;
+                """)
+
                 # सर्व २९ विषयांची अधिकृत क्रमाने नोंदणी
                 default_subjects = [
                     ('मराठी व्याकरण व शब्दसंग्रह', 1),
@@ -1176,6 +1209,55 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             <span style="font-size:13px; color:#64748b;">आमचे तज्ज्ञ शिक्षक नवीन दर्जेदार प्रश्नांची रचना करत आहेत. खाकीची तयारी अखंड चालू ठेवा! ⚔️</span>
         </div>
     </div>
+    <!-- 🎯 डायनॅमिक स्मार्ट पॅकेज बॅनर (All-in-One Controller द्वारे नियंत्रित) -->
+    {% if pkg_config and pkg_config.is_package_active %}
+    <div id="dynamicComboCard" style="background: linear-gradient(135deg, #0f172a, #1e293b); border: 2px solid #f59e0b; border-radius: 14px; padding: 20px 16px; margin: 25px auto 15px auto; max-width: 720px; text-align: center; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25); box-sizing: border-box;">
+        <span style="background: #ef4444; color: white; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase;">
+            {{ pkg_config.banner_badge_text or '🔥 महा-धमाका कॉम्बो ऑफर' }}
+        </span>
+        
+        <h3 style="color: #fde047; font-size: 21px; margin: 12px 0 6px 0;">
+            {{ pkg_config.package_title or 'संपूर्ण २५ अतिसंभाव्य १०० गुण टेस्ट संच' }}
+        </h3>
+        
+        <p style="color: #cbd5e1; font-size: 14px; margin: 0 0 12px 0; line-height: 1.5;">
+            प्रत्येक टेस्ट ₹{{ pkg_config.single_test_price|int }} वेगळी घेण्यापेक्षा संपूर्ण {{ pkg_config.total_tests_count }} टेस्ट्स एकाच वेळी मिळवा!<br>
+            <span style="text-decoration: line-through; color: #94a3b8; font-size: 15px;">₹{{ pkg_config.original_price|int }}</span> 
+            <b style="color: #10b981; font-size: 22px;"> फक्त ₹{{ pkg_config.offer_price|int }} मध्ये!</b>
+        </p>
+
+        {% if pkg_config.is_timer_enabled and pkg_config.offer_end_time %}
+        <div id="comboCountdownBox" style="background: rgba(239, 68, 68, 0.15); border: 1px dashed #ef4444; color: #fca5a5; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 13px; display: inline-block; margin-bottom: 12px;">
+            ⏳ ऑफर संपण्यास वेळ शिल्लक: <span id="comboTimerDisplay">गणना सुरू आहे...</span>
+        </div>
+        <script>
+            (function() {
+                var targetDate = new Date("{{ pkg_config.offer_end_time.strftime('%Y-%m-%dT%H:%M:%S') if pkg_config.offer_end_time else '' }}").getTime();
+                if(targetDate) {
+                    var timerInt = setInterval(function() {
+                        var now = new Date().getTime();
+                        var dist = targetDate - now;
+                        if(dist < 0) {
+                            clearInterval(timerInt);
+                            document.getElementById('comboCountdownBox').innerHTML = "⚠️ ऑफर संपली आहे!";
+                            return;
+                        }
+                        var h = Math.floor(dist / (1000 * 60 * 60));
+                        var m = Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60));
+                        var s = Math.floor((dist % (1000 * 60)) / 1000);
+                        document.getElementById('comboTimerDisplay').innerText = (h < 10 ? "0"+h : h) + " तास " + (m < 10 ? "0"+m : m) + " मि " + (s < 10 ? "0"+s : s) + " से";
+                    }, 1000);
+                }
+            })();
+        </script>
+        <br>
+        {% endif %}
+
+        <button onclick="payForComboMaster({{ pkg_config.offer_price|int }})" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-size: 15px; font-weight: 800; border: none; padding: 11px 26px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);">
+            ⚡ संपूर्ण {{ pkg_config.total_tests_count }} टेस्ट्स अनलॉक करा (₹{{ pkg_config.offer_price|int }}) ➔
+        </button>
+    </div>
+    {% endif %}
     <!-- Mahasangram Banner (टेस्ट्सच्या खाली) -->
 <div id="paidHeroCard" class="paid-hero-card" style="width: 100% !important; max-width: 100% !important; margin: 30px auto 15px auto !important; margin-left: 0 !important; margin-right: 0 !important; padding: 16px !important; box-sizing: border-box !important; overflow: hidden !important; text-align: center;">
     <h3 style="color: #fde047; margin-top: 0;">🎯 अतिसंभाव्य महासंग्राम टेस्ट संच (Mission Khaki 2026)</h3>
@@ -1445,6 +1527,34 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
         } else {
             alert("📲 ॲप आधीच इन्स्टॉल झालेले आहे किंवा ब्राऊझरच्या ३ ठिपक्यांवर (⋮) क्लिक करून 'Install app' निवडा.");
         }
+    }
+    // 🎯 ऑल-इन-वन कॉम्बो पॅकेज अनलॉक फंक्शन
+    function payForComboMaster(amount) {
+        let phone = localStorage.getItem('user_phone') || prompt("कृपया आपला १० अंकी व्हॉट्सॲप नंबर टाका:");
+        if (!phone || phone.trim().length < 10) {
+            alert("कृपया वैध १० अंकी मोबाईल नंबर टाका!");
+            return;
+        }
+        localStorage.setItem('user_phone', phone.trim());
+
+        fetch('/api/unlock_combo_25', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: phone.trim(), amount: amount })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert("अभिनंदन! तुमचे कॉम्बो पॅकेज यशस्वीरीत्या अनलॉक झाले आहे!");
+                location.reload();
+            } else {
+                alert(data.message || "त्रुटी आली, कृपया पुन्हा प्रयत्न करा.");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("सर्व्हरशी संपर्क होऊ शकला नाही.");
+        });
     }
     </script>
 </html>'''
@@ -3287,6 +3397,76 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
     <!-- 14. SETTINGS TAB -->
     {% elif active_tab == 'settings' %}
     <h3>🔐 ॲडमिन पासवर्ड, हेल्प डेस्क, मेंटेनन्स व सानुकूल टॅब्स</h3>
+    <!-- 🎛️ सर्व-समावेशक पॅकेज, किंमत व ऑफर व्यवस्थापन (All-in-One Smart Controller) -->
+    <div style="background: #0f172a; border: 2px solid #38bdf8; border-radius: 12px; padding: 22px; margin-bottom: 25px; color: #f8fafc; box-shadow: 0 4px 20px rgba(0,0,0,0.35);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 16px;">
+            <h3 style="color: #38bdf8; margin: 0; font-size: 18px;">🎛️ सर्व-समावेशक पॅकेज, किंमत व ऑफर व्यवस्थापन (Smart Controller)</h3>
+            <span style="background: #0369a1; color: white; padding: 3px 12px; border-radius: 12px; font-size: 11.5px; font-weight: bold;">Master Config</span>
+        </div>
+
+        <form action="/admin/save_master_package_config" method="POST">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+                
+                <!-- १. पॅकेज शीर्षक -->
+                <div style="grid-column: 1 / -1;">
+                    <label style="font-weight: bold; font-size: 13px; color: #cbd5e1;">पॅकेज शीर्षक (Package Title):</label>
+                    <input type="text" name="package_title" value="{{ pkg_config.package_title or 'संपूर्ण २५ अतिसंभाव्य १०० गुण टेस्ट संच' }}" required style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 10px; border-radius: 6px; margin-top: 4px;">
+                </div>
+
+                <!-- २. एकूण टेस्ट्स संख्या -->
+                <div>
+                    <label style="font-weight: bold; font-size: 13px; color: #cbd5e1;">समाविष्ट एकूण टेस्ट्स मर्यादा (संख्या):</label>
+                    <input type="number" name="total_tests_count" value="{{ pkg_config.total_tests_count or 25 }}" min="1" max="100" required style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 10px; border-radius: 6px; margin-top: 4px;">
+                </div>
+
+                <!-- ३. मूळ किंमत (MRP) -->
+                <div>
+                    <label style="font-weight: bold; font-size: 13px; color: #cbd5e1;">मूळ किंमत (खोडलेली MRP ₹):</label>
+                    <input type="number" step="1" name="original_price" value="{{ pkg_config.original_price|int if pkg_config and pkg_config.original_price else 100 }}" required style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 10px; border-radius: 6px; margin-top: 4px;">
+                </div>
+
+                <!-- ४. ऑफर विक्री किंमत -->
+                <div>
+                    <label style="font-weight: bold; font-size: 13px; color: #34d399;">सवलत/ऑफर विक्री किंमत (₹):</label>
+                    <input type="number" step="1" name="offer_price" value="{{ pkg_config.offer_price|int if pkg_config and pkg_config.offer_price else 50 }}" required style="background: #1e293b; color: #34d399; font-weight: 800; border: 1.5px solid #10b981; padding: 10px; border-radius: 6px; margin-top: 4px;">
+                </div>
+
+                <!-- ५. सिंगल टेस्ट दर -->
+                <div>
+                    <label style="font-weight: bold; font-size: 13px; color: #cbd5e1;">सिंगल टेस्ट दर (₹):</label>
+                    <input type="number" step="0.5" name="single_test_price" value="{{ pkg_config.single_test_price if pkg_config else 4 }}" required style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 10px; border-radius: 6px; margin-top: 4px;">
+                </div>
+
+                <!-- ६. ऑफर संपण्याची तारीख व वेळ -->
+                <div>
+                    <label style="font-weight: bold; font-size: 13px; color: #cbd5e1;">ऑफर समाप्ती वेळ (Expiry Date/Time):</label>
+                    <input type="datetime-local" name="offer_end_time" value="{{ pkg_config.offer_end_time.strftime('%Y-%m-%dT%H:%M') if pkg_config and pkg_config.offer_end_time else '' }}" style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 10px; border-radius: 6px; margin-top: 4px;">
+                </div>
+
+                <!-- ७. बॅनरवरील टॅग -->
+                <div>
+                    <label style="font-weight: bold; font-size: 13px; color: #cbd5e1;">बॅनरवरील हायलाइट टॅग:</label>
+                    <input type="text" name="banner_badge_text" value="{{ pkg_config.banner_badge_text or '🔥 महा-धमाका कॉम्बो ऑफर' }}" style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 10px; border-radius: 6px; margin-top: 4px;">
+                </div>
+            </div>
+
+            <!-- स्विचेस: लाइव्ह टायमर आणि ॲक्टिव्ह स्टेटस -->
+            <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #334155; display: flex; flex-wrap: wrap; gap: 20px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px;">
+                    <input type="checkbox" name="is_timer_enabled" value="1" {% if pkg_config and pkg_config.is_timer_enabled %}checked{% endif %}>
+                    <span>मुख्य पानावर रिव्हर्स काउंटडाऊन टायमर दाखवा (Urgency Timer)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px;">
+                    <input type="checkbox" name="is_package_active" value="1" {% if not pkg_config or pkg_config.is_package_active %}checked{% endif %}>
+                    <span>कॉम्बो ऑफर चालू ठेवा (Active Status)</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn" style="background: linear-gradient(135deg, #0284c7, #0369a1); font-weight: bold; margin-top: 16px; padding: 10px 24px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
+                💾 पॅकेज, किंमत व ऑफर सेटिंग्ज सेव्ह करा
+            </button>
+        </form>
+    </div>
     
     <div style="background:#ecfdf5; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px;">
         <h4 style="margin:0 0 10px; color:#065f46;">➕ स्वतःचा नवीन टॅब तयार करा (Add Custom Tab):</h4>
@@ -3653,10 +3833,15 @@ def home_tests_list():
             # WhatsApp Group Link Settings मधून मिळवणे
             raw_wa = settings.get('wa_groups_multiline', '').strip()
             wa_active_link = raw_wa.split('\n')[0].strip() if raw_wa else 'https://chat.whatsapp.com'
+            
+            # 🎯 ऑल-इन-वन पॅकेज सेटिंग्ज मिळवणे
+            cur.execute("SELECT * FROM portal_package_config WHERE package_key='combo_master' LIMIT 1")
+            pkg_config = cur.fetchone()
 
             return render_template_string(
                 HOME_TEMPLATE,
                 tests=tests,
+                pkg_config=pkg_config,
                 recruitment_pdf=settings.get('recruitment_pdf', ''),
                 eligibility_pdf=settings.get('eligibility_pdf', ''),
                 parsed_home_tabs=parsed_home_tabs,
@@ -3769,6 +3954,16 @@ def take_test(test_id):
                 p_row = cur.fetchone()
                 if p_row and p_row['unlocked_paid_count'] >= 2:
                     has_free_pass = True
+                    
+            # 🎯 कॉम्बो पॅकेज खरेदी तपासणी (Combo Buyer Auto-Unlock)
+            has_combo_pass = False
+            if current_phone:
+                cur.execute("""
+                    SELECT 1 FROM user_purchases 
+                    WHERE user_phone = %s AND package_type = 'combo_25' AND status = 'success'
+                """, (current_phone,))
+                if cur.fetchone():
+                    has_combo_pass = True         
 
             # सशुल्क टेस्टसाठी ९० दिवसांचे टोकन पडताळणी
             token_valid = False
@@ -3796,11 +3991,10 @@ def take_test(test_id):
 
             if session.get(f'paid_test_{test_id}') is True:
                 token_valid = True
-            if has_free_pass or token_valid:
+            if has_free_pass or has_combo_pass or token_valid:
                 cur.execute("SELECT * FROM questions WHERE test_id=%s AND is_deleted=0 ORDER BY id ASC", (test_id,))
                 questions = cur.fetchall()
                 return render_template_string(EXAM_TEMPLATE, test=test, questions=questions, battle_partner_id=battle_partner_id)
-
             # थेट प्रवेश रोखणे व GST सह पेमेंट स्क्रीन उघडणे
             base_fee = float(test.get('test_fee') or 99.0)
             gst_amount = 0.0
@@ -4904,10 +5098,15 @@ def admin_dashboard():
 
             admin_tab_order = settings_map.get('admin_tab_order', 'leads,power,payments,special,questions,launch,analytics,audit,blocked,leaderboard,feedback,notices,trash,settings')
             ordered_admin_tabs = [t.strip() for t in admin_tab_order.split(',') if t.strip()]
+            
+            # 🎯 ॲडमिन पॅनेलसाठी पॅकेज सेटिंग्ज मिळवणे
+            cur.execute("SELECT * FROM portal_package_config WHERE package_key='combo_master' LIMIT 1")
+            pkg_config = cur.fetchone()
 
             return render_template_string(
                 ADMIN_TEMPLATE,
                 live_now_count=live_now_count,
+                pkg_config=pkg_config,
                 total_visits_count=total_visits_count,
                 active_tab=active_tab,
                 q_subtab=q_subtab,
@@ -6071,6 +6270,91 @@ def admin_test_paper_view(test_id):
             questions = cur.fetchall()
 
     return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
+    
+    # =============================================================================
+# 🎛️ ऑल-इन-वन स्मार्ट पॅकेज व किंमत नियंत्रक सेव्ह राऊट (Admin)
+# =============================================================================
+@app.route('/admin/save_master_package_config', methods=['POST'])
+def save_master_package_config():
+    if not session.get('admin_logged') and not session.get('is_admin'):
+        return redirect('/admin/login')
+
+    title = request.form.get('package_title', '२५ अतिसंभाव्य १०० गुण टेस्ट संच').strip()
+    total_tests = int(request.form.get('total_tests_count', 25) or 25)
+    orig_price = float(request.form.get('original_price', 100.0) or 100.0)
+    offer_price = float(request.form.get('offer_price', 50.0) or 50.0)
+    single_price = float(request.form.get('single_test_price', 4.0) or 4.0)
+    offer_time_raw = request.form.get('offer_end_time')
+    badge_text = request.form.get('banner_badge_text', '🔥 महा-धमाका कॉम्बो ऑफर').strip()
+    
+    is_timer = True if request.form.get('is_timer_enabled') == '1' else False
+    is_active = True if request.form.get('is_package_active') == '1' else False
+
+    offer_end = None
+    if offer_time_raw:
+        try:
+            offer_end = datetime.strptime(offer_time_raw, '%Y-%m-%dT%H:%M')
+        except Exception:
+            offer_end = None
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO portal_package_config 
+                (package_key, package_title, total_tests_count, original_price, offer_price, single_test_price, offer_end_time, is_timer_enabled, is_package_active, banner_badge_text, updated_at)
+                VALUES ('combo_master', %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (package_key) DO UPDATE SET
+                    package_title = EXCLUDED.package_title,
+                    total_tests_count = EXCLUDED.total_tests_count,
+                    original_price = EXCLUDED.original_price,
+                    offer_price = EXCLUDED.offer_price,
+                    single_test_price = EXCLUDED.single_test_price,
+                    offer_end_time = EXCLUDED.offer_end_time,
+                    is_timer_enabled = EXCLUDED.is_timer_enabled,
+                    is_package_active = EXCLUDED.is_package_active,
+                    banner_badge_text = EXCLUDED.banner_badge_text,
+                    updated_at = CURRENT_TIMESTAMP;
+            """, (title, total_tests, orig_price, offer_price, single_price, offer_end, is_timer, is_active, badge_text))
+            conn.commit()
+
+    return redirect('/admin/dashboard?tab=settings')
+    
+    # =============================================================================
+# 🔓 कॉम्बो पॅकेज थेट अनलॉक API (विद्यार्थ्यांसाठी)
+# =============================================================================
+@app.route('/api/unlock_combo_25', methods=['POST'])
+def unlock_combo_25():
+    try:
+        data = request.get_json() or {}
+        phone = data.get('phone') or session.get('user_phone')
+        amount = float(data.get('amount', 50.0))
+
+        if not phone or len(str(phone).strip()) < 10:
+            return jsonify({'status': 'error', 'message': 'कृपया वैध १० अंकी व्हॉट्सॲप नंबर टाका!'}), 400
+
+        phone = str(phone).strip()
+
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                # आधीच खरेदी केली आहे का ते तपासणे
+                cur.execute("""
+                    SELECT 1 FROM user_purchases 
+                    WHERE user_phone = %s AND package_type = 'combo_25' AND status = 'success'
+                """, (phone,))
+                already_bought = cur.fetchone()
+
+                if not already_bought:
+                    cur.execute("""
+                        INSERT INTO user_purchases (user_phone, package_type, amount, status)
+                        VALUES (%s, 'combo_25', %s, 'success')
+                    """, (phone, amount))
+                    conn.commit()
+
+        session['user_phone'] = phone
+        session['has_combo_25'] = True
+        return jsonify({'status': 'success', 'message': 'अभिनंदन! कॉम्बो पॅकेज यशस्वीरीत्या अनलॉक झाले आहे.'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'सर्व्हर त्रुटी: {str(e)}'}), 500
         
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
