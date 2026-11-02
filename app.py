@@ -3419,9 +3419,9 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
                     <input type="text" name="package_title" value="{{ pkg_config.package_title or 'संपूर्ण २५ अतिसंभाव्य १०० गुण टेस्ट संच' }}" required style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 10px; border-radius: 6px; margin-top: 4px;">
                 </div>
 
-                <!-- २. एकूण टेस्ट्स संख्या -->
+                <!-- २. समाविष्ट टेस्ट्स मर्यादा (रेंज किंवा संख्या) -->
                 <div>
-                    <label style="font-weight: bold; font-size: 13px; color: #cbd5e1;">समाविष्ट एकूण टेस्ट्स मर्यादा (संख्या):</label>
+                    <label style="font-weight: bold; font-size: 13px; color: #cbd5e1;">समाविष्ट टेस्ट्स क्रम / मर्यादा (उदा. 1-25 किंवा 25):</label>
                     <input type="text" name="total_tests_count" value="{{ pkg_config.total_tests_count or '1-25' }}" placeholder="उदा. 1-25 किंवा 25" required style="background: #1e293b; color: #fff; border: 1px solid #475569; padding: 10px; border-radius: 6px; margin-top: 4px;">
                 </div>
 
@@ -6355,6 +6355,11 @@ def save_master_package_config():
 
     with get_db() as conn:
         with conn.cursor() as cur:
+            # कॉलम प्रकार सुरक्षितपणे VARCHAR मध्ये बदलणे (जेणेकरून 1-25 सेव्ह करताना इंटिजर एरर येणार नाही)
+            cur.execute("""
+                ALTER TABLE portal_package_config 
+                ALTER COLUMN total_tests_count TYPE VARCHAR(50) USING total_tests_count::VARCHAR;
+            """)
             cur.execute("""
                 INSERT INTO portal_package_config 
                 (package_key, package_title, total_tests_count, original_price, offer_price, single_test_price, offer_end_time, is_timer_enabled, is_package_active, banner_badge_text, updated_at)
