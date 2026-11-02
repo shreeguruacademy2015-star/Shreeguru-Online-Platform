@@ -515,6 +515,10 @@ def init_master_db():
 
     except Exception as db_init_err:
         print(f"Master Database Initialization Critical Error: {db_init_err}")
+        try:
+    init_master_db()
+except Exception as e:
+    print(f"Init DB Run Error: {e}")
         # =============================================================================
 # MAHARASHTRA POLICE BHARTI ONLINE TEST PORTAL 2026 - MASTER CORE (PART 2/10)
 # MODULE: FULL HTML TEMPLATES - LEGAL TERMS, MAINTENANCE & EXPANDED HOME PAGE
@@ -3834,9 +3838,13 @@ def home_tests_list():
             raw_wa = settings.get('wa_groups_multiline', '').strip()
             wa_active_link = raw_wa.split('\n')[0].strip() if raw_wa else 'https://chat.whatsapp.com'
             
-            # 🎯 ऑल-इन-वन पॅकेज सेटिंग्ज मिळवणे
-            cur.execute("SELECT * FROM portal_package_config WHERE package_key='combo_master' LIMIT 1")
-            pkg_config = cur.fetchone()
+            # 🎯 ऑल-इन-वन पॅकेज सेटिंग्ज मिळवणे (Safe)
+            pkg_config = None
+            try:
+                cur.execute("SELECT * FROM portal_package_config WHERE package_key='combo_master' LIMIT 1")
+                pkg_config = cur.fetchone()
+            except Exception:
+                conn.rollback()
 
             return render_template_string(
                 HOME_TEMPLATE,
@@ -5098,10 +5106,45 @@ def admin_dashboard():
 
             admin_tab_order = settings_map.get('admin_tab_order', 'leads,power,payments,special,questions,launch,analytics,audit,blocked,leaderboard,feedback,notices,trash,settings')
             ordered_admin_tabs = [t.strip() for t in admin_tab_order.split(',') if t.strip()]
-            
-            # 🎯 ॲडमिन पॅनेलसाठी पॅकेज सेटिंग्ज मिळवणे
-            cur.execute("SELECT * FROM portal_package_config WHERE package_key='combo_master' LIMIT 1")
-            pkg_config = cur.fetchone()
+
+            # 🎯 ॲडमिन पॅनेलसाठी पॅकेज सेटिंग्ज मिळवणे (Safe Auto-Create)
+            pkg_config = None
+            try:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS portal_package_config (
+                        id SERIAL PRIMARY KEY,
+                        package_key VARCHAR(50) UNIQUE NOT NULL DEFAULT 'combo_master',
+                        package_title VARCHAR(150) NOT NULL DEFAULT 'संपूर्ण २५ अतिसंभाव्य १०० गुण टेस्ट संच',
+                        total_tests_count INT NOT NULL DEFAULT 25,
+                        original_price NUMERIC(10, 2) NOT NULL DEFAULT 100.0,
+                        offer_price NUMERIC(10, 2) NOT NULL DEFAULT 50.0,
+                        single_test_price NUMERIC(10, 2) NOT NULL DEFAULT 4.0,
+                        offer_end_time TIMESTAMP NULL,
+                        is_timer_enabled BOOLEAN DEFAULT TRUE,
+                        is_package_active BOOLEAN DEFAULT TRUE,
+                        banner_badge_text VARCHAR(100) DEFAULT '🔥 महा-धमाका कॉम्बो ऑफर',
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                    INSERT INTO portal_package_config (package_key) 
+                    VALUES ('combo_master') 
+                    ON CONFLICT (package_key) DO NOTHING;
+                """)
+                conn.commit()
+                cur.execute("SELECT * FROM portal_package_config WHERE package_key='combo_master' LIMIT 1")
+                pkg_config = cur.fetchone()
+            except Exception:
+                conn.rollback()
+                pkg_config = {
+                    'package_title': 'संपूर्ण २५ अतिसंभाव्य १०० गुण टेस्ट संच',
+                    'total_tests_count': 25,
+                    'original_price': 100,
+                    'offer_price': 50,
+                    'single_test_price': 4,
+                    'is_timer_enabled': True,
+                    'is_package_active': True,
+                    'banner_badge_text': '🔥 महा-धमाका कॉम्बो ऑफर',
+                    'offer_end_time': None
+                }
 
             return render_template_string(
                 ADMIN_TEMPLATE,
@@ -6318,8 +6361,8 @@ def save_master_package_config():
             conn.commit()
 
     return redirect('/admin/dashboard?tab=settings')
-    
-    # =============================================================================
+
+# =============================================================================
 # 🔓 कॉम्बो पॅकेज थेट अनलॉक API (विद्यार्थ्यांसाठी)
 # =============================================================================
 @app.route('/api/unlock_combo_25', methods=['POST'])
