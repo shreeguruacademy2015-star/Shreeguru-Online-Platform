@@ -1534,7 +1534,7 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             alert("📲 ॲप आधीच इन्स्टॉल झालेले आहे किंवा ब्राऊझरच्या ३ ठिपक्यांवर (⋮) क्लिक करून 'Install app' निवडा.");
         }
     }
-    // 🎯 ऑल-इन-वन कॉम्बो पॅकेज पेमेंट फंक्शन (Razorpay Integration)
+    // 🎯 ऑल-इन-वन कॉम्बो पॅकेज पेमेंट फंक्शन (Razorpay Integration - Fixed)
 function payForComboMaster(amount) {
     let phone = localStorage.getItem('user_phone') || prompt("कृपया आपला १० अंकी व्हॉट्सॲप नंबर टाका:");
     if (!phone || phone.trim().length < 10) {
