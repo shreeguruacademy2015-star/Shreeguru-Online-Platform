@@ -6058,411 +6058,61 @@ def admin_update_pdf_docs():
 def admin_update_password():
     if not session.get('admin_logged'): 
         return redirect('/admin/login')
-    new_pass = request.form.get('new_password')
+    new_pass = request.form.get('new_password', '').strip()
     site_status = request.form.get('site_status', 'active')
     home_tab_order = request.form.get('home_tab_order', 'live,paid,free,rapid,subjects,about,battle,docs,help').strip()
     admin_tab_order = request.form.get('admin_tab_order', 'leads,power,payments,special,questions,launch,analytics,audit,blocked,leaderboard,feedback,notices,trash,settings').strip()
-    wa_groups = request.form.get('wa_groups_multiline', '').strip()
     help_phone = request.form.get('help_phone', '').strip()
     help_address = request.form.get('help_address', '').strip()
-    insta = request.form.get('insta_link', 'https://instagram.com')
-    yt = request.form.get('yt_link', 'https://youtube.com')
-    top = request.form.get('toppers_link', '/')
+    insta = request.form.get('insta_link', '').strip()
+    yt = request.form.get('yt_link', '').strip()
+    top = request.form.get('toppers_link', '').strip()
+    wa_groups = request.form.get('wa_groups_multiline', '').strip()
 
     with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             if new_pass:
                 cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_pass'", (new_pass,))
-            if help_phone:
-                cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('help_phone', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (help_phone,))
-            if help_address:
-                cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('help_address', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (help_address,))
-            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('site_status', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (site_status,))
-            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('home_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (home_tab_order,))
-            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('admin_tab_order', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (admin_tab_order,))
-            cur.execute("INSERT INTO academy_settings (setting_key, setting_value) VALUES ('wa_groups_multiline', %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value", (wa_groups,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='site_status'", (site_status,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='home_tab_order'", (home_tab_order,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='admin_tab_order'", (admin_tab_order,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='help_phone'", (help_phone,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='help_address'", (help_address,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='insta_link'", (insta,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='yt_link'", (yt,))
             cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='toppers_link'", (top,))
+            cur.execute("UPDATE academy_settings SET setting_value=%s WHERE setting_key='wa_groups_multiline'", (wa_groups,))
             conn.commit()
     return redirect('/admin/dashboard?tab=settings')
 
-# फिल्टरसह लीड्स CSV डाऊनलोड
-@app.route('/admin/export_leads_csv')
-def admin_export_leads_csv():
-    if not session.get('admin_logged'): 
-        return redirect('/admin/login')
-    lead_dist = request.args.get('lead_dist', '').strip()
-    lead_cat = request.args.get('lead_cat', '').strip()
-    lead_test_id = request.args.get('lead_test_id', '').strip()
-
-    query = "SELECT test_date, student_name, district, caste_category, phone, test_name, score, total_marks FROM mock_test_leads WHERE is_deleted=0"
-    params = []
-    if lead_dist:
-        query += " AND district = %s"
-        params.append(lead_dist)
-    if lead_cat:
-        query += " AND caste_category = %s"
-        params.append(lead_cat)
-    if lead_test_id:
-        query += " AND test_id = %s"
-        params.append(lead_test_id)
-    query += " ORDER BY id DESC"
-
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(query, tuple(params))
-            leads = cur.fetchall()
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(['Date', 'Name', 'District', 'Category', 'WhatsApp', 'Test Name', 'Score', 'Total'])
-    for l in leads:
-        writer.writerow([l['test_date'], l['student_name'], l['district'], l.get('caste_category', 'OPEN'), l['phone'], l['test_name'], l['score'], l['total_marks']])
-
-    return Response(
-        output.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-disposition": "attachment; filename=filtered_leads_2026.csv"}
-    )
-
-# ७. टेस्ट प्रश्नपत्रिका A4 प्रिंट / PDF राऊट
-@app.route('/admin/print_test/<int:test_id>')
-def print_test_route(test_id):
-    if not session.get('admin_logged'): 
-        return redirect('/admin/login')
-    
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT id, test_title, category, duration_minutes, test_fee FROM test_papers WHERE id = %s", (test_id,))
-            test = cur.fetchone()
-            if not test: 
-                return "टेस्ट सापडली नाही!", 404
-            
-            cur.execute("""
-                SELECT id, question, opt_a, opt_b, opt_c, opt_d, correct, explanation, image_url 
-                FROM questions 
-                WHERE test_id = %s AND is_deleted=0 
-                ORDER BY id ASC
-            """, (test_id,))
-            questions = cur.fetchall()
-            
-            html_code = f"""
-            <!DOCTYPE html>
-            <html lang="mr">
-            <head>
-                <meta charset="UTF-8">
-                <title>प्रश्नपत्रिका - {test['test_title']}</title>
-                <style>
-                    @page {{ size: A4; margin: 15mm; }}
-                    body {{ font-family: 'Segoe UI', Tahoma, sans-serif; color: #1e293b; line-height: 1.5; padding: 10px; }}
-                    .header {{ text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px; }}
-                    .header h2 {{ margin: 0; font-size: 22px; color: #0f172a; }}
-                    .header p {{ margin: 4px 0 0; font-size: 14px; font-weight: bold; color: #475569; }}
-                    .meta-box {{ display: flex; justify-content: space-between; border-bottom: 1px dashed #94a3b8; padding-bottom: 8px; margin-bottom: 15px; font-size: 13px; font-weight: 600; }}
-                    .q-block {{ margin-bottom: 18px; page-break-inside: avoid; }}
-                    .q-text {{ font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #0f172a; }}
-                    .options-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-left: 15px; font-size: 14px; }}
-                    .print-bar {{ background: #f1f5f9; padding: 10px; text-align: center; margin-bottom: 20px; border-radius: 8px; }}
-                    .btn-print {{ background: #059669; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }}
-                    @media print {{ .print-bar {{ display: none; }} }}
-                </style>
-            </head>
-            <body>
-                <div class="print-bar">
-                    <button class="btn-print" onclick="window.print()">🖨️ ही प्रश्नपत्रिका प्रिंट / PDF सेव्ह करा</button>
-                </div>
-                
-                <div class="header">
-                    <h2>महाराष्ट्र पोलीस भरती सराव केंद्र</h2>
-                    <p>सराव परीक्षा: {test['test_title']}</p>
-                </div>
-                <div class="meta-box">
-                    <span>एकूण प्रश्न: {len(questions)}</span>
-                    <span>वेळ: {test['duration_minutes']} मिनिटे</span>
-                    <span>कॅटेगरी: {str(test['category']).upper()}</span>
-                </div>
-                
-                <div class="questions-list">
-            """
-            
-            for idx, q in enumerate(questions, 1):
-                img_tag = f'<div style="margin-bottom:6px;"><img src="{q["image_url"]}" style="max-height:160px;"></div>' if q.get('image_url') else ''
-                html_code += f"""
-                    <div class="q-block">
-                        <div class="q-text">प्र. {idx}) {q['question']}</div>
-                        {img_tag}
-                        <div class="options-grid">
-                            <div>(A) {q['opt_a']}</div>
-                            <div>(B) {q['opt_b']}</div>
-                            <div>(C) {q['opt_c']}</div>
-                            <div>(D) {q['opt_d']}</div>
-                        </div>
-                    </div>
-                """
-                
-            html_code += """
-                </div>
-            </body>
-            </html>
-            """
-            return html_code
-
-# =============================================================================
-# ३६०° पॉवर सर्च - नंबर ब्लॉक व अनब्लॉक राऊट
-# =============================================================================
-@app.route('/admin/toggle_block_user', methods=['POST'])
-def admin_toggle_block_user():
-    if not session.get('admin_logged'):
-        return redirect('/admin/login')
-    
-    phone = request.form.get('phone', '').strip()
-    action = request.form.get('action', '').strip()
-
-    if phone:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                if action == 'block':
-                    cur.execute("""
-                        INSERT INTO blocked_numbers (phone, reason, blocked_at)
-                        VALUES (%s, '360 पॉवर सर्चमधून ब्लॉक केले', NOW())
-                        ON CONFLICT (phone) DO NOTHING
-                    """, (phone,))
-                    cur.execute("""
-                        CREATE TABLE IF NOT EXISTS blocked_users (
-                            id SERIAL PRIMARY KEY,
-                            phone VARCHAR(20) UNIQUE,
-                            blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                        );
-                        INSERT INTO blocked_users (phone)
-                        VALUES (%s)
-                        ON CONFLICT (phone) DO NOTHING;
-                    """, (phone,))
-                elif action == 'unblock':
-                    cur.execute("DELETE FROM blocked_numbers WHERE phone=%s", (phone,))
-                    cur.execute("DELETE FROM blocked_users WHERE phone=%s", (phone,))
-                conn.commit()
-                
-    return redirect(f"/admin/dashboard?tab=power&power_phone={phone}")
-
-# -----------------------------------------------------------------------------
-# 8. APPLICATION ENTRYPOINT
-# -----------------------------------------------------------------------------
-# PWA Service Worker Route
-@app.route('/sw.js')
-def service_worker():
-    response = Response(
-        "self.addEventListener('fetch', function(e) {});",
-        mimetype='application/javascript'
-    )
-    return response
-
-# -------------------------------------------------------------
-# मास्टर टेस्ट रिपॉझिटरी व ऑफलाईन प्रिंट व्ह्यू (विद्यार्थी पेपर व मास्टर की)
-# -------------------------------------------------------------
-OFFLINE_PAPER_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="mr">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ test.test_title or test.title }} - ऑफलाईन प्रिंट</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; color: #111; background: #fff; }
-        .no-print { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #cbd5e1; }
-        .btn-print { background: #059669; color: white; border: none; padding: 8px 18px; font-weight: bold; font-size: 14px; border-radius: 6px; cursor: pointer; }
-        .mode-link { text-decoration: none; font-size: 13px; font-weight: bold; padding: 6px 12px; border-radius: 6px; margin-right: 8px; }
-        .mode-active { background: #1e293b; color: #fff; }
-        .mode-inactive { background: #e2e8f0; color: #334155; }
-        
-        .exam-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
-        .exam-header h2 { margin: 0 0 4px; font-size: 20px; text-transform: uppercase; }
-        .exam-header h3 { margin: 0 0 6px; font-size: 15px; color: #333; }
-        .exam-meta { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; border-top: 1px dashed #666; padding-top: 6px; margin-top: 6px; }
-        .student-fill { display: flex; justify-content: space-between; font-size: 13px; margin-top: 8px; padding-bottom: 4px; border-bottom: 1px solid #000; }
-
-        .paper-columns { column-count: 2; column-gap: 30px; column-rule: 1px solid #cbd5e1; }
-        .q-block { break-inside: avoid; margin-bottom: 12px; font-size: 12.5px; line-height: 1.45; }
-        .q-title { font-weight: bold; margin-bottom: 3px; }
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-left: 6px; font-size: 12px; }
-        
-        .ans-key-tag { background: #dcfce7; color: #166534; font-weight: bold; padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 3px; font-size: 11px; }
-        .exp-box { background: #f8fafc; border-left: 3px solid #3b82f6; padding: 4px 8px; margin-top: 3px; font-size: 11px; color: #334155; }
-
-        @media print {
-            .no-print { display: none !important; }
-            body { margin: 8mm 10mm; font-size: 11px; }
-            .paper-columns { column-count: 2; column-gap: 24px; }
-            .q-block { margin-bottom: 10px; font-size: 11.5px; }
-            .options-grid { font-size: 11px; }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="no-print">
-        <div>
-            <a href="/admin/test_paper_view/{{ test.id }}?mode=student" class="mode-link {{ 'mode-active' if mode == 'student' else 'mode-inactive' }}">📄 विद्यार्थी ऑफलाईन पेपर (फक्त प्रश्न)</a>
-            <a href="/admin/test_paper_view/{{ test.id }}?mode=master" class="mode-link {{ 'mode-active' if mode == 'master' else 'mode-inactive' }}">🔑 मास्टर उत्तरतालिका (स्पष्टीकरणासह)</a>
-        </div>
-        <div>
-            <button onclick="window.print()" class="btn-print">🖨️ प्रिंट काढा (Print / Save PDF)</button>
-        </div>
-    </div>
-
-    <div class="exam-header">
-        <h2>श्रीगुरु करिअर अकॅडमी, आडूर</h2>
-        <h3>{{ test.test_title or test.title }} {% if mode == 'master' %}<span style="color:#dc2626;">(शिक्षक/मास्टर की)</span>{% endif %}</h3>
-        <div class="exam-meta">
-            <span>एकूण प्रश्न: {{ questions|length }}</span>
-            <span>वेळ: {{ test.duration_minutes }} मिनिटे</span>
-            <span>गुण: {{ questions|length }}</span>
-        </div>
-        {% if mode == 'student' %}
-        <div class="student-fill">
-            <span>विद्यार्थ्याचे नाव: _________________________________________</span>
-            <span>रोल नं: _________</span>
-            <span>गुण: ____/{{ questions|length }}</span>
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="paper-columns">
-        {% for q in questions %}
-        <div class="q-block">
-            <div class="q-title">प्र. {{ loop.index }}. {{ q.question }}</div>
-            <div class="options-grid">
-                <div>(A) {{ q.opt_a }}</div>
-                <div>(B) {{ q.opt_b }}</div>
-                <div>(C) {{ q.opt_c }}</div>
-                <div>(D) {{ q.opt_d }}</div>
-            </div>
-            {% if mode == 'master' %}
-            <div class="ans-key-tag">✅ अचूक उत्तर: पर्याय {{ q.correct_opt }}</div>
-            {% if q.explanation %}
-            <div class="exp-box"><b>💡 स्पष्टीकरण:</b> {{ q.explanation }}</div>
-            {% endif %}
-            {% endif %}
-        </div>
-        {% endfor %}
-    </div>
-
-</body>
-</html>
-"""
-
-@app.route('/admin/test_paper_view/<int:test_id>')
-def admin_test_paper_view(test_id):
-    if not session.get('admin_logged'): 
-        return redirect('/admin/login')
-        
-    mode = request.args.get('mode', 'student')
-    
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT id, test_title, category, duration_minutes, test_fee FROM test_papers WHERE id = %s", (test_id,))
-            test = cur.fetchone()
-            if not test: 
-                return "टेस्ट सापडली नाही!", 404
-                
-            cur.execute("""
-                SELECT id, question, opt_a, opt_b, opt_c, opt_d, correct AS correct_opt, explanation 
-                FROM questions 
-                WHERE test_id = %s AND is_deleted = 0 
-                ORDER BY id ASC
-            """, (test_id,))
-            questions = cur.fetchall()
-
-    return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
-    
-    # =============================================================================
-# 🎛️ ऑल-इन-वन स्मार्ट पॅकेज व किंमत नियंत्रक सेव्ह राऊट (Admin)
-# =============================================================================
 @app.route('/admin/save_master_package_config', methods=['POST'])
 def save_master_package_config():
     if not session.get('admin_logged') and not session.get('is_admin'):
         return redirect('/admin/login')
 
-    title = request.form.get('package_title', '२५ अतिसंभाव्य १०० गुण टेस्ट संच').strip()
-    total_tests = str(request.form.get('total_tests_count', '1-25')).strip()
-    orig_price = float(request.form.get('original_price', 100.0) or 100.0)
-    offer_price = float(request.form.get('offer_price', 50.0) or 50.0)
-    single_price = float(request.form.get('single_test_price', 4.0) or 4.0)
-    offer_time_raw = request.form.get('offer_end_time')
-    badge_text = request.form.get('banner_badge_text', '🔥 महा-धमाका कॉम्बो ऑफर').strip()
-    
-    is_timer = True if request.form.get('is_timer_enabled') == '1' else False
-    is_active = True if request.form.get('is_package_active') == '1' else False
-
-    offer_end = None
-    if offer_time_raw:
-        try:
-            offer_end = datetime.strptime(offer_time_raw, '%Y-%m-%dT%H:%M')
-        except Exception:
-            offer_end = None
+    package_title = request.form.get('package_title', '').strip()
+    total_tests_count = request.form.get('total_tests_count', '25').strip()
+    original_price = float(request.form.get('original_price', 100) or 100)
+    offer_price = float(request.form.get('offer_price', 50) or 50)
+    single_test_price = float(request.form.get('single_test_price', 4) or 4)
+    offer_end_time = request.form.get('offer_end_time', '').strip() or None
+    banner_badge_text = request.form.get('banner_badge_text', '').strip()
+    is_timer_enabled = True if request.form.get('is_timer_enabled') == '1' else False
+    is_package_active = True if request.form.get('is_package_active') == '1' else False
 
     with get_db() as conn:
         with conn.cursor() as cur:
-            # कॉलम प्रकार सुरक्षितपणे VARCHAR मध्ये बदलणे (जेणेकरून 1-25 सेव्ह करताना इंटिजर एरर येणार नाही)
             cur.execute("""
-                ALTER TABLE portal_package_config 
-                ALTER COLUMN total_tests_count TYPE VARCHAR(50) USING total_tests_count::VARCHAR;
-            """)
-            cur.execute("""
-                INSERT INTO portal_package_config 
-                (package_key, package_title, total_tests_count, original_price, offer_price, single_test_price, offer_end_time, is_timer_enabled, is_package_active, banner_badge_text, updated_at)
-                VALUES ('combo_master', %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-                ON CONFLICT (package_key) DO UPDATE SET
-                    package_title = EXCLUDED.package_title,
-                    total_tests_count = EXCLUDED.total_tests_count,
-                    original_price = EXCLUDED.original_price,
-                    offer_price = EXCLUDED.offer_price,
-                    single_test_price = EXCLUDED.single_test_price,
-                    offer_end_time = EXCLUDED.offer_end_time,
-                    is_timer_enabled = EXCLUDED.is_timer_enabled,
-                    is_package_active = EXCLUDED.is_package_active,
-                    banner_badge_text = EXCLUDED.banner_badge_text,
-                    updated_at = CURRENT_TIMESTAMP;
-            """, (title, total_tests, orig_price, offer_price, single_price, offer_end, is_timer, is_active, badge_text))
+                UPDATE portal_package_config 
+                SET package_title = %s, total_tests_count = %s, original_price = %s, 
+                    offer_price = %s, single_test_price = %s, offer_end_time = %s, 
+                    banner_badge_text = %s, is_timer_enabled = %s, is_package_active = %s, 
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE package_key = 'combo_master'
+            """, (package_title, str(total_tests_count), original_price, offer_price, single_test_price, offer_end_time, banner_badge_text, is_timer_enabled, is_package_active))
             conn.commit()
 
     return redirect('/admin/dashboard?tab=settings')
-
-# =============================================================================
-# 🔓 कॉम्बो पॅकेज थेट अनलॉक API (विद्यार्थ्यांसाठी)
-# =============================================================================
-@app.route('/api/unlock_combo_25', methods=['POST'])
-def unlock_combo_25():
-    try:
-        data = request.get_json() or {}
-        phone = data.get('phone') or session.get('user_phone')
-        amount = float(data.get('amount', 50.0))
-
-        if not phone or len(str(phone).strip()) < 10:
-            return jsonify({'status': 'error', 'message': 'कृपया वैध १० अंकी व्हॉट्सॲप नंबर टाका!'}), 400
-
-        phone = str(phone).strip()
-
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                # आधीच खरेदी केली आहे का ते तपासणे
-                cur.execute("""
-                    SELECT 1 FROM user_purchases 
-                    WHERE user_phone = %s AND package_type = 'combo_25' AND status = 'success'
-                """, (phone,))
-                already_bought = cur.fetchone()
-
-                if not already_bought:
-                    cur.execute("""
-                        INSERT INTO user_purchases (user_phone, package_type, amount, status)
-                        VALUES (%s, 'combo_25', %s, 'success')
-                    """, (phone, amount))
-                    conn.commit()
-
-        Session['user_phone'] = phone
-        session['has_combo_25'] = True
-        return jsonify({'status': 'success', 'message': 'अभिनंदन! कॉम्बो पॅकेज यशस्वीरीत्या अनलॉक झाले आहे.'})
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': f'सर्व्हर त्रुटी: {str(e)}'}), 500
 
 @app.route('/admin/save_all_questions', methods=['POST'])
 def save_all_questions():
