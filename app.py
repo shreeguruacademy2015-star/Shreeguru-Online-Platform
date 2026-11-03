@@ -5273,6 +5273,7 @@ def save_all_questions():
     try:
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # सर्व फॉर्मच्या की तपासून डेटाबेस अपडेट करणे
                 for key, val in request.form.items():
                     if key.startswith('question_text_'):
                         q_id = key.split('_')[-1]
