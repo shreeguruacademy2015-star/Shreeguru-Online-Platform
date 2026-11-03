@@ -5266,7 +5266,34 @@ def admin_edit_question(q_id):
 @app.route('/admin/save_all_questions', methods=['POST'])
 def save_all_questions():
     if not session.get('admin_logged') and not session.get('is_admin'):
-        return jsonify({'success': False, 'message': 'अनधिकृत प्रवेश!'}), 403
+        return redirect('/admin/login')
+
+    filter_test_id = request.form.get('filter_test_id', '')
+
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                for key, val in request.form.items():
+                    if key.startswith('question_text_'):
+                        q_id = key.split('_')[-1]
+                        q_text = val.strip()
+                        opt_a = request.form.get(f'opt_a_{q_id}', '').strip()
+                        opt_b = request.form.get(f'opt_b_{q_id}', '').strip()
+                        opt_c = request.form.get(f'opt_c_{q_id}', '').strip()
+                        opt_d = request.form.get(f'opt_d_{q_id}', '').strip()
+                        correct = request.form.get(f'correct_{q_id}', 'A').strip().upper()
+                        explanation = request.form.get(f'explanation_{q_id}', '').strip()
+
+                        cur.execute("""
+                            UPDATE questions 
+                            SET question = %s, opt_a = %s, opt_b = %s, opt_c = %s, opt_d = %s, correct = %s, explanation = %s
+                            WHERE id = %s
+                        """, (q_text, opt_a, opt_b, opt_c, opt_d, correct, explanation, int(q_id)))
+                conn.commit()
+    except Exception as e:
+        print(f"Save All Questions Error: {e}")
+
+    return redirect(url_for('admin_dashboard', tab='questions', filter_test_id=filter_test_id))
         # =============================================================================
 # विषय व्यवस्थापन राऊट्स (Add & Delete Dynamic Subjects)
 # =============================================================================
