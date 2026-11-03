@@ -5328,10 +5328,6 @@ def admin_edit_question(q_id):
                 return "Question not found", 404
     return render_template_string(EDIT_QUESTION_TEMPLATE, q=q)
 
-@app.route('/admin/save_all_questions', methods=['POST'])
-def save_all_questions():
-    if not session.get('admin_logged') and not session.get('is_admin'):
-        return jsonify({'success': False, 'message': 'अनधिकृत प्रवेश!'}), 403
         # =============================================================================
 # विषय व्यवस्थापन राऊट्स (Add & Delete Dynamic Subjects)
 # =============================================================================
