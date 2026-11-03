@@ -1534,34 +1534,69 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             alert("📲 ॲप आधीच इन्स्टॉल झालेले आहे किंवा ब्राऊझरच्या ३ ठिपक्यांवर (⋮) क्लिक करून 'Install app' निवडा.");
         }
     }
-    // 🎯 ऑल-इन-वन कॉम्बो पॅकेज अनलॉक फंक्शन
-    function payForComboMaster(amount) {
-        let phone = localStorage.getItem('user_phone') || prompt("कृपया आपला १० अंकी व्हॉट्सॲप नंबर टाका:");
-        if (!phone || phone.trim().length < 10) {
-            alert("कृपया वैध १० अंकी मोबाईल नंबर टाका!");
+    // 🎯 ऑल-इन-वन कॉम्बो पॅकेज पेमेंट फंक्शन (Razorpay Integration)
+function payForComboMaster(amount) {
+    let phone = localStorage.getItem('user_phone') || prompt("कृपया आपला १० अंकी व्हॉट्सॲप नंबर टाका:");
+    if (!phone || phone.trim().length < 10) {
+        alert("कृपया वैध १० अंकी मोबाईल नंबर टाका!");
+        return;
+    }
+    localStorage.setItem('user_phone', phone.trim());
+
+    // १. मर्चंट Razorpay ऑर्डर तयार करण्यासाठी रिक्वेस्ट पाठवणे
+    fetch('/create_combo_razorpay_order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amount, phone: phone.trim() })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert("⚠️ " + data.error);
             return;
         }
-        localStorage.setItem('user_phone', phone.trim());
 
-        fetch('/api/unlock_combo_25', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: phone.trim(), amount: amount })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                alert("अभिनंदन! तुमचे कॉम्बो पॅकेज यशस्वीरीत्या अनलॉक झाले आहे!");
-                location.reload();
-            } else {
-                alert(data.message || "त्रुटी आली, कृपया पुन्हा प्रयत्न करा.");
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("सर्व्हरशी संपर्क होऊ शकला नाही.");
-        });
-    }
+        // २. Razorpay पेमेंट विंडो (Checkout UI) उघडणे
+        var options = {
+            "key": data.key_id,
+            "amount": data.amount,
+            "currency": "INR",
+            "name": "महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल",
+            "description": "संपूर्ण टेस्ट्स कॉम्बो पॅकेज",
+            "order_id": data.order_id,
+            "config": {
+                "display": {
+                    "blocks": {
+                        "upi": {
+                            "name": "Pay via UPI App",
+                            "instruments": [
+                                {
+                                    "method": "upi",
+                                    "flows": ["intent"]
+                                }
+                            ]
+                        }
+                    },
+                    "sequence": ["block.upi"],
+                    "preferences": {
+                        "show_default_blocks": true
+                    }
+                }
+            },
+            "handler": function (response){
+                // ३. यशस्वी पेमेंट झाल्यावर सही (Signature) तपासून अनलॉक करण्यासाठी पाठवणे
+                window.location.href = "/verify_combo_razorpay_payment?order_id=" + response.razorpay_order_id + "&payment_id=" + response.razorpay_payment_id + "&signature=" + response.razorpay_signature + "&amount=" + amount;
+            },
+            "theme": { "color": "#10b981" }
+        };
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
+    })
+    .catch(err => {
+        console.error(err);
+        alert("पेमेंट गेटवे सुरू करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.");
+    });
+}
     </script>
 </html>'''
 # =============================================================================
