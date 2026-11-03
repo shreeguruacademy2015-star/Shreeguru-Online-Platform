@@ -5134,38 +5134,6 @@ def admin_edit_question(q_id):
                 return "Question not found", 404
     return render_template_string(EDIT_QUESTION_TEMPLATE, q=q)
 
-# प्रश्नांचे संपादन (Edit Question Route)
-@app.route('/admin/edit_question/<int:q_id>', methods=['GET', 'POST'])
-def admin_edit_question(q_id):
-    if not session.get('admin_logged'): 
-        return redirect('/admin/login')
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            if request.method == 'POST':
-                q_text = request.form.get('question', '').strip()
-                oa = request.form.get('opt_a', '').strip()
-                ob = request.form.get('opt_b', '').strip()
-                oc = request.form.get('opt_c', '').strip()
-                od = request.form.get('opt_d', '').strip()
-                corr = request.form.get('correct', 'A').strip().upper()
-                exp = request.form.get('explanation', '').strip()
-                img = request.form.get('image_url', '').strip()
-
-                cur.execute("""
-                    UPDATE questions 
-                    SET question=%s, opt_a=%s, opt_b=%s, opt_c=%s, opt_d=%s, correct=%s, explanation=%s, image_url=%s
-                    WHERE id=%s RETURNING test_id
-                """, (q_text, oa, ob, oc, od, corr, exp, img, q_id))
-                t_id = cur.fetchone()['test_id']
-                conn.commit()
-                return redirect(f"/admin/dashboard?tab=questions&filter_test_id={t_id}")
-
-            cur.execute("SELECT * FROM questions WHERE id=%s", (q_id,))
-            q = cur.fetchone()
-            if not q: 
-                return "Question not found", 404
-    return render_template_string(EDIT_QUESTION_TEMPLATE, q=q)
-
 @app.route('/admin/save_all_questions', methods=['POST'])
 def save_all_questions():
     if not session.get('admin_logged') and not session.get('is_admin'):
