@@ -6212,7 +6212,7 @@ def admin_test_paper_view(test_id):
 
     return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
     
-    # =============================================================================
+# =============================================================================
 # 🎛️ ऑल-इन-वन स्मार्ट पॅकेज व किंमत नियंत्रक सेव्ह राऊट (Admin)
 # =============================================================================
 @app.route('/admin/save_master_package_config', methods=['POST'])
@@ -6240,7 +6240,6 @@ def save_master_package_config():
 
     with get_db() as conn:
         with conn.cursor() as cur:
-            # कॉलम प्रकार सुरक्षितपणे VARCHAR मध्ये बदलणे (जेणेकरून 1-25 सेव्ह करताना इंटिजर एरर येणार नाही)
             cur.execute("""
                 ALTER TABLE portal_package_config 
                 ALTER COLUMN total_tests_count TYPE VARCHAR(50) USING total_tests_count::VARCHAR;
@@ -6282,7 +6281,6 @@ def unlock_combo_25():
 
         with get_db() as conn:
             with conn.cursor() as cur:
-                # आधीच खरेदी केली आहे का ते तपासणे
                 cur.execute("""
                     SELECT 1 FROM user_purchases 
                     WHERE user_phone = %s AND package_type = 'combo_25' AND status = 'success'
