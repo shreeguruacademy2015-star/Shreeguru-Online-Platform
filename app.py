@@ -6560,7 +6560,7 @@ def unlock_combo_25():
                     """, (phone, amount))
                     conn.commit()
 
-        Session['user_phone'] = phone
+        session['user_phone'] = phone
         session['has_combo_25'] = True
         return jsonify({'status': 'success', 'message': 'अभिनंदन! कॉम्बो पॅकेज यशस्वीरीत्या अनलॉक झाले आहे.'})
     except Exception as e:
