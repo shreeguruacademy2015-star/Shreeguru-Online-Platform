@@ -1534,45 +1534,34 @@ HOME_TEMPLATE = '''<!DOCTYPE html>
             alert("📲 ॲप आधीच इन्स्टॉल झालेले आहे किंवा ब्राऊझरच्या ३ ठिपक्यांवर (⋮) क्लिक करून 'Install app' निवडा.");
         }
     }
-    // 🎯 ऑल-इन-वन कॉम्बो पॅकेज पेमेंट फंक्शन (Razorpay Integration - Fixed)
-function payForComboMaster(amount) {
-    let phone = localStorage.getItem('user_phone') || prompt("कृपया आपला १० अंकी व्हॉट्सॲप नंबर टाका:");
-    if (!phone || phone.trim().length < 10) {
-        alert("कृपया वैध १० अंकी मोबाईल नंबर टाका!");
-        return;
-    }
-    localStorage.setItem('user_phone', phone.trim());
-
-    fetch('/create_combo_razorpay_order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amount, phone: phone.trim() })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) {
-            alert("⚠️ " + data.error);
+    // 🎯 ऑल-इन-वन कॉम्बो पॅकेज अनलॉक फंक्शन
+    function payForComboMaster(amount) {
+        let phone = localStorage.getItem('user_phone') || prompt("कृपया आपला १० अंकी व्हॉट्सॲप नंबर टाका:");
+        if (!phone || phone.trim().length < 10) {
+            alert("कृपया वैध १० अंकी मोबाईल नंबर टाका!");
             return;
         }
-        var options = {
-            "key": data.key_id,
-            "amount": data.amount,
-            "currency": "INR",
-            "name": "महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल",
-            "description": "संपूर्ण टेस्ट्स कॉम्बो पॅकेज",
-            "order_id": data.order_id,
-            "handler": function (response){
-                window.location.href = "/verify_combo_razorpay_payment?order_id=" + response.razorpay_order_id + "&payment_id=" + response.razorpay_payment_id + "&signature=" + response.razorpay_signature + "&amount=" + amount;
-            },
-            "theme": { "color": "#10b981" }
-        };
-        var rzp1 = new Razorpay(options);
-        rzp1.open();
-    })
-    .catch(err => {
-        alert("पेमेंट गेटवे सुरू करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.");
-    });
-}
+        localStorage.setItem('user_phone', phone.trim());
+
+        fetch('/api/unlock_combo_25', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: phone.trim(), amount: amount })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert("अभिनंदन! तुमचे कॉम्बो पॅकेज यशस्वीरीत्या अनलॉक झाले आहे!");
+                location.reload();
+            } else {
+                alert(data.message || "त्रुटी आली, कृपया पुन्हा प्रयत्न करा.");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("सर्व्हरशी संपर्क होऊ शकला नाही.");
+        });
+    }
     </script>
 </html>'''
 # =============================================================================
@@ -4307,105 +4296,6 @@ def verify_razorpay_payment():
     # यशस्वीरीत्या टेस्ट सुरू करा
     return redirect(f"/take_test/{test_id}?token={token}")
 
-
-    # -----------------------------------------------------------------------------
-# COMBO RAZORPAY PAYMENT & VERIFICATION ROUTES (Safe Fallback Enabled)
-# -----------------------------------------------------------------------------
-@app.route('/create_combo_razorpay_order', methods=['POST'])
-def create_combo_razorpay_order():
-    try:
-        data = request.get_json() or {}
-        amount = float(data.get('amount', 50.0))
-        phone = data.get('phone') or session.get('user_phone', '')
-        if phone:
-            session['user_phone'] = str(phone).strip()
-
-        amount_paise = int(round(amount, 2) * 100)
-        client, key_id = get_razorpay_client()
-        
-        # फॉलबॅक: जर की सेट नसतील तर क्रॅश न होऊ देता सुरक्षित डमी ऑर्डर आयडी पाठवणे
-        if not client or not key_id:
-            fake_order_id = f"order_fallback_{int(datetime.now().timestamp())}"
-            return jsonify({
-                "order_id": fake_order_id, 
-                "amount": amount_paise, 
-                "key_id": "rzp_test_fallback_key"
-            })
-
-        order = client.order.create({
-            "amount": amount_paise,
-            "currency": "INR",
-            "receipt": f"rcpt_combo_{int(datetime.now().timestamp())}",
-            "payment_capture": 1
-        })
-        return jsonify({"order_id": order['id'], "amount": amount_paise, "key_id": key_id})
-    except Exception as e:
-        # कोणतीही अनपेक्षित त्रुटी आल्यास सुरक्षित फॉलबॅक
-        fallback_id = f"order_err_{int(datetime.now().timestamp())}"
-        amt_val = 50.0
-        try:
-            amt_val = float(request.get_json().get('amount', 50.0))
-        except Exception:
-            pass
-        amount_paise = int(round(amt_val, 2) * 100)
-        return jsonify({
-            "order_id": fallback_id,
-            "amount": amount_paise,
-            "key_id": "rzp_test_fallback_key"
-        })
-
-@app.route('/verify_combo_razorpay_payment')
-def verify_combo_razorpay_payment():
-    order_id = request.args.get('order_id', '').strip()
-    payment_id = request.args.get('payment_id', '').strip()
-    signature = request.args.get('signature', '').strip()
-    amount = float(request.args.get('amount', 50.0))
-    user_phone = session.get('user_phone', '') or '9921111960'
-
-    key_secret = (os.environ.get("RAZORPAY_KEY_SECRET") or "").strip()
-    if not key_secret:
-        try:
-            with get_db() as conn:
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='razorpay_key_secret'")
-                    row = cur.fetchone()
-                    if row and row.get('setting_value'):
-                        key_secret = row['setting_value'].strip()
-        except Exception:
-            pass
-
-    verified = False
-    if key_secret and order_id and payment_id and signature:
-        try:
-            msg = f"{order_id}|{payment_id}"
-            expected_sig = hmac.new(key_secret.encode('utf-8'), msg.encode('utf-8'), hashlib.sha256).hexdigest()
-            if hmac.compare_digest(expected_sig, signature) or payment_id.startswith('pay_'):
-                verified = True
-        except Exception:
-            if payment_id.startswith('pay_'):
-                verified = True
-    elif payment_id and payment_id.startswith('pay_'):
-        verified = True
-
-    if not verified:
-        return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ पेमेंट पडताळणी अयशस्वी झाली. कृपया पुन्हा प्रयत्न करा.</h3>", 400
-
-    try:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO user_purchases (user_phone, package_type, amount, status)
-                    VALUES (%s, 'combo_25', %s, 'success')
-                    ON CONFLICT DO NOTHING;
-                """, (user_phone, amount))
-                conn.commit()
-    except Exception as e:
-        print(f"Combo Purchase Insert Warning: {e}")
-
-    session['user_phone'] = user_phone
-    session['has_combo_25'] = True
-    return redirect('/?combo_success=1')
-
 @app.route('/request_paid_test/<int:test_id>', methods=['POST'])
 def request_paid_test(test_id):
     name = request.form.get('student_name', '').strip()
@@ -6670,7 +6560,7 @@ def unlock_combo_25():
                     """, (phone, amount))
                     conn.commit()
 
-        session['user_phone'] = phone
+        Session['user_phone'] = phone
         session['has_combo_25'] = True
         return jsonify({'status': 'success', 'message': 'अभिनंदन! कॉम्बो पॅकेज यशस्वीरीत्या अनलॉक झाले आहे.'})
     except Exception as e:
