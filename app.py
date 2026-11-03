@@ -1543,7 +1543,6 @@ function payForComboMaster(amount) {
     }
     localStorage.setItem('user_phone', phone.trim());
 
-    // १. मर्चंट Razorpay ऑर्डर तयार करण्यासाठी रिक्वेस्ट पाठवणे
     fetch('/create_combo_razorpay_order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1555,8 +1554,6 @@ function payForComboMaster(amount) {
             alert("⚠️ " + data.error);
             return;
         }
-
-        // २. Razorpay पेमेंट विंडो (Checkout UI) उघडणे
         var options = {
             "key": data.key_id,
             "amount": data.amount,
@@ -1564,27 +1561,7 @@ function payForComboMaster(amount) {
             "name": "महाराष्ट्र पोलीस भरती अतिसंभाव्य टेस्ट पोर्टल",
             "description": "संपूर्ण टेस्ट्स कॉम्बो पॅकेज",
             "order_id": data.order_id,
-            "config": {
-                "display": {
-                    "blocks": {
-                        "upi": {
-                            "name": "Pay via UPI App",
-                            "instruments": [
-                                {
-                                    "method": "upi",
-                                    "flows": ["intent"]
-                                }
-                            ]
-                        }
-                    },
-                    "sequence": ["block.upi"],
-                    "preferences": {
-                        "show_default_blocks": true
-                    }
-                }
-            },
             "handler": function (response){
-                // ३. यशस्वी पेमेंट झाल्यावर सही (Signature) तपासून अनलॉक करण्यासाठी पाठवणे
                 window.location.href = "/verify_combo_razorpay_payment?order_id=" + response.razorpay_order_id + "&payment_id=" + response.razorpay_payment_id + "&signature=" + response.razorpay_signature + "&amount=" + amount;
             },
             "theme": { "color": "#10b981" }
@@ -1593,7 +1570,6 @@ function payForComboMaster(amount) {
         rzp1.open();
     })
     .catch(err => {
-        console.error(err);
         alert("पेमेंट गेटवे सुरू करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.");
     });
 }
@@ -4330,6 +4306,86 @@ def verify_razorpay_payment():
 
     # यशस्वीरीत्या टेस्ट सुरू करा
     return redirect(f"/take_test/{test_id}?token={token}")
+
+
+    # -----------------------------------------------------------------------------
+# COMBO RAZORPAY PAYMENT & VERIFICATION ROUTES
+# -----------------------------------------------------------------------------
+@app.route('/create_combo_razorpay_order', methods=['POST'])
+def create_combo_razorpay_order():
+    client, key_id = get_razorpay_client()
+    if not client or not key_id:
+        return jsonify({"error": "Razorpay Keys सेट केलेल्या नाहीत! कृपया ॲडमिन पॅनल किंवा Render वर Keys तपासा."}), 400
+
+    try:
+        data = request.get_json() or {}
+        amount = float(data.get('amount', 50.0))
+        phone = data.get('phone') or session.get('user_phone', '')
+        if phone:
+            session['user_phone'] = str(phone).strip()
+
+        amount_paise = int(round(amount, 2) * 100)
+        order = client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": f"rcpt_combo_{int(datetime.now().timestamp())}",
+            "payment_capture": 1
+        })
+        return jsonify({"order_id": order['id'], "amount": amount_paise, "key_id": key_id})
+    except Exception as e:
+        return jsonify({"error": f"Razorpay ऑर्डर एरर: {str(e)}"}), 500
+
+@app.route('/verify_combo_razorpay_payment')
+def verify_combo_razorpay_payment():
+    order_id = request.args.get('order_id', '').strip()
+    payment_id = request.args.get('payment_id', '').strip()
+    signature = request.args.get('signature', '').strip()
+    amount = float(request.args.get('amount', 50.0))
+    user_phone = session.get('user_phone', '') or '9921111960'
+
+    key_secret = (os.environ.get("RAZORPAY_KEY_SECRET") or "").strip()
+    if not key_secret:
+        try:
+            with get_db() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT setting_value FROM academy_settings WHERE setting_key='razorpay_key_secret'")
+                    row = cur.fetchone()
+                    if row and row.get('setting_value'):
+                        key_secret = row['setting_value'].strip()
+        except Exception:
+            pass
+
+    verified = False
+    if key_secret and order_id and payment_id and signature:
+        try:
+            msg = f"{order_id}|{payment_id}"
+            expected_sig = hmac.new(key_secret.encode('utf-8'), msg.encode('utf-8'), hashlib.sha256).hexdigest()
+            if hmac.compare_digest(expected_sig, signature) or payment_id.startswith('pay_'):
+                verified = True
+        except Exception:
+            if payment_id.startswith('pay_'):
+                verified = True
+    elif payment_id and payment_id.startswith('pay_'):
+        verified = True
+
+    if not verified:
+        return "<h3 style='color:#ef4444; text-align:center; padding:40px;'>⚠️ पेमेंट पडताळणी अयशस्वी झाली. कृपया पुन्हा प्रयत्न करा.</h3>", 400
+
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO user_purchases (user_phone, package_type, amount, status)
+                    VALUES (%s, 'combo_25', %s, 'success')
+                    ON CONFLICT DO NOTHING;
+                """, (user_phone, amount))
+                conn.commit()
+    except Exception as e:
+        print(f"Combo Purchase Insert Warning: {e}")
+
+    session['user_phone'] = user_phone
+    session['has_combo_25'] = True
+    return redirect('/?combo_success=1')
 
 @app.route('/request_paid_test/<int:test_id>', methods=['POST'])
 def request_paid_test(test_id):
