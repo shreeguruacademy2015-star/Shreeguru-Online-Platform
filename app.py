@@ -2743,17 +2743,146 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- 5. QUESTIONS TAB (Quick Edit Mode) -->
+    <!-- 5. QUESTIONS TAB -->
     {% elif active_tab == 'questions' %}
-    <h3>📝 प्रश्नपत्रिका थेट संपादन कक्ष (Quick Edit Mode)</h3>
-    
+    <h3>📝 प्रश्न व्यवस्थापन</h3>
+    <div class="sub-nav-tabs">
+        <a href="/admin/dashboard?tab=questions&q_subtab=ai{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'ai' else '' }}">🤖 डिजिटल स्मार्ट प्रश्न जनरेटर</a>
+        <a href="/admin/dashboard?tab=questions&q_subtab=ocr{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'ocr' else '' }}">📸 हार्डकॉपी व्हिजन स्कॅनर</a>
+        <a href="/admin/dashboard?tab=questions&q_subtab=csv{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'csv' else '' }}">📥 १०० प्रश्नांची CSV फाईल अपलोड</a>
+        <a href="/admin/dashboard?tab=questions&q_subtab=manual{% if filter_test_id %}&filter_test_id={{ filter_test_id }}{% endif %}" class="{{ 'active' if q_subtab == 'manual' else '' }}">✍️ प्रश्न मॅन्युअल नोंद</a>
+    </div>
+
+    {% if q_subtab == 'manual' %}
+    <div style="background:#ffffff; border:2px solid #059669; padding:20px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+        <h4 style="margin:0 0 12px; color:#065f46; font-size:16px;">✍️ मॅन्युअल प्रश्न, पर्याय, अचूक उत्तर व स्पष्टीकरण जोडा</h4>
+        <form method="POST" action="/admin/add_manual_question" enctype="multipart/form-data">
+            <div style="margin-bottom:10px;">
+                <label style="font-weight:bold; font-size:12px;">कोणत्या टेस्टमध्ये प्रश्न जोडायचा आहे ती टेस्ट निवडा:</label>
+                <select name="test_id" required onchange="switchTestView(this.value, 'manual')">
+                    {% for t in tests %}
+                    <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }} (ID: {{ t.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom:10px;">
+                <label style="font-weight:bold; font-size:12px;">प्रश्न टाइप करा:</label>
+                <textarea name="question" rows="2" placeholder="येथे प्रश्न लिहा..." required></textarea>
+            </div>
+            <div style="margin-bottom:10px;">
+                <label style="font-weight:bold; font-size:12px;">प्रश्नासोबत इमेज जोडा (गणित/आकृतीसाठी पर्यायी):</label>
+                <input type="file" name="question_image" accept="image/*">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div><label style="font-weight:bold; font-size:12px;">पर्याय A:</label><input type="text" name="opt_a" placeholder="पर्याय A" required></div>
+                <div><label style="font-weight:bold; font-size:12px;">पर्याय B:</label><input type="text" name="opt_b" placeholder="पर्याय B" required></div>
+                <div><label style="font-weight:bold; font-size:12px;">पर्याय C:</label><input type="text" name="opt_c" placeholder="पर्याय C" required></div>
+                <div><label style="font-weight:bold; font-size:12px;">पर्याय D:</label><input type="text" name="opt_d" placeholder="पर्याय D" required></div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px; margin-bottom:10px;">
+                <div>
+                    <label style="font-weight:bold; font-size:12px;">अचूक उत्तर निवडा:</label>
+                    <select name="correct" required>
+                        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight:bold; font-size:12px;">सविस्तर स्पष्टीकरण (पर्यायी):</label>
+                    <input type="text" name="explanation" placeholder="या प्रश्नाचे स्पष्टीकरण लिहा...">
+                </div>
+            </div>
+            <button type="submit" class="btn" style="width:100%; background:#059669; font-weight:800;">➕ हा प्रश्न निवडलेल्या टेस्टमध्ये जोडा</button>
+        </form>
+    </div>
+
+    {% elif q_subtab == 'ai' %}
+    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 10px; color:#065f46;">🤖 डिजिटल स्मार्ट प्रश्न जनरेटर (विभाग व १३ विषयनिहाय)</h4>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div>
+                <label style="font-weight:bold; font-size:12px;">टेस्ट निवडा:</label>
+                <select id="ai_target_test_id">
+                    {% for t in tests %}
+                    <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12px;">विभाग निवडा:</label>
+                <select id="ai_department">
+                    <option value="पोलीस भरती">पोलीस भरती</option>
+                    <option value="आर्मी भरती">आर्मी भरती</option>
+                    <option value="महाराष्ट्र लोकसेवा आयोग (MPSC)">महाराष्ट्र लोकसेवा आयोग (MPSC)</option>
+                    <option value="सरळ सेवा भरती">सरळ सेवा भरती</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-bottom:12px;">
+            <label style="font-weight:bold; font-size:12px; display:block; margin-bottom:4px;">विषय निवडा व संख्या टाका (१३ अधिकृत विषय):</label>
+            <div style="background:white; padding:12px; border-radius:6px; border:1px solid #cbd5e1; display:flex; flex-direction:column; gap:8px;">
+                {% for s in all_dynamic_subjects %}
+                <div class="subject-row" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:4px;">
+                    <label style="font-size:13px; font-weight:600;"><input type="checkbox" class="ai_subj_cb" value="{{ s.subject_name }}"> {{ s.subject_name }}</label>
+                    <input type="number" class="ai_subj_count" value="0" min="0" max="100" style="width:90px; margin-bottom:0; text-align:center;" placeholder="संख्या">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- काठिण्य पातळी निवड (Difficulty Level) -->
+<div class="mb-3" style="margin-top: 15px; margin-bottom: 15px;">
+    <label class="form-label font-weight-bold" style="color: #1e293b; font-size: 14px; display: block; margin-bottom: 6px;">
+        🎯 प्रश्नांची काठिण्य पातळी (Difficulty Level):
+    </label>
+    <select id="ai-difficulty" class="form-control" style="border: 2px solid #cbd5e1; border-radius: 8px; font-weight: 500; height: 42px; width: 100%; padding: 6px 12px;">
+        <option value="balanced" selected>🎯 प्रमाण समतोल (३०% सोपे + ५०% मध्यम + २०% कठीण - भरती पॅटर्न)</option>
+        <option value="easy">🟢 सोपी पातळी (Easy - थेट वस्तुनिष्ठ व मूलभूत प्रश्न)</option>
+        <option value="medium">🟡 मध्यम पातळी (Medium - पोलीस भरती नियमित गुणवत्ता स्तर)</option>
+        <option value="hard">🔴 कठीण पातळी (Hard - विधानात्मक, MPSC दर्जा व फसवे पर्याय)</option>
+    </select>
+    <small style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;">टीप: सराव चाचणीसाठी 'प्रमाण समतोल' हा सर्वोत्तम पर्याय आहे.</small>
+</div>
+        <button id="advancedAiBtn" type="button" class="btn" onclick="generateAIQuestionsFromAdvancedForm()" style="background:#10b981; color:#022c22; font-weight:800; width:100%;">
+            🤖 डिजिटल स्मार्ट प्रश्न जनरेट करा व सेव्ह करा
+        </button>
+    </div>
+
+    {% elif q_subtab == 'ocr' %}
+    <div style="background:#f0fdf4; border:2px solid #10b981; padding:18px; border-radius:8px; margin-bottom:20px;">
+        <h4 style="margin:0 0 8px; color:#065f46;">📸 हार्डकॉपी व्हिजन स्कॅनर</h4>
+        <p style="font-size:13px; color:#047857; margin-bottom:12px;">पुस्तकाचा किंवा जुन्या प्रश्नपत्रिकेचा फोटो अपलोड करा; संगणक आपोआप सर्व MCQs वाचून या टेस्टमध्ये सेव्ह करेल:</p>
+        <form method="POST" action="/admin/ai_scan_hardcopy" enctype="multipart/form-data">
+            <select name="test_id" required style="margin-bottom:8px;">
+                {% for t in tests %}
+                <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                {% endfor %}
+            </select>
+            <input type="file" name="scanned_image" accept="image/*" required style="margin-bottom:10px; background:white; padding:6px;">
+            <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:800; width:100%;">🚀 फोटो स्कॅन करा व MCQs जोडा</button>
+        </form>
+    </div>
+
+    {% elif q_subtab == 'csv' %}
+    <div style="background:#fefce8; border:2px dashed #ca8a04; padding:18px; border-radius:8px; margin-bottom:25px;">
+        <h4 style="margin:0 0 8px; color:#854d0e;">📥 १०० प्रश्नांची CSV फाईल अपलोड</h4>
+        <form method="POST" action="/admin/upload_csv_questions" enctype="multipart/form-data">
+            <select name="test_id" required style="margin-bottom:8px;">
+                {% for t in tests %}
+                <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>{{ t.test_title }}</option>
+                {% endfor %}
+            </select>
+            <input type="file" name="csv_file" accept=".csv,.txt" required style="margin-bottom:8px; background:white; padding:6px;">
+            <button type="submit" class="btn" style="background:#ca8a04; width:100%;">🚀 संपूर्ण प्रश्न CSV द्वारे अपलोड करा</button>
+        </form>
+    </div>
+    {% endif %}
+
     <div style="background:#f8fafc; border:1.5px solid #cbd5e1; padding:15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
-            <label style="font-weight:bold; font-size:13px; color:#0f172a;">🎯 कोणत्या टेस्टचे प्रश्न एडिट करायचे आहेत ती निवडा:</label>
-            <select style="width:300px; margin-bottom:0; font-weight:bold; color:#065f46;" onchange="switchTestView(this.value, 'manual')">
+            <label style="font-weight:bold; font-size:13px; color:#0f172a;">🎯 कोणत्या टेस्टचे प्रश्न पाहायचे आहेत ते निवडा:</label>
+            <select style="width:300px; margin-bottom:0; font-weight:bold; color:#065f46;" onchange="switchTestView(this.value, '{{ q_subtab }}')">
                 {% for t in tests %}
-                <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>[{{ t.category }}] {{ t.test_title }}</option>
-                {% endfor %}
+<option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>[{{ t.category }}] {{ t.test_title }}</option>
+{% endfor %}
             </select>
         </div>
         <div style="font-size:13px; color:#64748b; font-weight:bold;">
@@ -2761,77 +2890,90 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- सर्व प्रश्न एकाच वेळी थेट एडिट करून सेव्ह करण्यासाठी फॉर्म -->
-    <form method="POST" action="/admin/save_all_questions">
-        <input type="hidden" name="filter_test_id" value="{{ filter_test_id }}">
-        
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:#1e293b; padding:12px; border-radius:8px;">
-            <h4 style="margin:0; color:#38bdf8;">📋 टेस्टचे प्रश्न ({{ selected_test_title }})</h4>
-            <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:800; padding:10px 20px; font-size:14px; box-shadow:0 4px 10px rgba(16,185,129,0.3); cursor:pointer;">
-                💾 Save All (सर्व बदल एकाच वेळी सेव्ह करा)
-            </button>
+    <form method="POST" action="/admin/bulk_delete_questions" onsubmit="return confirm('निवडलेले सर्व प्रश्न डिलीट करायचे का?');">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h4 style="margin:0; color:#0f172a;">📋 या टेस्टचे प्रश्न ({{ selected_test_title }}):</h4>
+            <button type="submit" class="btn" style="background:#dc2626; padding:5px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न डिलीट करा</button>
         </div>
-
-        {% for q in all_questions %}
-        <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:18px; margin-bottom:15px; color:#1e293b; box-shadow:0 3px 10px rgba(0,0,0,0.05);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-weight:bold; color:#0284c7; font-size:13.5px;">प्रश्न क्र. {{ loop.index }} (ID: {{ q.id }})</span>
-                <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white; padding:4px 8px; text-decoration:none; border-radius:4px;" onclick="return confirm('हा प्रश्न डिलीट करायचा का?');">🗑️ डिलीट</a>
-            </div>
-            
-            <input type="hidden" name="qid_{{ loop.index }}" value="{{ q.id }}">
-            
-            <!-- प्रश्न मजकूर -->
-            <label style="font-size:12px; font-weight:bold; color:#334155;">प्रश्न मजकूर:</label>
-            <textarea name="question_text_{{ q.id }}" rows="2" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:10px;" required>{{ q.question }}</textarea>
-
-            <!-- पर्याय A, B, C, D एका खाली एक -->
-            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
-                <div>
-                    <label style="font-size:11.5px; font-weight:bold; color:#059669;">पर्याय A:</label>
-                    <input type="text" name="opt_a_{{ q.id }}" value="{{ q.opt_a }}" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:0;" required>
-                </div>
-                <div>
-                    <label style="font-size:11.5px; font-weight:bold; color:#059669;">पर्याय B:</label>
-                    <input type="text" name="opt_b_{{ q.id }}" value="{{ q.opt_b }}" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:0;" required>
-                </div>
-                <div>
-                    <label style="font-size:11.5px; font-weight:bold; color:#059669;">पर्याय C:</label>
-                    <input type="text" name="opt_c_{{ q.id }}" value="{{ q.opt_c }}" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:0;" required>
-                </div>
-                <div>
-                    <label style="font-size:11.5px; font-weight:bold; color:#059669;">पर्याय D:</label>
-                    <input type="text" name="opt_d_{{ q.id }}" value="{{ q.opt_d }}" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:0;" required>
-                </div>
-            </div>
-
-            <!-- अचूक उत्तर आणि स्पष्टीकरण -->
-            <div style="display:grid; grid-template-columns: 140px 1fr; gap:10px;">
-                <div>
-                    <label style="font-size:11.5px; font-weight:bold; color:#dc2626;">अचूक उत्तर:</label>
-                    <select name="correct_{{ q.id }}" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:0;" required>
-                        <option value="A" {% if q.correct=='A' %}selected{% endif %}>A</option>
-                        <option value="B" {% if q.correct=='B' %}selected{% endif %}>B</option>
-                        <option value="C" {% if q.correct=='C' %}selected{% endif %}>C</option>
-                        <option value="D" {% if q.correct=='D' %}selected{% endif %}>D</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:11.5px; font-weight:bold; color:#2563eb;">तज्ज्ञ स्पष्टीकरण (Explanation):</label>
-                    <input type="text" name="explanation_{{ q.id }}" value="{{ q.explanation or '' }}" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:0;" placeholder="स्पष्टीकरण लिहा...">
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <div style="text-align:center; padding:30px; color:#64748b; background:white; border-radius:8px;">या टेस्टमध्ये अजून एकही प्रश्न जोडलेला नाही.</div>
-        {% endfor %}
-
-        {% if all_questions %}
-        <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:800; padding:12px; width:100%; font-size:15px; margin-top:10px; cursor:pointer;">
-            💾 Save All (सर्व बदल एकाच वेळी सेव्ह करा)
-        </button>
-        {% endif %}
+        <table>
+            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'q-cb')"></th><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>कृती</th></tr>
+            {% for q in all_questions %}
+            <tr>
+                <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="q-cb"></td>
+                <td style="text-align:center; font-weight:bold; color:#0284c7; background:#f0f9ff;">
+                    #{{ loop.index }}
+                </td>
+                <td style="color:#64748b; font-size:12px;">{{ q.id }}</td>
+                <td><b>प्र. {{ loop.index }}. {{ q.question }}</b></td>
+                <td style="color:green; font-weight:bold; text-align:center;">{{ q.correct }}</td>
+                <td style="white-space:nowrap;">
+                    <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
+                    <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे?');">🗑️</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">या टेस्टमध्ये अजून एकही प्रश्न जोडलेला नाही.</td></tr>
+            {% endfor %}
+        </table>
     </form>
+    <!-- 5B. SUBJECTS MANAGEMENT TAB (Sub-tabs + Full Deep Syllabus Display) -->
+    {% elif active_tab == 'subjects_mgmt' %}
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="margin:0; color:#065f46;">📚 परिपूर्ण अभ्यासक्रम व विषय व्यवस्थापन</h3>
+        <span style="font-size:12.5px; background:#ecfdf5; color:#065f46; border:1px solid #10b981; padding:4px 10px; border-radius:6px; font-weight:bold;">
+            एकूण विषय: {{ all_dynamic_subjects|length }}
+        </span>
+    </div>
+
+    <!-- नवीन विषय जोडण्याचा छोटा फॉर्म -->
+    <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:14px; border-radius:8px; margin-bottom:18px;">
+        <form method="POST" action="/admin/add_subject" style="display:grid; grid-template-columns: 2fr 1fr auto; gap:10px; align-items:end;">
+            <div>
+                <label style="font-weight:bold; font-size:12px; color:#334155;">+ नवीन विषय जोडा:</label>
+                <input type="text" name="subject_name" placeholder="उदा. पर्यावरण व वने" required style="margin-bottom:0;">
+            </div>
+            <div>
+                <label style="font-weight:bold; font-size:12px; color:#334155;">अनुक्रमांक (Seq):</label>
+                <input type="number" name="sequence_order" value="30" required style="margin-bottom:0;">
+            </div>
+            <div>
+                <button type="submit" class="btn" style="background:#10b981; color:#022c22; font-weight:bold; height:36px;">➕ विषय जोडा</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- २ भागांची रचना: डावीकडे सब-टॅब, उजवीकडे सिलॅबस कार्ड्स -->
+    <div style="display:grid; grid-template-columns: 320px 1fr; gap:18px; align-items:start;">
+        
+        <!-- डावा विभाग: सर्व विषयांची बटणे (Sub-tabs) -->
+        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
+            <div style="background:#1e293b; color:#38bdf8; padding:10px 14px; font-weight:bold; font-size:13px;">
+                📋 अधिकृत विषय यादी (क्लिक करा):
+            </div>
+            <div style="max-height:68vh; overflow-y:auto; padding:6px;">
+                {% for s in all_dynamic_subjects %}
+                <div id="subtab-btn-{{ loop.index }}" onclick="showSyllabusCard({{ loop.index }})" 
+                     style="padding:9px 12px; margin-bottom:4px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background: {{ '#10b981' if loop.first else '#ffffff' }}; color: {{ '#022c22' if loop.first else '#334155' }}; border: 1px solid {{ '#059669' if loop.first else '#e2e8f0' }};" class="subj-nav-item">
+                    <span><b>{{ s.sequence_order }}.</b> {{ s.subject_name }}</span>
+                    <span style="font-size:11px; opacity:0.8;">➔</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- उजवा विभाग: निवडलेल्या विषयाचा सखोल सिलॅबस -->
+        <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:18px; max-height:74vh; overflow-y:auto;">
+            {% for s in all_dynamic_subjects %}
+            <div id="syllabus-view-{{ loop.index }}" class="syllabus-panel" style="display: {{ 'block' if loop.first else 'none' }};">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:10px; margin-bottom:14px;">
+                    <div>
+                        <span style="font-size:11px; font-weight:bold; color:#0284c7; text-transform:uppercase;">अनुक्रमांक #{{ s.sequence_order }}</span>
+                        <h4 style="margin:2px 0 0 0; color:#065f46; font-size:18px;">📖 {{ s.subject_name }}</h4>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <a href="/admin/delete_subject/{{ s.id }}" class="btn-sm" style="background:#dc2626; color:white; padding:6px 10px;" onclick="return confirm('हा विषय खरोखर काढून टाकायचा का?');">🗑️ डिलीट</a>
+                    </div>
+                </div>
 
                 <!-- सिलॅबस घटक (MASTER_SYLLABUS मॅपिंग) -->
                 {% set matched_syllabus = none %}
@@ -5137,35 +5279,7 @@ def admin_edit_question(q_id):
 @app.route('/admin/save_all_questions', methods=['POST'])
 def save_all_questions():
     if not session.get('admin_logged') and not session.get('is_admin'):
-        return redirect('/admin/login')
-
-    filter_test_id = request.form.get('filter_test_id', '')
-
-    try:
-        with get_db() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                for key, val in request.form.items():
-                    if key.startswith('question_text_'):
-                        q_id = key.split('_')[-1]
-                        q_text = val.strip()
-                        opt_a = request.form.get(f'opt_a_{q_id}', '').strip()
-                        opt_b = request.form.get(f'opt_b_{q_id}', '').strip()
-                        opt_c = request.form.get(f'opt_c_{q_id}', '').strip()
-                        opt_d = request.form.get(f'opt_d_{q_id}', '').strip()
-                        correct = request.form.get(f'correct_{q_id}', 'A').strip().upper()
-                        explanation = request.form.get(f'explanation_{q_id}', '').strip()
-
-                        cur.execute("""
-                            UPDATE questions 
-                            SET question = %s, opt_a = %s, opt_b = %s, opt_c = %s, opt_d = %s, correct = %s, explanation = %s
-                            WHERE id = %s
-                        """, (q_text, opt_a, opt_b, opt_c, opt_d, correct, explanation, int(q_id)))
-                conn.commit()
-    except Exception as e:
-        print(f"Save All Questions Error: {e}")
-
-    return redirect(f'/admin/dashboard?tab=questions&filter_test_id={filter_test_id}')
-
+        return jsonify({'success': False, 'message': 'अनधिकृत प्रवेश!'}), 403
         # =============================================================================
 # विषय व्यवस्थापन राऊट्स (Add & Delete Dynamic Subjects)
 # =============================================================================
@@ -6212,7 +6326,7 @@ def admin_test_paper_view(test_id):
 
     return render_template_string(OFFLINE_PAPER_TEMPLATE, test=test, questions=questions, mode=mode)
     
-# =============================================================================
+    # =============================================================================
 # 🎛️ ऑल-इन-वन स्मार्ट पॅकेज व किंमत नियंत्रक सेव्ह राऊट (Admin)
 # =============================================================================
 @app.route('/admin/save_master_package_config', methods=['POST'])
@@ -6240,6 +6354,7 @@ def save_master_package_config():
 
     with get_db() as conn:
         with conn.cursor() as cur:
+            # कॉलम प्रकार सुरक्षितपणे VARCHAR मध्ये बदलणे (जेणेकरून 1-25 सेव्ह करताना इंटिजर एरर येणार नाही)
             cur.execute("""
                 ALTER TABLE portal_package_config 
                 ALTER COLUMN total_tests_count TYPE VARCHAR(50) USING total_tests_count::VARCHAR;
@@ -6281,6 +6396,7 @@ def unlock_combo_25():
 
         with get_db() as conn:
             with conn.cursor() as cur:
+                # आधीच खरेदी केली आहे का ते तपासणे
                 cur.execute("""
                     SELECT 1 FROM user_purchases 
                     WHERE user_phone = %s AND package_type = 'combo_25' AND status = 'success'
