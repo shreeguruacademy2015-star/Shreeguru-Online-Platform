@@ -6467,6 +6467,38 @@ def unlock_combo_25():
         return jsonify({'status': 'success', 'message': 'अभिनंदन! कॉम्बो पॅकेज यशस्वीरीत्या अनलॉक झाले आहे.'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'सर्व्हर त्रुटी: {str(e)}'}), 500
+
+        @app.route('/admin/save_all_questions', methods=['POST'])
+def save_all_questions():
+    if not session.get('admin_logged') and not session.get('is_admin'):
+        return redirect('/admin/login')
+
+    filter_test_id = request.form.get('filter_test_id', '')
+
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                for key, val in request.form.items():
+                    if key.startswith('question_text_'):
+                        q_id = key.split('_')[-1]
+                        q_text = val.strip()
+                        opt_a = request.form.get(f'opt_a_{q_id}', '').strip()
+                        opt_b = request.form.get(f'opt_b_{q_id}', '').strip()
+                        opt_c = request.form.get(f'opt_c_{q_id}', '').strip()
+                        opt_d = request.form.get(f'opt_d_{q_id}', '').strip()
+                        correct = request.form.get(f'correct_{q_id}', 'A').strip().upper()
+                        explanation = request.form.get(f'explanation_{q_id}', '').strip()
+
+                        cur.execute("""
+                            UPDATE questions 
+                            SET question = %s, opt_a = %s, opt_b = %s, opt_c = %s, opt_d = %s, correct = %s, explanation = %s
+                            WHERE id = %s
+                        """, (q_text, opt_a, opt_b, opt_c, opt_d, correct, explanation, int(q_id)))
+                conn.commit()
+    except Exception as e:
+        print(f"Save All Questions Error: {e}")
+
+    return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={filter_test_id}')
         
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
