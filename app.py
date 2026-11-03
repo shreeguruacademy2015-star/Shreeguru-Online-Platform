@@ -6462,13 +6462,13 @@ def unlock_combo_25():
                     """, (phone, amount))
                     conn.commit()
 
-        session['user_phone'] = phone
+        Session['user_phone'] = phone
         session['has_combo_25'] = True
         return jsonify({'status': 'success', 'message': 'अभिनंदन! कॉम्बो पॅकेज यशस्वीरीत्या अनलॉक झाले आहे.'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'सर्व्हर त्रुटी: {str(e)}'}), 500
 
-        @app.route('/admin/save_all_questions', methods=['POST'])
+@app.route('/admin/save_all_questions', methods=['POST'])
 def save_all_questions():
     if not session.get('admin_logged') and not session.get('is_admin'):
         return redirect('/admin/login')
@@ -6499,7 +6499,7 @@ def save_all_questions():
         print(f"Save All Questions Error: {e}")
 
     return redirect(f'/admin/dashboard?tab=questions&q_subtab=manual&filter_test_id={filter_test_id}')
-        
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
