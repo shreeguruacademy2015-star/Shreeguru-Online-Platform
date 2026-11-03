@@ -2967,48 +2967,6 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         </form>
     </div>
     {% endif %}
-
-    <div style="background:#f8fafc; border:1.5px solid #cbd5e1; padding:15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:25px;">
-        <div>
-            <label style="font-weight:bold; font-size:13px; color:#0f172a;">🎯 साधी यादी पाहण्यासाठी टेस्ट निवडा:</label>
-            <select style="width:300px; margin-bottom:0; font-weight:bold; color:#065f46;" onchange="switchTestView(this.value, '{{ q_subtab }}')">
-                {% for t in tests %}
-                <option value="{{ t.id }}" {% if filter_test_id==t.id|string %}selected{% endif %}>[{{ t.category }}] {{ t.test_title }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div style="font-size:13px; color:#64748b; font-weight:bold;">
-            या टेस्टमध्ये एकूण प्रश्न: <span style="color:#059669; font-size:15px;">{{ all_questions|length }}</span>
-        </div>
-    </div>
-
-    <form method="POST" action="/admin/bulk_delete_questions" onsubmit="return confirm('निवडलेले सर्व प्रश्न डिलीट करायचे का?');">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h4 style="margin:0; color:#0f172a;">📋 या टेस्टचे प्रश्न (सूची):</h4>
-            <button type="submit" class="btn" style="background:#dc2626; padding:5px 12px; font-size:12px;">🗑️ निवडलेले प्रश्न डिलीट करा</button>
-        </div>
-        <table>
-            <tr><th style="width:30px;"><input type="checkbox" onclick="toggleSelectAll(this, 'q-cb')"></th><th>ID</th><th>प्रश्न</th><th>अचूक</th><th>कृती</th></tr>
-            {% for q in all_questions %}
-            <tr>
-                <td><input type="checkbox" name="question_ids" value="{{ q.id }}" class="q-cb"></td>
-                <td style="text-align:center; font-weight:bold; color:#0284c7; background:#f0f9ff;">
-                    #{{ loop.index }}
-                </td>
-                <td style="color:#64748b; font-size:12px;">{{ q.id }}</td>
-                <td><b>प्र. {{ loop.index }}. {{ q.question }}</b></td>
-                <td style="color:green; font-weight:bold; text-align:center;">{{ q.correct }}</td>
-                <td style="white-space:nowrap;">
-                    <a href="/admin/edit_question/{{ q.id }}" class="btn-sm" style="background:#0284c7; color:white;">✏ एडिट</a>
-                    <a href="/admin/delete_question/{{ q.id }}" class="btn-sm" style="background:#dc2626; color:white;" onclick="return confirm('डिलीट करायचे?');">🗑️</a>
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">या टेस्टमध्ये अजून एकही प्रश्न जोडलेला नाही.</td></tr>
-            {% endfor %}
-        </table>
-    </form>
-    {% endif %}
     
     <!-- 5B. SUBJECTS MANAGEMENT TAB (Sub-tabs + Full Deep Syllabus Display) -->
     {% elif active_tab == 'subjects_mgmt' %}
